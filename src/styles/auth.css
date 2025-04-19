@@ -1,0 +1,6 @@
+/* Auth pages styling */
+.bg-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.2) 8%, transparent 8%);
+  background-position: 0 0;
+  background-size: 16px 16px;
+} 
