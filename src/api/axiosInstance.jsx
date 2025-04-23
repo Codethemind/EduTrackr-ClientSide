@@ -1,63 +1,50 @@
-/// <reference types="vite/client" />
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
+import  store  from '../redux/store';
+import { refreshTokenSuccess, logout } from '../redux/slices/authSlice';
 
-// Use environment variable with a type-safe fallback
-const API_BASE_URL = (import.meta.env.VITE_API_URL as string) || 'http://localhost:3000';
-
-interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
-}
-
-interface ErrorResponse {
-  message?: string;
-}
+// Environment safe
+const API_BASE_URL =  'http://localhost:3000';
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 5000, // 5 second timeout
+  timeout: 5000, // 5 seconds timeout
 });
 
 // Request interceptor
 axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('accessToken');
+  (config) => {
+    const token = store.getState().auth.accessToken; // Get token from Redux
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error: AxiosError) => {
+  (error) => {
     return Promise.reject(error);
   }
 );
-
-interface RefreshTokenResponse {
-  data: {
-    accessToken: string;
-  };
-}
 
 // Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => {
     return response;
   },
-  async (error: AxiosError<ErrorResponse>) => {
-    const originalRequest = error.config as CustomAxiosRequestConfig;
-    
+  async (error) => {
+    const originalRequest = error.config;
+
     if (!originalRequest) {
       return Promise.reject(error);
     }
 
-    // Handle timeout errors specifically
+    // Handle timeout errors
     if (error.code === 'ECONNABORTED') {
       return Promise.reject(new Error('Request timed out. Please try again.'));
     }
 
-    // If the error is 401 and we haven't retried yet
+    // Handle 401 Unauthorized errors and refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -67,22 +54,27 @@ axiosInstance.interceptors.response.use(
           throw new Error('No refresh token available');
         }
 
-        // Try to refresh the token using the baseURL
-        const response = await axios.post<RefreshTokenResponse>(
+        // Attempt to refresh the token
+        const response = await axios.post(
           `${API_BASE_URL}/auth/refresh-token`,
           { refreshToken }
         );
 
-        const { accessToken } = response.data.data;
-        localStorage.setItem('accessToken', accessToken);
+        const accessToken = response.data?.data?.accessToken;
 
-        // Update the authorization header
+        // Dispatch refreshTokenSuccess to update Redux + localStorage
+        store.dispatch(refreshTokenSuccess(accessToken));
+
+        // Update original request header with new access token
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+
+        // Retry the original request
         return axios(originalRequest);
       } catch (refreshError) {
-        // If refresh token fails, logout the user
-        localStorage.clear(); // Clear all local storage items
-        window.location.href = '/auth/login';
+        // If token refresh fails, logout user
+        store.dispatch(logout());
+        localStorage.clear(); // Optional: Clear everything
+        window.location.href = '/auth/login'; // Redirect to login
         return Promise.reject(refreshError);
       }
     }

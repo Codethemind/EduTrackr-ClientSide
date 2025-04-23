@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios'
-// import { useAuth } from '../../contexts/AuthContext';
+import axios from "../../api/axiosInstance.jsx";
+import { toast } from 'react-hot-toast';
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/slices/authSlice';
 
 const TeacherLogin = () => {
   const [formData, setFormData] = useState({
@@ -9,53 +11,56 @@ const TeacherLogin = () => {
     password: '',
     rememberMe: false,
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  // const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+  
     // Basic validation
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
-
+  
     try {
-      setError('');
       setLoading(true);
       
-    
-      const response = await axios.post('http://localhost:3000/auth/loginTeacher',formData);
-
-      
-      // if (userData.role !== 'teacher') {
-      //   throw new Error('Invalid account type. Please use teacher credentials.');
-      // }
-
-      // Get the redirect path from location state or default to teacher dashboard
+      const response = await axios.post('/auth/loginTeacher', formData);
+     
+      const { accessToken, teacher } = response.data.data;
+      console.log('login teacher details',teacher)
+      localStorage.setItem('accessToken', accessToken);
+      dispatch(loginSuccess({
+        accessToken,
+        user: teacher,
+      }));
       const from = location.state?.from?.pathname || '/teacher/dashboard';
-      console.log('Login successful:', response.data);
-      navigate('/teacher/dashboard', { replace: true });
+      toast.success('Login successful!');
+      navigate(from, { replace: true });
+  
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+  
+      if (err.response && err.response.status === 401) {
+        toast.error('Invalid credentials, please try again.');
+      } else {
+        toast.error(err.message || 'Failed to login. Please check your credentials.');
+      }
     } finally {
       setLoading(false);
     }
-  };
+  };;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -81,12 +86,6 @@ const TeacherLogin = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Teacher Login</h1>
               <p className="text-gray-600">Welcome back, educator!</p>
             </div>
-
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
-                {error}
-              </div>
-            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
@@ -143,9 +142,7 @@ const TeacherLogin = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`w-full flex justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? 'Logging in...' : 'Login as Teacher'}
               </button>

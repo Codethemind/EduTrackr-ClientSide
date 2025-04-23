@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axios from "../../api/axiosInstance.jsx";
+
 
 const ResetPassword = () => {
   const { token } = useParams();
@@ -37,7 +38,7 @@ const ResetPassword = () => {
     setLoading(true);
     try {
       const { data } = await axios.post(
-        `http://localhost:3000/auth/resetPassword/${token}`,
+        `/auth/resetPassword/${token}`,
         {
           email: formData.email,
           newPassword: formData.password

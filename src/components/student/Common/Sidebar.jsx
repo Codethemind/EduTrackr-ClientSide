@@ -1,4 +1,7 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   MdDashboard, 
@@ -15,8 +18,17 @@ import {
 } from 'react-icons/md';
 
 const Sidebar = () => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const location = useLocation();
+
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = () => {
+    dispatch(logout()); // 1. Clear Redux auth state
+    localStorage.removeItem('accessToken'); // 2. Clear any session tokens from localStorage
+    navigate('/auth/student-login'); // 3. Redirect to login page
+  };
 
   const menuItems = [
     { section: 'MAIN', items: [
@@ -38,7 +50,7 @@ const Sidebar = () => {
     { section: 'ACCOUNT', items: [
       { name: 'Profile', icon: <MdPerson className="w-5 h-5" />, path: '/student/profile' },
       { name: 'Settings', icon: <MdSettings className="w-5 h-5" />, path: '/student/settings' },
-      { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '/auth/student-login' },
+      { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' }, // No path for logout
     ]},
   ];
 
@@ -55,18 +67,25 @@ const Sidebar = () => {
               <h2 className="text-xs font-semibold text-gray-500">{section.section}</h2>
             </div>
             {section.items.map((item, itemIndex) => (
-              <Link
-                key={itemIndex}
-                to={item.path}
-                className={`flex items-center px-6 py-2.5 text-sm ${
-                  isActive(item.path)
-                    ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                <span className="mr-3">{item.icon}</span>
-                {item.name}
-              </Link>
+              item.name === 'Logout' ? (
+                <button
+                  key={itemIndex}
+                  onClick={handleLogout}
+                  className={`flex w-full items-center px-6 py-2.5 text-sm text-gray-700 hover:bg-gray-50`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  {item.name}
+                </button>
+              ) : (
+                <Link
+                  key={itemIndex}
+                  to={item.path}
+                  className={`flex items-center px-6 py-2.5 text-sm ${isActive(item.path) ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  {item.name}
+                </Link>
+              )
             ))}
           </div>
         ))}
@@ -75,4 +94,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

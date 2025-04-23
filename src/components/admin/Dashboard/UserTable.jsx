@@ -144,14 +144,14 @@ const UserTable = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  {["Name", "Email", "Role", "Status", "Actions"].map((header) => (
+                  {["Name", "Email", "Role"].map((header) => (
                     <th
                       key={header}
                       className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider"
                     >
                       {header}
                     </th>
-                  ))}
+                  ))}        
                 </tr>
               </thead>
              
@@ -165,34 +165,8 @@ const UserTable = () => {
                     </td>
                     <td className="px-6 py-4 text-gray-600">{user.email}</td>
                     <td className="px-6 py-4 text-gray-600">{user.role}</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={user.status || (user.isActive ? 'active' : 'inactive')} />
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-4 items-center">
-                        <button
-                          onClick={() => handleViewUser(user._id || user.id)}
-                          className="text-gray-500 hover:text-blue-600 transition-colors"
-                          aria-label="View details"
-                        >
-                          <i className="ti ti-eye text-lg" />
-                        </button>
-                        <button
-                          onClick={() => handleEditUser(user._id || user.id)}
-                          className="text-gray-500 hover:text-green-600 transition-colors"
-                          aria-label="Edit user"
-                        >
-                          <i className="ti ti-edit text-lg" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user._id || user.id)}
-                          className="text-gray-500 hover:text-red-600 transition-colors"
-                          aria-label="Delete user"
-                        >
-                          <i className="ti ti-trash text-lg" />
-                        </button>
-                      </div>
-                    </td>
+                  
+                  
                   </tr>
                 ))}
               </tbody>

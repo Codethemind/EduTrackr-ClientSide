@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import axios from "../../api/axiosInstance.ts";
+import axios from "../../api/axiosInstance.jsx";
 import Sidebar from "../../components/admin/Commen/Sidebar.jsx";
 import Header from "../../components/admin/Commen/Header.jsx";
 import StatCard from "../../components/admin/Commen/StatCard.jsx";
 import UserTable from "../../components/admin/Dashboard/UserTable.jsx";
+import { useSelector } from 'react-redux';
 
 const Dashboard = () => {
+  const auth = useSelector((state) => state.auth); // Access Redux state
+
+  console.log('Current auth state:', auth); // Log the auth state
   const [dashboardStats, setDashboardStats] = useState({
     users: { count: 0, trend: 0 },
     courses: { count: 0, trend: 0 },
@@ -74,6 +78,7 @@ const Dashboard = () => {
   const formatTrendValue = (value) => `${Math.abs(value)}% since last month`;
 
   return (
+    
     <main className="flex bg-gradient-to-b from-gray-100 to-gray-50 min-h-screen">
       <Sidebar activePage="dashboard" />
       <div className="flex-1 ml-64">

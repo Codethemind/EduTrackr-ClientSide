@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-// import { useAuth } from '../../contexts/AuthContext';
-
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-
-import axios from 'axios';
+import axios from "../../api/axiosInstance.jsx";
+import { toast } from 'react-hot-toast'; // Import toast
+import { useDispatch } from 'react-redux';
+import { loginSuccess } from '../../redux/slices/authSlice';
 
 const StudentLogin = () => {
   const [formData, setFormData] = useState({
@@ -13,45 +13,63 @@ const StudentLogin = () => {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  // const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
     if (!formData.email || !formData.password) {
       setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
-
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email');
+      toast.error('Please enter a valid email');
+      return;
+    }
+  
     try {
-      setError('');  
+      setError('');
       setLoading(true);
-      const response = await axios.post('http://localhost:3000/auth/loginStudent',formData)
-      // const userData = await login(formData.email, formData.password, 'student');
-      
-      // if (userData.role !== 'student') {
-      //   throw new Error('Invalid account type. Please use student credentials.');
-      // }
-
-      // Get the redirect path from location state or default to student dashboard
+  
+      const response = await axios.post('/auth/loginStudent', formData);
+  
+      const { accessToken, student } = response.data.data;
+      console.log('login student details',student)
+  
+      // Save to localStorage
+      localStorage.setItem('accessToken', accessToken);
+  
+      // Update Redux store
+      dispatch(loginSuccess({
+        accessToken,
+        user: student,
+      }));
+  
+      // Navigate to dashboard
       const from = location.state?.from?.pathname || '/student/dashboard';
-      console.log('Login successful:', response.data);
-      navigate('/student/dashboard', { replace: true });
+      toast.success('Login successful! Redirecting...');
+      navigate(from, { replace: true });
+  
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+  
+      const errorMessage = err.response?.data?.message || 'Failed to login. Please check your credentials.';
+      
+      setError(errorMessage);
+      toast.error(errorMessage);
+  
     } finally {
       setLoading(false);
     }

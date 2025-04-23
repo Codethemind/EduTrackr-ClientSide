@@ -1,139 +1,270 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const EditUserModal = ({ user, onClose, onSave }) => {
-  const [formData, setFormData] = useState({ 
-    ...user,
-    // Ensure all fields are populated with at least empty strings
-    username: user?.username || '',
-    email: user?.email || '',
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    role: user?.role || 'Student',
-    isActive: user?.isActive !== undefined ? user.isActive : true
+  if (!user) return null; // Safety check to ensure user data exists before rendering
+
+  // Local state to handle the form data
+  const [formData, setFormData] = useState({
+    username: user.username,
+    email: user.email,
+    firstname: user.firstname || '',
+    lastname: user.lastname || '',
+    role: user.role,
+    department: user.department || '',
+    class: user.class || '',
+    courses: user.courses || [],
+    isBlock: user.isBlock,
   });
-  const [errors, setErrors] = useState({});
 
-  // Define the fields to be displayed in the form
-  const formFields = [
-    { name: 'username', label: 'Username', type: 'text', required: true },
-    { name: 'email', label: 'Email', type: 'email', required: true },
-    { name: 'firstName', label: 'First Name', type: 'text', required: true },
-    { name: 'lastName', label: 'Last Name', type: 'text', required: true },
-    { name: 'role', label: 'Role', type: 'select', options: ['Admin', 'Teacher', 'Student'], required: true },
-    { name: 'isActive', label: 'Status', type: 'select', options: ['Active', 'Inactive'], required: true }
-  ];
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    
-    // For the isActive field, convert 'Active'/'Inactive' to boolean
-    if (name === 'isActive') {
-      setFormData({ ...formData, [name]: value === 'Active' });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
-    
-    // Clear error for this field when user types
-    if (errors[name]) {
-      setErrors({ ...errors, [name]: null });
-    }
-  };
-
-  const validateForm = () => {
-    const newErrors = {};
-    
-    formFields.forEach(field => {
-      if (field.required && (!formData[field.name] || formData[field.name] === '')) {
-        newErrors[field.name] = `${field.label} is required`;
-      }
+  useEffect(() => {
+    // Initialize formData with user details when modal is opened
+    setFormData({
+      username: user.username,
+      email: user.email,
+      firstname: user.firstname || '',
+      lastname: user.lastname || '',
+      role: user.role,
+      department: user.department || '',
+      class: user.class || '',
+      courses: user.courses || [],
+      isBlock: user.isBlock,
     });
-    
-    // Email validation
-    if (formData.email && !/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Please enter a valid email address';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  }, [user]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    
-    if (validateForm()) {
-      onSave(formData);
+  const handleCheckboxChange = (e) => {
+    const { name, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: checked,
+    });
+  };
+
+  const handleSave = async () => {
+    try {
+      const userId = user._id || user.id;
+      const baseURL = 'http://localhost:3000'; // <-- Set your base URL here
+      let apiUrl = '';
+  
+      console.log('Inside EditUserModal:', user.id);
+  
+      if (formData.role === 'Student') {
+        apiUrl = `${baseURL}/api/students/${userId}`;
+      } else if (formData.role === 'Teacher') {
+        apiUrl = `${baseURL}/api/teachers/${userId}`;
+      } else if (formData.role === 'Admin') {
+        apiUrl = `${baseURL}/api/admins/${userId}`;
+      }
+  
+      const response = await fetch(apiUrl, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to update user');
+      }
+  
+      const updatedUser = await response.json();
+      onSave(updatedUser); // Send updated user to parent
+      onClose(); // Close modal
+    } catch (err) {
+      console.error(err.message);
     }
   };
+  
+
+  // Render common details form inputs
+  const renderCommonDetails = () => (
+    <>
+      <div>
+        <label className="text-sm text-gray-500">Username</label>
+        <input
+          type="text"
+          name="username"
+          value={formData.username}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">Email</label>
+        <input
+          type="email"
+          name="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">Role</label>
+        <select
+          name="role"
+          value={formData.role}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        >
+          <option value="Student">Student</option>
+          <option value="Teacher">Teacher</option>
+          <option value="Admin">Admin</option>
+        </select>
+      </div>
+
+      {formData.firstname && (
+        <div>
+          <label className="text-sm text-gray-500">First Name</label>
+          <input
+            type="text"
+            name="firstname"
+            value={formData.firstname}
+            onChange={handleInputChange}
+            className="mt-1 p-2 w-full border rounded-md"
+          />
+        </div>
+      )}
+
+      {formData.lastname && (
+        <div>
+          <label className="text-sm text-gray-500">Last Name</label>
+          <input
+            type="text"
+            name="lastname"
+            value={formData.lastname}
+            onChange={handleInputChange}
+            className="mt-1 p-2 w-full border rounded-md"
+          />
+        </div>
+      )}
+    </>
+  );
+
+  // Render student-specific form inputs
+  const renderStudentDetails = () => (
+    <>
+      <div>
+        <label className="text-sm text-gray-500">Department</label>
+        <input
+          type="text"
+          name="department"
+          value={formData.department}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">Class</label>
+        <input
+          type="text"
+          name="class"
+          value={formData.class}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">Courses</label>
+        <input
+          type="text"
+          name="courses"
+          value={formData.courses.join(', ')}
+          onChange={(e) => {
+            const courses = e.target.value.split(',').map((course) => course.trim());
+            setFormData({ ...formData, courses });
+          }}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+
+      <div>
+        <label className="text-sm text-gray-500">Blocked Status</label>
+        <input
+          type="checkbox"
+          name="isBlock"
+          checked={formData.isBlock}
+          onChange={handleCheckboxChange}
+          className="mt-1"
+        />
+      </div>
+    </>
+  );
+
+  // Render teacher-specific form inputs
+  const renderTeacherDetails = () => (
+    <div>
+      <label className="text-sm text-gray-500">Department</label>
+      <input
+        type="text"
+        name="department"
+        value={formData.department}
+        onChange={handleInputChange}
+        className="mt-1 p-2 w-full border rounded-md"
+      />
+    </div>
+  );
+
+  // Render admin-specific form inputs
+  const renderAdminDetails = () => (
+    <>
+      <div>
+        <label className="text-sm text-gray-500">Admin Access Level</label>
+        <input
+          type="text"
+          name="adminLevel"
+          value={formData.adminLevel || ''}
+          onChange={handleInputChange}
+          className="mt-1 p-2 w-full border rounded-md"
+        />
+      </div>
+    </>
+  );
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-      <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-xl font-semibold text-gray-900">Edit User</h3>
-          <button 
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            <i className="ti ti-x text-lg"></i>
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div className="mb-4 flex justify-between items-center">
+          <h3 className="text-lg font-medium">Edit User Details</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <i className="ti ti-x text-xl"></i>
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="mt-2">
-          <div className="grid grid-cols-1 gap-4">
-            {formFields.map((field) => (
-              <div key={field.name} className="mb-4">
-                <label className="block text-gray-700 font-medium mb-1">{field.label}</label>
-                
-                {field.type === 'select' ? (
-                  <select
-                    name={field.name}
-                    value={field.name === 'isActive' ? (formData[field.name] ? 'Active' : 'Inactive') : formData[field.name] || ''}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors[field.name] ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                  >
-                    <option value="">Select {field.label}</option>
-                    {field.options.map(option => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type={field.type}
-                    name={field.name}
-                    value={formData[field.name] || ''}
-                    onChange={handleChange}
-                    className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      errors[field.name] ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder={`Enter ${field.label}`}
-                  />
-                )}
-                
-                {errors[field.name] && (
-                  <p className="text-red-500 text-xs mt-1">{errors[field.name]}</p>
-                )}
-              </div>
-            ))}
-          </div>
-          
-          <div className="flex justify-end space-x-2 mt-6">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-gray-100 text-gray-800 font-medium rounded-lg hover:bg-gray-200 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Save Changes
-            </button>
-          </div>
-        </form>
+
+        <div className="space-y-4">
+          {/* Render common details for all users */}
+          {renderCommonDetails()}
+
+          {/* Render role-specific details */}
+          {formData.role === 'Student' && renderStudentDetails()}
+          {formData.role === 'Teacher' && renderTeacherDetails()}
+          {formData.role === 'Admin' && renderAdminDetails()}
+        </div>
+
+        <div className="mt-6 text-right">
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+          >
+            Save Changes
+          </button>
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 ml-2"
+          >
+            Close
+          </button>
+        </div>
       </div>
     </div>
   );

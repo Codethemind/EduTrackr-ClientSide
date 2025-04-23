@@ -1,22 +1,19 @@
 import React, { useState } from 'react';
-import axios from 'axios'
-
+import axios from "../../api/axiosInstance.jsx";
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-// import { useAuth } from '../../contexts/AuthContext';
-
-
+import { toast } from 'react-hot-toast'; // Import toast
+import { useDispatch } from "react-redux";
+import { loginSuccess } from '../../redux/slices/authSlice';
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  // const { login } = useAuth();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -28,31 +25,24 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Basic validation
     if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
-
+  
     try {
-      setError('');
       setLoading(true);
-      
-      const response = await axios.post('http://localhost:3000/auth/loginAdmin',formData);
-      
-      // if (userData.role !== 'admin') {
-      //   throw new Error('Invalid account type. Please use admin credentials.');
-      // }
-
-      // Get the redirect path from location state or default to admin dashboard
-      const from = location.state?.from?.pathname || '/admin/dashboard';
-      console.log('Login successful:', response.data);
+      const response = await axios.post('auth/loginAdmin', formData);
+    
+      const { accessToken, admin } = response.data.data;
+    
+      dispatch(loginSuccess({ accessToken, user: admin }));
+    
+      toast.success('Login successful!');
       navigate('/admin/dashboard', { replace: true });
-     
     } catch (err) {
       console.error('Login error:', err);
-      setError(err.message || 'Failed to login. Please check your credentials.');
+      toast.error(err.response?.data?.message || 'Failed to login.');
     } finally {
       setLoading(false);
     }
@@ -82,12 +72,6 @@ const AdminLogin = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Login</h1>
               <p className="text-gray-600">Welcome onboard with us!</p>
             </div>
-
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
-                {error}
-              </div>
-            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>

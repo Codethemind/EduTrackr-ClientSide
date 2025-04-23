@@ -1,164 +1,86 @@
-// src/components/admin/Sidebar.jsx
-import React, { useEffect, useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React from 'react';
+import { useDispatch } from 'react-redux';
+import { logout } from '../../../redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { 
+  MdDashboard, 
+  MdAssignment, 
+  MdGrade,
+  MdSettings,
+  MdPeople,
+  MdCategory,
+  MdClass,
+  MdLogout 
+} from 'react-icons/md';
 
-const NavItem = ({ icon, label, isActive = false, onClick }) => (
-  <div
-    className={`group flex items-center gap-4 p-3 rounded-xl transition-colors cursor-pointer ${
-      isActive
-        ? "bg-blue-50 border-l-4 border-blue-600 text-blue-600"
-        : "text-gray-600 hover:bg-gray-100"
-    }`}
-    onClick={onClick}
-  >
-    <i className={`ti ti-${icon} text-xl ${isActive ? "text-blue-600" : "text-gray-500"}`} />
-    <span className={`font-medium ${isActive ? "text-blue-600" : "text-gray-700"}`}>
-      {label}
-    </span>
-  </div>
-);
-
-const NavSection = ({ title, items }) => (
-  <div className="mb-6">
-    <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
-      {title}
-    </h3>
-    <div className="space-y-1">
-      {items.map((item, index) => (
-        <NavItem key={index} {...item} />
-      ))}
-    </div>
-  </div>
-);
-
-const Sidebar = ({ activePage: propActivePage }) => {
+const Sidebar = () => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Determine active page from URL if not provided via props
-  const [activePage, setActivePage] = useState(propActivePage);
-  
-  useEffect(() => {
-    // Update activePage when props change
-    if (propActivePage) {
-      setActivePage(propActivePage);
-    } else {
-      // Extract the active page from the current URL path
-      const path = location.pathname.split('/').pop();
-      setActivePage(path);
-    }
-  }, [location.pathname, propActivePage]);
-  
+
+  const isActive = (path) => location.pathname === path;
+
   const handleLogout = () => {
-    // Add your logout logic here
-    console.log("Logging out...");
-    navigate("/login");
+    dispatch(logout()); // 1. Clear Redux auth state
+    localStorage.removeItem('accessToken'); // 2. Clear any session tokens from localStorage
+    navigate('/auth/admin-login'); // 3. Redirect to admin login page
   };
 
-  const handleNavigation = (path) => {
-    navigate(`/admin/${path}`);
-  };
-
-  const navSections = [
-    {
-      title: "Main",
-      items: [
-        { 
-          icon: "layout-dashboard", 
-          label: "Dashboard", 
-          isActive: activePage === "dashboard",
-          onClick: () => handleNavigation("dashboard")
-        },
-        { 
-          icon: "users", 
-          label: "Users", 
-          isActive: activePage === "users",
-          onClick: () => handleNavigation("users")
-        },
-        { 
-          icon: "building", 
-          label: "Departments", 
-          isActive: activePage === "departments",
-          onClick: () => handleNavigation("departments")
-        },
-        { 
-          icon: "book", 
-          label: "Courses", 
-          isActive: activePage === "courses",
-          onClick: () => handleNavigation("courses")
-        },
-      ]
-    },
-    // ... rest of your sections remain the same
-    {
-      title: "Management",
-      items: [
-        { 
-          icon: "section", 
-          label: "Sections", 
-          isActive: activePage === "sections",
-          onClick: () => handleNavigation("sections")
-        },
-        { 
-          icon: "clipboard", 
-          label: "Assignments", 
-          isActive: activePage === "assignments",
-          onClick: () => handleNavigation("assignments")
-        },
-        { 
-          icon: "files", 
-          label: "Resources", 
-          isActive: activePage === "resources",
-          onClick: () => handleNavigation("resources")
-        },
-        { 
-          icon: "bell", 
-          label: "Announcements", 
-          isActive: activePage === "announcements",
-          onClick: () => handleNavigation("announcements")
-        },
-      ]
-    },
-    {
-      title: "System",
-      items: [
-        { 
-          icon: "settings", 
-          label: "Settings", 
-          isActive: activePage === "settings",
-          onClick: () => handleNavigation("settings")
-        },
-        { 
-          icon: "logout", 
-          label: "Logout", 
-          onClick: handleLogout 
-        },
-      ]
-    }
+  const menuItems = [
+    { section: 'MAIN', items: [
+      { name: 'Dashboard', icon: <MdDashboard className="w-5 h-5" />, path: '/admin/dashboard' },
+      { name: 'Users', icon: <MdPeople className="w-5 h-5" />, path: '/admin/users' },
+      { name: 'Departments', icon: <MdCategory className="w-5 h-5" />, path: '/admin/departments' },
+      { name: 'Courses', icon: <MdClass className="w-5 h-5" />, path: '/admin/courses' },
+    ]},
+    { section: 'MANAGEMENT', items: [
+      { name: 'Assignments', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/assignments' },
+      { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/admin/grades' },
+    ]},
+    { section: 'ACCOUNT', items: [
+      { name: 'Settings', icon: <MdSettings className="w-5 h-5" />, path: '/admin/settings' },
+      { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' }, // No path for logout
+    ]},
   ];
 
   return (
-    <aside className="w-64 bg-white h-screen shadow-xl fixed overflow-y-auto">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <img
-            src="/eduportal-logo.png"
-            alt="EduPortal"
-            className="w-9 h-9"
-          />
-          <h1 className="text-xl font-bold text-gray-900">EduPortal</h1>
-        </div>
+    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 overflow-y-auto">
+      <div className="px-6 py-4">
+        <h1 className="text-2xl font-bold text-blue-600">EduPortal</h1>
       </div>
-      <nav className="p-4">
-        {navSections.map((section, index) => (
-          <NavSection
-            key={index}
-            title={section.title}
-            items={section.items}
-          />
+      
+      <nav className="mt-4">
+        {menuItems.map((section, index) => (
+          <div key={index} className="mb-6">
+            <div className="px-6 mb-2">
+              <h2 className="text-xs font-semibold text-gray-500">{section.section}</h2>
+            </div>
+            {section.items.map((item, itemIndex) => (
+              item.name === 'Logout' ? (
+                <button
+                  key={itemIndex}
+                  onClick={handleLogout}
+                  className={`flex w-full items-center px-6 py-2.5 text-sm text-gray-700 hover:bg-gray-50`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  {item.name}
+                </button>
+              ) : (
+                <Link
+                  key={itemIndex}
+                  to={item.path}
+                  className={`flex items-center px-6 py-2.5 text-sm ${isActive(item.path) ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                >
+                  <span className="mr-3">{item.icon}</span>
+                  {item.name}
+                </Link>
+              )
+            ))}
+          </div>
         ))}
       </nav>
-    </aside>
+    </div>
   );
 };
 
