@@ -35,7 +35,7 @@ const Sidebar = () => {
       { name: 'Courses', icon: <MdClass className="w-5 h-5" />, path: '/admin/courses' },
     ]},
     { section: 'MANAGEMENT', items: [
-      { name: 'Assignments', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/assignments' },
+      { name: 'Announcements', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/announcements' },
       { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/admin/grades' },
     ]},
     { section: 'ACCOUNT', items: [

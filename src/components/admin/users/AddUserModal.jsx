@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
+import axios from 'axios';
 
 const AddUserModal = ({ onClose, onSave }) => {
   const [newUser, setNewUser] = useState({
@@ -12,7 +13,8 @@ const AddUserModal = ({ onClose, onSave }) => {
     isActive: true,
     class: '',
     department: '',
-    courses: []
+    courses: [],
+    profileImage: ''
   });
 
   const [errors, setErrors] = useState({});
@@ -20,6 +22,9 @@ const AddUserModal = ({ onClose, onSave }) => {
   const [availableDepartments, setAvailableDepartments] = useState([]);
   const [availableClasses, setAvailableClasses] = useState([]);
   const [selectedCourses, setSelectedCourses] = useState([]);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     setAvailableDepartments(['Computer Science', 'Engineering', 'Business', 'Arts', 'Medicine']);
@@ -79,15 +84,98 @@ const AddUserModal = ({ onClose, onSave }) => {
     return Object.keys(validationErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const userData = { ...newUser, courses: selectedCourses };
-
-    if (validateForm()) {
-      onSave(userData);
-      toast.success('User added successfully!');
-      onClose();
+    console.log("Form submission triggered");
+    
+    if (!validateForm()) {
+      console.log("Form validation failed");
+      return;
     }
+
+    try {
+      setUploading(true);
+      
+      // Create FormData object to send to backend
+      const formData = new FormData();
+      
+      // Add user data
+      formData.append('username', newUser.username);
+      formData.append('email', newUser.email);
+      formData.append('role', newUser.role);
+      formData.append('password', newUser.password);
+      formData.append('firstname', newUser.firstName);
+      formData.append('lastname', newUser.lastName);
+      formData.append('isActive', newUser.isActive.toString());
+      
+      if (newUser.role === 'Student') {
+        formData.append('department', newUser.department);
+        formData.append('class', newUser.class);
+        // Add courses data
+        formData.append('courses', JSON.stringify(selectedCourses));
+      } else if (newUser.role === 'Teacher') {
+        formData.append('department', newUser.department);
+      }
+      
+      // Add profile image if available
+      if (imageFile) {
+        formData.append('profileImage', imageFile);
+      }
+      
+      // Determine the API endpoint based on user role
+      const baseURL = 'http://localhost:3000'; // Adjust to your API base URL
+      let endpoint = '';
+      
+      switch (newUser.role) {
+        case 'Student':
+          endpoint = `${baseURL}/api/students/create`; // Use the base students endpoint
+          break;
+        case 'Teacher':
+          endpoint = `${baseURL}/api/teachers/create`; // Use the base teachers endpoint 
+          break;
+        case 'Admin':
+          endpoint = `${baseURL}/api/admins/create`;
+          break;
+        default:
+          throw new Error('Invalid role selected');
+      }
+      
+      console.log('Sending request to:', endpoint);
+      
+      // Log form data for debugging
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+      
+      // Send request to backend
+      const response = await axios.post(endpoint, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      
+      setUploading(false);
+      
+      if (response.data && response.data.success) {
+        toast.success('User added successfully!');
+        onSave(response.data.data);
+        onClose();
+      } else {
+        toast.error(response.data?.message || 'Failed to add user');
+      }
+    } catch (error) {
+      setUploading(false);
+      console.error('Error adding user:', error);
+      console.log('Error details:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to add user. Please check console for details.');
+    }
+  };
+
+  // Direct button click handler as a backup
+  const handleSaveClick = (e) => {
+    console.log("Save button clicked directly");
+    e.preventDefault();
+    handleSubmit(e);
   };
 
   const handleChange = (e) => {
@@ -115,6 +203,14 @@ const AddUserModal = ({ onClose, onSave }) => {
     }
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   return (
     <>
       <Toaster position="top-right" />
@@ -122,12 +218,44 @@ const AddUserModal = ({ onClose, onSave }) => {
         <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Add New User</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-black">
+            <button 
+              type="button"
+              onClick={onClose} 
+              className="text-gray-500 hover:text-black"
+            >
               ✖
             </button>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto max-h-[70vh] px-1">
+            {/* Profile Image Upload */}
+            <div className="mb-4">
+              <label className="block mb-1 text-sm font-medium">Profile Image</label>
+              <div className="flex items-center space-x-4">
+                <div className="w-24 h-24 border rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+                  {imagePreview ? (
+                    <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-gray-400">No image</span>
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-md file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                  <p className="mt-1 text-xs text-gray-500">Upload a profile picture (max 5MB)</p>
+                </div>
+              </div>
+            </div>
+
             {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -274,37 +402,39 @@ const AddUserModal = ({ onClose, onSave }) => {
               </>
             )}
             
-                  {/* Teacher Information Section - You can expand this if needed */}
-          {newUser.role === 'Teacher' && (
-            <div className="bg-gray-50 p-4 rounded-lg mb-4">
-              <h4 className="font-medium text-gray-700 mb-3">Teacher Information</h4>
-              
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">Department</label>
-                <select
-                  name="department"
-                  value={newUser.department}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md border-gray-300"
-                >
-                  <option value="">Select Department</option>
-                  {availableDepartments.map((dept, index) => (
-                    <option key={index} value={dept}>{dept}</option>
-                  ))}
-                </select>
+            {/* Teacher Information Section - You can expand this if needed */}
+            {newUser.role === 'Teacher' && (
+              <div className="bg-gray-50 p-4 rounded-lg mb-4">
+                <h4 className="font-medium text-gray-700 mb-3">Teacher Information</h4>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium mb-1">Department</label>
+                  <select
+                    name="department"
+                    value={newUser.department}
+                    onChange={handleChange}
+                    className="w-full px-3 py-2 border rounded-md border-gray-300"
+                  >
+                    <option value="">Select Department</option>
+                    {availableDepartments.map((dept, index) => (
+                      <option key={index} value={dept}>{dept}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                {/* Add more teacher-specific fields as needed */}
               </div>
-              
-              {/* Add more teacher-specific fields as needed */}
-            </div>
-          )}
+            )}
 
             {/* Submit button */}
             <div className="flex justify-end mt-4">
               <button
                 type="submit"
-                className="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition"
+                onClick={handleSaveClick}
+                disabled={uploading}
+                className={`bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 transition ${uploading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
-                Save User
+                {uploading ? 'Saving...' : 'Save User'}
               </button>
             </div>
           </form>

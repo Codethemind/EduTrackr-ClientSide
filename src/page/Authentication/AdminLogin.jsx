@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import axios from "../../api/axiosInstance.jsx";
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { toast } from 'react-hot-toast'; // Import toast
+import { Link, useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
 import { useDispatch } from "react-redux";
 import { loginSuccess } from '../../redux/slices/authSlice';
+
 const AdminLogin = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -11,40 +12,72 @@ const AdminLogin = () => {
     rememberMe: false,
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({ email: '', password: '', general: '' });
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const validateForm = () => {
+    let isValid = true;
+    const newErrors = { email: '', password: '', general: '' };
+
+    // Email Validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+    if (!formData.email || !emailRegex.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
+      isValid = false;
+    }
+
+    // Password Validation
+    if (!formData.password) {
+      newErrors.password = 'Please enter your password';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
+
+    if (!validateForm()) {
       return;
     }
-  
+
     try {
       setLoading(true);
       const response = await axios.post('auth/loginAdmin', formData);
-    
       const { accessToken, admin } = response.data.data;
-    
+
+      // Store token in localStorage if "Remember Me" is checked
+      if (formData.rememberMe) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+
       dispatch(loginSuccess({ accessToken, user: admin }));
-    
       toast.success('Login successful!');
       navigate('/admin/dashboard', { replace: true });
     } catch (err) {
-      console.error('Login error:', err);
-      toast.error(err.response?.data?.message || 'Failed to login.');
-    } finally {
       setLoading(false);
+      if (err.response) {
+        if (err.response.status === 500) {
+          setErrors({ ...errors, general: 'Server error. Please try again later.' });
+        } else if (err.response.status === 401) {
+          setErrors({ ...errors, general: 'Incorrect email or password' });
+        } else {
+          setErrors({ ...errors, general: err.response?.data?.message || 'Failed to login.' });
+        }
+      } else {
+        setErrors({ ...errors, general: 'Network error. Please check your internet connection.' });
+      }
     }
   };
 
@@ -73,6 +106,11 @@ const AdminLogin = () => {
               <p className="text-gray-600">Welcome onboard with us!</p>
             </div>
 
+            {/* Display validation or error messages */}
+            {errors.general && (
+              <div className="mb-4 text-red-500 text-sm">{errors.general}</div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
@@ -85,9 +123,11 @@ const AdminLogin = () => {
                   required
                   value={formData.email}
                   onChange={handleChange}
+                  aria-label="Admin Email"
                   className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter your email"
                 />
+                {errors.email && <div className="text-red-500 text-sm">{errors.email}</div>}
               </div>
 
               <div>
@@ -101,9 +141,11 @@ const AdminLogin = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
+                  aria-label="Password"
                   className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter your password"
                 />
+                {errors.password && <div className="text-red-500 text-sm">{errors.password}</div>}
               </div>
 
               <div className="flex items-center justify-between">

@@ -17,7 +17,7 @@ import {
   MdExitToApp,
 } from 'react-icons/md';
 
-const TeacherSideBar = ({ teacherId }) => {
+const TeacherSideBar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -39,12 +39,11 @@ const TeacherSideBar = ({ teacherId }) => {
     ],
     CONTENT: [
       { icon: MdDescription, label: 'Resources', path: '/teacher/resources' },
-      { icon: MdAnnouncement, label: 'Content Announcements', path: '/teacher/content-announcements' },
-      { icon: MdCalendarToday, label: 'Calendar', path: '/teacher/calendar' },
+      
     ],
     ACCOUNT: [
-      { icon: MdPerson, label: 'Profile', path: `/teacher/profile/${teacherId}` },
-      { icon: MdSettings, label: 'Settings', path: '/teacher/settings' },
+      { icon: MdPerson, label: 'Profile', path: `/teacher/profile` },
+     
       { icon: MdExitToApp, label: 'Logout', path: '#' }, // No path for logout, will trigger function
     ],
   };
@@ -88,14 +87,14 @@ const TeacherSideBar = ({ teacherId }) => {
   );
 
   return (
-    <div className="w-64 h-screen bg-white border-r border-gray-200 flex flex-col">
+    <div className="w-64 h-full bg-white border-r border-gray-200 flex flex-col">
       <div className="p-4">
         <Link to="/teacher/dashboard" className="flex items-center">
           <span className="text-xl font-bold text-blue-600">EduPortal</span>
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-4">
+      <div className="flex-1 px-3 py-4">
         {Object.entries(menuItems).map(([section, items]) => (
           <React.Fragment key={section}>
             {renderSection(section, items)}

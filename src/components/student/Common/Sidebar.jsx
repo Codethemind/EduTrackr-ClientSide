@@ -39,28 +39,27 @@ const Sidebar = () => {
     ]},
     { section: 'RESOURCES', items: [
       { name: 'Course Materials', icon: <MdLibraryBooks className="w-5 h-5" />, path: '/student/materials' },
-      { name: 'Library', icon: <MdBook className="w-5 h-5" />, path: '/student/library' },
-      { name: 'Calendar', icon: <MdBook className="w-5 h-5" />, path: '/student/calendar' },
+      
     ]},
     { section: 'COMMUNICATION', items: [
       { name: 'Messages', icon: <MdMessage className="w-5 h-5" />, path: '/student/messages' },
-      { name: 'Announcements', icon: <MdAnnouncement className="w-5 h-5" />, path: '/student/announcements' },
+    
       { name: 'AI Assistant', icon: <MdSmartToy className="w-5 h-5" />, path: '/student/ai-assistant' },
     ]},
     { section: 'ACCOUNT', items: [
       { name: 'Profile', icon: <MdPerson className="w-5 h-5" />, path: '/student/profile' },
-      { name: 'Settings', icon: <MdSettings className="w-5 h-5" />, path: '/student/settings' },
+    
       { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' }, // No path for logout
     ]},
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 overflow-y-auto">
+    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200">
       <div className="px-6 py-4">
         <h1 className="text-2xl font-bold text-blue-600">EduPortal</h1>
       </div>
       
-      <nav className="mt-4">
+      <nav className="mt-4 overflow-hidden">
         {menuItems.map((section, index) => (
           <div key={index} className="mb-6">
             <div className="px-6 mb-2">

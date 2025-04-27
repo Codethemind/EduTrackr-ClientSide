@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../../components/student/Common/Sidebar';
 import Header from '../../components/student/Common/Header';
 import StatsCard from '../../components/student/Dashboard/StatsCard';
@@ -6,9 +6,11 @@ import CourseProgress from '../../components/student/Dashboard/CourseProgress';
 import UpcomingAssignments from '../../components/student/Dashboard/UpcomingAssignments';
 import TodaySchedule from '../../components/student/Dashboard/TodaySchedule';
 import RecentAnnouncements from '../../components/student/Dashboard/RecentAnnouncements';
-import { MdSchool, MdAssignment, MdTrendingUp } from 'react-icons/md';
+import { MdSchool, MdAssignment, MdTrendingUp, MdMenu } from 'react-icons/md'; // Hamburger icon
 
 const Dashboard = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar toggle state
+
   // Sample data - replace with actual data from your API
   const stats = [
     {
@@ -127,42 +129,66 @@ const Dashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Sidebar />
-      <Header />
-      
-      <main className="ml-64 pt-16 min-h-screen">
-        <div className="p-8">
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
-            <p className="text-gray-600">Welcome back! Here's an overview of your academic progress.</p>
-          </div>
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar (hidden by default on small screens) */}
+      <div
+        className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+      <div
+        className={`fixed left-0 top-0 bottom-0 z-40 bg-white w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform ease-in-out duration-300`}
+      >
+        <Sidebar />
+      </div>
 
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatsCard key={index} {...stat} />
-            ))}
-          </div>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-64">
+        {/* Header with Hamburger Icon */}
+        <div className="flex items-center justify-between bg-white shadow-md p-4 md:hidden">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+            <MdMenu size={30} />
+          </button>
+          <Header />
+        </div>
 
-          {/* Three Column Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <div className="grid grid-cols-1 gap-6">
-                <UpcomingAssignments assignments={assignments} />
-                <CourseProgress courses={courses} />
-              </div>
+        {/* Header for desktop */}
+        <div className="hidden md:block">
+          <Header />
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto no-scrollbar p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="mb-8">
+              <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
+              <p className="text-gray-600">Welcome back! Here's an overview of your academic progress.</p>
             </div>
-            <div className="space-y-6">
-              <TodaySchedule schedule={schedule} />
-              <RecentAnnouncements announcements={announcements} />
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {stats.map((stat, index) => (
+                <StatsCard key={index} {...stat} />
+              ))}
+            </div>
+
+            {/* Two-Column Layout for Desktop, Single Column for Mobile */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <div className="grid grid-cols-1 gap-6">
+                  <UpcomingAssignments assignments={assignments} />
+                  <CourseProgress courses={courses} />
+                </div>
+              </div>
+              <div className="space-y-6">
+                <TodaySchedule schedule={schedule} />
+                <RecentAnnouncements announcements={announcements} />
+              </div>
             </div>
           </div>
         </div>
-        
-      </main>
+      </div>
     </div>
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

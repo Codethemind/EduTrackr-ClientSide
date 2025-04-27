@@ -1,24 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import axios from "../../api/axiosInstance.jsx";
+import axios from 'axios';
 import Sidebar from '../../components/student/Common/Sidebar';
+import Header from '../../components/student/Common/Header';
 import { useNavigate } from 'react-router-dom';
-import toast, { Toaster } from 'react-hot-toast';
+import { toast, Toaster } from 'react-hot-toast';
 import { useSelector } from 'react-redux';
+import { MdMenu } from 'react-icons/md';
 
-const Profile = () => {
+const StudentProfile = () => {
   const navigate = useNavigate();
   const { user: student } = useSelector(state => state.auth);
-
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const [editFirstname, setEditFirstname] = useState('');
   const [editLastname, setEditLastname] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editProfileImage, setEditProfileImage] = useState('');
+  const [imageFile, setImageFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    console.log('sadas',student)
     if (!student?.id) {
       navigate('/auth/student-login');
       return;
@@ -28,13 +31,43 @@ const Profile = () => {
     setEditLastname(student.lastname || '');
     setEditEmail(student.email || '');
     setEditProfileImage(student.profileImage || '');
-
     setLoading(false);
   }, [navigate, student]);
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setEditProfileImage(URL.createObjectURL(file));
+    }
+  };
+
   const handleUpdate = async () => {
     try {
-      const id = student.id;
+      if (!student?.id) {
+        toast.error('Student ID not found');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('firstname', editFirstname);
+      formData.append('lastname', editLastname);
+      formData.append('email', editEmail);
+      
+      if (imageFile) {
+        formData.append('profileImage', imageFile);
+      }
+
+      if (imageFile) {
+        const imageResponse = await axios.put(
+          `http://localhost:3000/api/students/${student.id}/profile-image`,
+          formData,
+          { headers: { 'Content-Type': 'multipart/form-data' } }
+        );
+        if (imageResponse.data?.data?.profileImage) {
+          setEditProfileImage(imageResponse.data.data.profileImage);
+        }
+      }
 
       const updateData = {
         firstname: editFirstname,
@@ -43,19 +76,19 @@ const Profile = () => {
         profileImage: editProfileImage,
       };
 
-      await axios.put(`/api/students/${id}`, updateData);
+      const response = await axios.put(
+        `http://localhost:3000/api/students/${student.id}`,
+        updateData,
+        { headers: { 'Content-Type': 'application/json' } }
+      );
 
-      toast.success('Profile updated successfully! 🎉', {
-        duration: 3000,
-      });
-
-      setIsEditing(false);
-
+      if (response.data) {
+        toast.success('Profile updated successfully!');
+        setIsEditing(false);
+      }
     } catch (err) {
-      console.error('Failed to update profile', err);
-      toast.error('Update failed ❌', {
-        duration: 3000,
-      });
+      console.error('Failed to update profile:', err);
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     }
   };
 
@@ -76,13 +109,35 @@ const Profile = () => {
   }
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-gradient-to-br from-gray-100 to-[rgba(53,130,140,0.4)]">
-      <Sidebar page="Profile" />
+    <div className="flex h-screen bg-gray-50">
+      {/* Sidebar (hidden by default on small screens) */}
+      <div
+        className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+      <div
+        className={`fixed left-0 top-0 bottom-0 z-40 bg-white w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform ease-in-out duration-300`}
+      >
+        <Sidebar />
+      </div>
 
-      <div className="flex-1 p-6 mt-5 md:ml-12">
-        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8">
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-64">
+        {/* Header with Hamburger Icon */}
+        <div className="flex items-center justify-between bg-white shadow-md p-4 md:hidden">
+          <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
+            <MdMenu size={30} />
+          </button>
+          <Header />
+        </div>
 
-          {/* Profile Header */}
+        {/* Header for desktop */}
+        <div className="hidden md:block">
+          <Header />
+        </div>
+
+        {/* Profile content */}
+        <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-8 mt-4">
           <div className="flex flex-col items-center text-center mb-8">
             <img
               className="w-32 h-32 rounded-full object-cover border-4 border-[rgba(53,130,140,0.9)] shadow"
@@ -91,10 +146,9 @@ const Profile = () => {
             />
             {isEditing && (
               <input
-                type="text"
-                placeholder="Profile Image URL"
-                value={editProfileImage}
-                onChange={(e) => setEditProfileImage(e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
                 className="mt-4 p-2 border rounded w-64 text-center text-sm"
               />
             )}
@@ -144,7 +198,6 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Non-editable Info */}
             <div>
               <p className="text-sm text-gray-500 font-medium">Department</p>
               <p className="text-base text-gray-800">{student.department}</p>
@@ -198,14 +251,10 @@ const Profile = () => {
               </button>
             )}
           </div>
-
         </div>
       </div>
-
-      {/* Hot Toast Notification Container */}
-      <Toaster />
     </div>
   );
 };
 
-export default Profile;
+export default StudentProfile;

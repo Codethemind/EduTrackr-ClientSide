@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { toast } from 'react-hot-toast';
 
 const EditUserModal = ({ user, onClose, onSave }) => {
   if (!user) return null; // Safety check to ensure user data exists before rendering
@@ -14,7 +16,12 @@ const EditUserModal = ({ user, onClose, onSave }) => {
     class: user.class || '',
     courses: user.courses || [],
     isBlock: user.isBlock,
+    profileImage: user.profileImage || '',
   });
+
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(user.profileImage || '');
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     // Initialize formData with user details when modal is opened
@@ -28,7 +35,9 @@ const EditUserModal = ({ user, onClose, onSave }) => {
       class: user.class || '',
       courses: user.courses || [],
       isBlock: user.isBlock,
+      profileImage: user.profileImage || '',
     });
+    setImagePreview(user.profileImage || '');
   }, [user]);
 
   const handleInputChange = (e) => {
@@ -47,44 +56,117 @@ const EditUserModal = ({ user, onClose, onSave }) => {
     });
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
+    }
+  };
+
   const handleSave = async () => {
     try {
+      setUploading(true);
+      
       const userId = user._id || user.id;
       const baseURL = 'http://localhost:3000'; // <-- Set your base URL here
       let apiUrl = '';
-  
-      console.log('Inside EditUserModal:', user.id);
-  
+      let profileImageUrl = formData.profileImage;
+      
+      // Determine the base API endpoint based on user role
       if (formData.role === 'Student') {
-        apiUrl = `${baseURL}/api/students/${userId}`;
+        apiUrl = `${baseURL}/api/students`;
       } else if (formData.role === 'Teacher') {
-        apiUrl = `${baseURL}/api/teachers/${userId}`;
+        apiUrl = `${baseURL}/api/teachers`;
       } else if (formData.role === 'Admin') {
-        apiUrl = `${baseURL}/api/admins/${userId}`;
+        apiUrl = `${baseURL}/api/admins`;
       }
-  
-      const response = await fetch(apiUrl, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-  
-      if (!response.ok) {
-        throw new Error('Failed to update user');
+      
+      // If there's a new image, upload it first using the specific profile image endpoint
+      if (imageFile) {
+        const imageFormData = new FormData();
+        imageFormData.append('profileImage', imageFile);
+        
+        try {
+          const imageResponse = await axios.put(
+            `${apiUrl}/${userId}/profile-image`, 
+            imageFormData, 
+            {
+              headers: {
+                'Content-Type': 'multipart/form-data'
+              }
+            }
+          );
+          
+          if (imageResponse.data && imageResponse.data.success) {
+            // If image upload is successful, update the profileImage URL
+            profileImageUrl = imageResponse.data.data?.profileImage || imageResponse.data.profileImage;
+            toast.success('Profile image updated successfully');
+          }
+        } catch (imageError) {
+          console.error('Failed to update profile image:', imageError);
+          toast.error('Failed to update profile image');
+        }
       }
-  
-      const updatedUser = await response.json();
-      onSave(updatedUser); // Send updated user to parent
-      onClose(); // Close modal
+      
+      // Update the user data with the new or existing profile image URL
+      const updatedUserData = {
+        ...formData,
+        profileImage: profileImageUrl
+      };
+      
+      // Make the regular update API call
+      const updateResponse = await axios.put(
+        `${apiUrl}/${userId}`, 
+        updatedUserData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      setUploading(false);
+      
+      if (updateResponse.data) {
+        toast.success('User details updated successfully');
+        onSave(updateResponse.data.data || updateResponse.data); 
+        onClose();
+      } else {
+        toast.error('Failed to update user details');
+      }
     } catch (err) {
-      console.error(err.message);
+      setUploading(false);
+      console.error('Error updating user:', err);
+      toast.error('Failed to update user');
     }
   };
-  
 
   // Render common details form inputs
   const renderCommonDetails = () => (
     <>
+      {/* Profile Image Upload */}
+      <div className="mb-4">
+        <label className="text-sm text-gray-500">Profile Image</label>
+        <div className="flex items-center space-x-3 mt-1">
+          <div className="w-16 h-16 border rounded-full overflow-hidden flex items-center justify-center bg-gray-100">
+            {imagePreview ? (
+              <img src={imagePreview} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs text-gray-400">No image</span>
+            )}
+          </div>
+          <div className="flex-1">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="text-xs w-full border rounded p-1"
+            />
+          </div>
+        </div>
+      </div>
+
       <div>
         <label className="text-sm text-gray-500">Username</label>
         <input
