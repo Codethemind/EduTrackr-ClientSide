@@ -44,12 +44,13 @@ const StudentLogin = () => {
       setLoading(true);
   
       const response = await axios.post('/auth/loginStudent', formData);
-  
+      console.log(response)
       const { accessToken, student } = response.data.data;
-      console.log('login student details',student)
+    
   
       // Save to localStorage
       localStorage.setItem('accessToken', accessToken);
+      
   
       // Update Redux store
       dispatch(loginSuccess({
@@ -59,20 +60,30 @@ const StudentLogin = () => {
   
       // Navigate to dashboard
       const from = location.state?.from?.pathname || '/student/dashboard';
+      console.log(from)
       toast.success('Login successful! Redirecting...');
       navigate(from, { replace: true });
   
-    } catch (err) {
-      console.error('Login error:', err);
-  
-      const errorMessage = err.response?.data?.message || 'Failed to login. Please check your credentials.';
-      
-      setError(errorMessage);
-      toast.error(errorMessage);
-  
-    } finally {
-      setLoading(false);
+  } catch (err) {
+  console.log("Caught error:", err);
+  setLoading(false);
+  if (err.response) {
+    const status = err.response.status;
+    const message = err.response.data?.message || 'Login failed';
+    if (status === 401) {
+      toast.error(message);
+    } else if (status === 500) {
+      toast.error('Server error. Please try again later.');
+    } else {
+      toast.error(message);
     }
+  } else if (err.request) {
+    toast.error('No response from server. Please try again.');
+  } else {
+    toast.error(err.message || 'Something went wrong.');
+  }
+}
+
   };
 
   return (
@@ -115,7 +126,6 @@ const StudentLogin = () => {
                   id="email"
                   name="email"
                   type="email"
-                  required
                   value={formData.email}
                   onChange={handleChange}
                   className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -131,7 +141,6 @@ const StudentLogin = () => {
                   id="password"
                   name="password"
                   type="password"
-                  required
                   value={formData.password}
                   onChange={handleChange}
                   className="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"

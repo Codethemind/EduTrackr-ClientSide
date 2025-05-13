@@ -12,6 +12,7 @@ const TeacherLogin = () => {
     rememberMe: false,
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
@@ -24,12 +25,38 @@ const TeacherLogin = () => {
     }));
   };
 
+  const validateForm = () => {
+    // Email validation
+    if (!formData.email) {
+      setError('Email is required');
+      toast.error('Email is required');
+      return false;
+    }
+    
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email');
+      toast.error('Please enter a valid email');
+      return false;
+    }
+
+    // Password validation
+    if (!formData.password) {
+      setError('Password is required');
+      toast.error('Password is required');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
-    // Basic validation
-    if (!formData.email || !formData.password) {
-      toast.error('Please fill in all fields');
+    
+    // Reset previous errors
+    setError('');
+    
+    // Validate form before submission
+    if (!validateForm()) {
       return;
     }
   
@@ -37,30 +64,48 @@ const TeacherLogin = () => {
       setLoading(true);
       
       const response = await axios.post('/auth/loginTeacher', formData);
-     
       const { accessToken, teacher } = response.data.data;
-      console.log('login teacher details',teacher)
-      localStorage.setItem('accessToken', accessToken);
+      // Save token to localStorage if rememberMe is checked
+      if (formData.rememberMe) {
+        localStorage.setItem('accessToken', accessToken);
+      } else {
+        // For session only
+        sessionStorage.setItem('accessToken', accessToken);
+      }
+      
+      // Update Redux store
       dispatch(loginSuccess({
         accessToken,
         user: teacher,
       }));
+      
+      // Display success message
+      toast.success(response.data.message || 'Login successful!');
+      
+      // Navigate to dashboard or previous route
       const from = location.state?.from?.pathname || '/teacher/dashboard';
-      toast.success('Login successful!');
       navigate(from, { replace: true });
   
-    } catch (err) {
-      console.error('Login error:', err);
-  
-      if (err.response && err.response.status === 401) {
-        toast.error('Invalid credentials, please try again.');
-      } else {
-        toast.error(err.message || 'Failed to login. Please check your credentials.');
-      }
-    } finally {
-      setLoading(false);
+  } catch (err) {
+  console.log("Caught error:", err);
+  setLoading(false);
+  if (err.response) {
+    const status = err.response.status;
+    const message = err.response.data?.message || 'Login failed';
+    if (status === 401) {
+      toast.error(message);
+    } else if (status === 500) {
+      toast.error('Server error. Please try again later.');
+    } else {
+      toast.error(message);
     }
-  };;
+  } else if (err.request) {
+    toast.error('No response from server. Please try again.');
+  } else {
+    toast.error(err.message || 'Something went wrong.');
+  }
+}
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -86,6 +131,13 @@ const TeacherLogin = () => {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Teacher Login</h1>
               <p className="text-gray-600">Welcome back, educator!</p>
             </div>
+
+            {/* Display error message */}
+            {error && (
+              <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-500 text-red-700">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>

@@ -200,7 +200,7 @@ const StudentProfile = () => {
 
             <div>
               <p className="text-sm text-gray-500 font-medium">Department</p>
-              <p className="text-base text-gray-800">{student.department}</p>
+              <p className="text-base text-gray-800">{student.departmentName}</p>
             </div>
 
             <div>

@@ -1,13 +1,14 @@
 import React from 'react';
+import { Toaster, toast } from 'react-hot-toast';
 
 const DeleteUserModal = ({ user, onClose, onDeleteSuccess }) => {
 
   const handleDelete = async () => {
     try {
       const userId = user._id || user.id;
-      const baseURL = 'http://localhost:3000'; // Adjust base URL
+      const baseURL = 'http://localhost:3000';
       let apiUrl = '';
-
+  
       if (user.role === 'Student') {
         apiUrl = `${baseURL}/api/students/${userId}`;
       } else if (user.role === 'Teacher') {
@@ -15,21 +16,28 @@ const DeleteUserModal = ({ user, onClose, onDeleteSuccess }) => {
       } else if (user.role === 'Admin') {
         apiUrl = `${baseURL}/api/admins/${userId}`;
       }
-
+  
       const response = await fetch(apiUrl, {
         method: 'DELETE',
       });
-
+  
+      const data = await response.json();
+  
       if (!response.ok) {
-        throw new Error('Failed to delete user');
+        const errorMessage = data?.message || 'Failed to delete user';
+        toast.error(errorMessage);
+        throw new Error(errorMessage);
       }
-
-      onDeleteSuccess(userId); // Notify parent about successful deletion
-      onClose(); // Close the modal
+  
+      toast.success(data?.message || 'User deleted successfully');
+      onDeleteSuccess(userId);  // Notify parent
+      onClose();  // Close modal
     } catch (error) {
       console.error('Delete error:', error.message);
+      toast.error(error.message || 'An error occurred while deleting user');
     }
   };
+  
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">

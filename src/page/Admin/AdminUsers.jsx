@@ -97,13 +97,12 @@ const AdminUserManagement = () => {
     setModalType(null);
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (id) => {
     if (!selectedUser) return;
     try {
-      const endpoint = getEndpointByRole(selectedUser.role);
-      await axios.delete(`${endpoint}/${selectedUser._id}`);
-      setUsers((prevUsers) => prevUsers.filter((u) => u._id !== selectedUser._id));
+      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== selectedUser.id));
       handleCloseModal();
+      
     } catch (err) {
       console.error('Error deleting user:', err);
     }
@@ -112,17 +111,17 @@ const AdminUserManagement = () => {
   const handleSaveUser = async (userData) => {
     try {
       const endpoint = getEndpointByRole(userData.role);
-
-      if (userData._id) {
-        const response = await axios.put(`${endpoint}/${userData._id}`, userData);
-        setUsers((prevUsers) =>
-          prevUsers.map((u) => (u._id === userData._id ? response.data.data : u))
-        );
-      } else {
-        const response = await axios.post(`${endpoint}/create`, userData);
-        setUsers((prevUsers) => [...prevUsers, response.data.data]);
-      }
-
+      setUsers((prevUsers) => {
+        const isExistingUser = prevUsers.some((u) => u.id === userData.id);
+        if (isExistingUser) {
+          return prevUsers.map((u) =>
+            u.id === userData.id ? userData : u
+          );
+        } else {
+          return [...prevUsers, userData];
+        }
+      });
+      
       handleCloseModal();
     } catch (err) {
       console.error('Error saving user:', err);

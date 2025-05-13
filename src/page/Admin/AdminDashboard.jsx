@@ -8,8 +8,6 @@ import { useSelector } from "react-redux";
 
 const Dashboard = () => {
   const auth = useSelector((state) => state.auth);
-  console.log("Current auth state:", auth);
-
   const [dashboardStats, setDashboardStats] = useState({
     users: { count: 0, trend: 0 },
     courses: { count: 0, trend: 0 },
@@ -78,22 +76,36 @@ const Dashboard = () => {
   const getTrendDirection = (value) => (value >= 0 ? "up" : "down");
   const formatTrendValue = (value) => `${Math.abs(value)}% since last month`;
 
-  const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-
   return (
-    <main className="flex bg-gradient-to-b from-gray-100 to-gray-50 min-h-screen flex-col lg:flex-row">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-gradient-to-b from-gray-100 to-gray-50">
+      {/* Sidebar for mobile (with overlay) */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform ${
-          isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:transform-none lg:static transition-transform duration-300 ease-in-out`}
-      >
+        className={`fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden ${
+          isSidebarOpen ? 'block' : 'hidden'
+        }`}
+        onClick={() => setIsSidebarOpen(false)}
+      ></div>
+      
+      {/* Sidebar for desktop */}
+      <div className="hidden lg:block">
         <Sidebar activePage="dashboard" />
+      </div>
+      
+      {/* Mobile Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-50 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-300 ease-in-out lg:hidden`}
+      >
+        <Sidebar activePage="dashboard" onClose={() => setIsSidebarOpen(false)} />
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 lg:ml-0">
-        <Header toggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} />
+      <div className="flex-1 pl-0 lg:pl-64">
+        <Header
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+          isSidebarOpen={isSidebarOpen}
+        />
         <section className="p-4 sm:p-6 lg:p-8">
           <h1 className="mb-2 text-2xl sm:text-3xl font-bold text-gray-800">Dashboard</h1>
           <p className="mb-6 text-sm sm:text-base text-gray-500">
@@ -234,7 +246,7 @@ const Dashboard = () => {
           )}
         </section>
       </div>
-    </main>
+    </div>
   );
 };
 

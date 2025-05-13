@@ -45,41 +45,52 @@ const AdminLogin = () => {
     return isValid;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!validateForm()) {
-      return;
+  if (!validateForm()) {
+    return;
+  }
+
+  try {
+    setLoading(true);
+    const response = await axios.post('auth/loginAdmin', formData);
+    const { accessToken, admin } = response.data.data;
+
+    if (formData.rememberMe) {
+      localStorage.setItem('accessToken', accessToken);
     }
 
-    try {
-      setLoading(true);
-      const response = await axios.post('auth/loginAdmin', formData);
-      const { accessToken, admin } = response.data.data;
-
-      // Store token in localStorage if "Remember Me" is checked
-      if (formData.rememberMe) {
-        localStorage.setItem('accessToken', accessToken);
-      }
-
-      dispatch(loginSuccess({ accessToken, user: admin }));
-      toast.success('Login successful!');
+    dispatch(loginSuccess({ accessToken, user: admin }));
+    toast.success(response.data.message || 'Login successful!');
+    setTimeout(() => {
+     
       navigate('/admin/dashboard', { replace: true });
-    } catch (err) {
-      setLoading(false);
-      if (err.response) {
-        if (err.response.status === 500) {
-          setErrors({ ...errors, general: 'Server error. Please try again later.' });
-        } else if (err.response.status === 401) {
-          setErrors({ ...errors, general: 'Incorrect email or password' });
-        } else {
-          setErrors({ ...errors, general: err.response?.data?.message || 'Failed to login.' });
-        }
-      } else {
-        setErrors({ ...errors, general: 'Network error. Please check your internet connection.' });
-      }
+    }, 1500); 
+
+ } catch (err) {
+  console.log("Caught error:", err);
+  setLoading(false);
+
+  if (err.response) {
+    const status = err.response.status;
+    const message = err.response.data?.message || 'Login failed';
+    if (status === 401) {
+      toast.error(message);
+    } else if (status === 500) {
+      toast.error('Server error. Please try again later.');
+    } else {
+      toast.error(message);
     }
-  };
+  } else if (err.request) {
+    toast.error('No response from server. Please try again.');
+  } else {
+    toast.error(err.message || 'Something went wrong.');
+  }
+}
+
+}
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4 sm:px-6 lg:px-8">

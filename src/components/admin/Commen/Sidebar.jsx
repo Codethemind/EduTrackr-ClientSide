@@ -7,23 +7,30 @@ import {
   MdDashboard, 
   MdAssignment, 
   MdGrade,
-  MdSettings,
+ 
   MdPeople,
   MdCategory,
   MdClass,
-  MdLogout 
+  MdLogout,
+  MdPerson 
 } from 'react-icons/md';
 
-const Sidebar = () => {
+const Sidebar = ({ activePage, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path) => location.pathname === path;
+  const isActive = (path) => {
+    if (activePage) {
+      return activePage === path.replace('/admin/', '');
+    }
+    return location.pathname === path;
+  };
 
   const handleLogout = () => {
     dispatch(logout()); // 1. Clear Redux auth state
     localStorage.removeItem('accessToken'); // 2. Clear any session tokens from localStorage
+    localStorage.removeItem('refreshToken'); // Clear refresh token as well
     navigate('/auth/admin-login'); // 3. Redirect to admin login page
   };
 
@@ -39,15 +46,23 @@ const Sidebar = () => {
       { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/admin/grades' },
     ]},
     { section: 'ACCOUNT', items: [
-      { name: 'Settings', icon: <MdSettings className="w-5 h-5" />, path: '/admin/settings' },
+      { name: 'Profile', icon: <MdPerson className="w-5 h-5" />, path: '/admin/profile' },
       { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' }, // No path for logout
     ]},
   ];
 
   return (
-    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200 overflow-y-auto">
-      <div className="px-6 py-4">
+    <div className="fixed inset-y-0 left-0 h-full w-64 bg-white border-r border-gray-200 overflow-y-auto">
+      <div className="flex items-center justify-between px-6 py-4">
         <h1 className="text-2xl font-bold text-blue-600">EduPortal</h1>
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            className="lg:hidden text-gray-500 hover:text-gray-700"
+          >
+            &times;
+          </button>
+        )}
       </div>
       
       <nav className="mt-4">

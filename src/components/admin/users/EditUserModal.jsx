@@ -22,9 +22,36 @@ const EditUserModal = ({ user, onClose, onSave }) => {
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(user.profileImage || '');
   const [uploading, setUploading] = useState(false);
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [selectedCourses, setSelectedCourses] = useState(user.courses || []);
+  const [loading, setLoading] = useState(true);
 
+  // Fetch departments and courses
   useEffect(() => {
-    // Initialize formData with user details when modal is opened
+    const fetchDepartmentsAndCourses = async () => {
+      try {
+        setLoading(true);
+        const [departmentsResponse, coursesResponse] = await Promise.all([
+          axios.get('http://localhost:3000/api/departments'),
+          axios.get('http://localhost:3000/api/courses')
+        ]);
+
+        setAvailableDepartments(departmentsResponse.data.data);
+        setAvailableCourses(coursesResponse.data.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load departments and courses');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartmentsAndCourses();
+  }, []);
+
+  // Initialize formData with user details when modal is opened
+  useEffect(() => {
     setFormData({
       username: user.username,
       email: user.email,
@@ -37,15 +64,38 @@ const EditUserModal = ({ user, onClose, onSave }) => {
       isBlock: user.isBlock,
       profileImage: user.profileImage || '',
     });
+    setSelectedCourses(user.courses || []);
     setImagePreview(user.profileImage || '');
   }, [user]);
 
+  // Get department name by ID
+  const getDepartmentName = (departmentId) => {
+    const department = availableDepartments.find(dept => dept._id === departmentId);
+    return department ? department.name : departmentId;
+  };
+
+  // Filter courses based on selected department
+  const filteredCourses = formData.department
+    ? availableCourses.filter(course => course.departmentId === formData.department)
+    : [];
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    
+    if (name === 'department') {
+      // Reset courses when department changes
+      setFormData({
+        ...formData,
+        [name]: value,
+        courses: []
+      });
+      setSelectedCourses([]);
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
   };
 
   const handleCheckboxChange = (e) => {
@@ -53,6 +103,16 @@ const EditUserModal = ({ user, onClose, onSave }) => {
     setFormData({
       ...formData,
       [name]: checked,
+    });
+  };
+
+  const handleCourseSelection = (courseId) => {
+    setSelectedCourses(prev => {
+      if (prev.includes(courseId)) {
+        return prev.filter(id => id !== courseId);
+      } else {
+        return [...prev, courseId];
+      }
     });
   };
 
@@ -69,7 +129,7 @@ const EditUserModal = ({ user, onClose, onSave }) => {
       setUploading(true);
       
       const userId = user._id || user.id;
-      const baseURL = 'http://localhost:3000'; // <-- Set your base URL here
+      const baseURL = 'http://localhost:3000';
       let apiUrl = '';
       let profileImageUrl = formData.profileImage;
       
@@ -112,7 +172,8 @@ const EditUserModal = ({ user, onClose, onSave }) => {
       // Update the user data with the new or existing profile image URL
       const updatedUserData = {
         ...formData,
-        profileImage: profileImageUrl
+        profileImage: profileImageUrl,
+        courses: selectedCourses
       };
       
       // Make the regular update API call
@@ -130,16 +191,36 @@ const EditUserModal = ({ user, onClose, onSave }) => {
       
       if (updateResponse.data) {
         toast.success('User details updated successfully');
-        onSave(updateResponse.data.data || updateResponse.data); 
+        console.log('edit user',updateResponse.data)
+        onSave(updateResponse.data.data); 
         onClose();
       } else {
         toast.error('Failed to update user details');
       }
-    } catch (err) {
+    } catch (error) {
       setUploading(false);
-      console.error('Error updating user:', err);
-      toast.error('Failed to update user');
+      console.error('Error updating user:', error);
+    
+      if (error.response) {
+        const status = error.response.status;
+        const errorMessage = error.response.data?.message || 'An error occurred';
+    
+        if (status === 400) {
+          toast.error(errorMessage); // shows "Email already exists", "Invalid role", etc.
+        } else if (status === 409 || errorMessage.includes('already exists')) {
+          toast.error(errorMessage);
+        } else if (status === 500) {
+          toast.error('Server error. Please try again later.');
+        } else {
+          toast.error(errorMessage);
+        }
+      } else if (error.request) {
+        toast.error('Network error. Please check your connection.');
+      } else {
+        toast.error(error.message || 'An unexpected error occurred');
+      }
     }
+    
   };
 
   // Render common details form inputs
@@ -236,13 +317,19 @@ const EditUserModal = ({ user, onClose, onSave }) => {
     <>
       <div>
         <label className="text-sm text-gray-500">Department</label>
-        <input
-          type="text"
+        <select
           name="department"
           value={formData.department}
           onChange={handleInputChange}
           className="mt-1 p-2 w-full border rounded-md"
-        />
+        >
+          <option value="">Select Department</option>
+          {availableDepartments.map((dept) => (
+            <option key={dept._id} value={dept._id}>
+              {dept.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div>
@@ -258,27 +345,30 @@ const EditUserModal = ({ user, onClose, onSave }) => {
 
       <div>
         <label className="text-sm text-gray-500">Courses</label>
-        <input
-          type="text"
-          name="courses"
-          value={formData.courses.join(', ')}
-          onChange={(e) => {
-            const courses = e.target.value.split(',').map((course) => course.trim());
-            setFormData({ ...formData, courses });
-          }}
-          className="mt-1 p-2 w-full border rounded-md"
-        />
-      </div>
-
-      <div>
-        <label className="text-sm text-gray-500">Blocked Status</label>
-        <input
-          type="checkbox"
-          name="isBlock"
-          checked={formData.isBlock}
-          onChange={handleCheckboxChange}
-          className="mt-1"
-        />
+        <div className="border rounded-md p-2 max-h-40 overflow-y-auto mt-1">
+          {formData.department ? (
+            filteredCourses.length > 0 ? (
+              filteredCourses.map((course) => (
+                <div key={course._id} className="flex items-center mb-2">
+                  <input
+                    type="checkbox"
+                    id={course._id}
+                    checked={selectedCourses.includes(course._id)}
+                    onChange={() => handleCourseSelection(course._id)}
+                    className="mr-2"
+                  />
+                  <label htmlFor={course._id} className="text-sm">
+                    {course.name} ({course.code})
+                  </label>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-500 text-sm">No courses available for this department</p>
+            )
+          ) : (
+            <p className="text-gray-500 text-sm">Please select a department first</p>
+          )}
+        </div>
       </div>
     </>
   );
@@ -287,13 +377,19 @@ const EditUserModal = ({ user, onClose, onSave }) => {
   const renderTeacherDetails = () => (
     <div>
       <label className="text-sm text-gray-500">Department</label>
-      <input
-        type="text"
+      <select
         name="department"
         value={formData.department}
         onChange={handleInputChange}
         className="mt-1 p-2 w-full border rounded-md"
-      />
+      >
+        <option value="">Select Department</option>
+        {availableDepartments.map((dept) => (
+          <option key={dept._id} value={dept._id}>
+            {dept.name}
+          </option>
+        ))}
+      </select>
     </div>
   );
 
@@ -323,22 +419,29 @@ const EditUserModal = ({ user, onClose, onSave }) => {
           </button>
         </div>
 
-        <div className="space-y-4">
-          {/* Render common details for all users */}
-          {renderCommonDetails()}
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {/* Render common details for all users */}
+            {renderCommonDetails()}
 
-          {/* Render role-specific details */}
-          {formData.role === 'Student' && renderStudentDetails()}
-          {formData.role === 'Teacher' && renderTeacherDetails()}
-          {formData.role === 'Admin' && renderAdminDetails()}
-        </div>
+            {/* Render role-specific details */}
+            {formData.role === 'Student' && renderStudentDetails()}
+            {formData.role === 'Teacher' && renderTeacherDetails()}
+            {formData.role === 'Admin' && renderAdminDetails()}
+          </div>
+        )}
 
         <div className="mt-6 text-right">
           <button
             onClick={handleSave}
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+            disabled={loading || uploading}
+            className={`px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 ${(loading || uploading) ? 'opacity-50 cursor-not-allowed' : ''}`}
           >
-            Save Changes
+            {uploading ? 'Saving...' : 'Save Changes'}
           </button>
           <button
             onClick={onClose}

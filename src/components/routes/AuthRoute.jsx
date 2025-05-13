@@ -1,31 +1,33 @@
-// import { Navigate } from 'react-router-dom';
-// import { jwtDecode } from "jwt-decode";
+import { Navigate } from 'react-router-dom';
+import { jwtDecode } from "jwt-decode";
+import { useSelector } from 'react-redux';
 
-// const AuthRoute = ({ element }) => {
-//     const { accessToken } = useSelector(state => state.auth)
 
-//   if (accessToken) {
-//     try {
-//       const decoded = jwtDecode(accessToken);
-//       const role = decoded?.role;
+const AuthRoute = ({ element }) => {
+    const { accessToken } = useSelector(state => state.auth)
 
-//       if (role === 'Admin') {
-//         return <Navigate to="/admin/dashboard" replace />;
-//       }
-//       if (role === 'Teacher') {
-//         return <Navigate to="/teacher/dashboard" replace />;
-//       }
-//       if (role === 'Student') {
-//         return <Navigate to="/student/dashboard" replace />;
-//       }
-//     } catch (error) {
-//       console.error('Token decoding failed:', error);
-//       localStorage.clear();
-//     }
-//   }
+  if (accessToken) {
+    try {
+      const decoded = jwtDecode(accessToken);
+      const role = decoded?.role;
 
-//   // If no token or decoding failed, show login/signup page
-//   return element;
-// };
+      if (role === 'Admin') {
+        return <Navigate to="/admin/dashboard" replace />;
+      }
+      if (role === 'Teacher') {
+        return <Navigate to="/teacher/dashboard" replace />;
+      }
+      if (role === 'Student') {
+        return <Navigate to="/student/dashboard" replace />;
+      }
+    } catch (error) {
+      console.error('Token decoding failed:', error);
+      localStorage.clear();
+    }
+  }
 
-// export default AuthRoute;
+  // If no token or decoding failed, show login/signup page
+  return element;
+};
+
+export default AuthRoute;

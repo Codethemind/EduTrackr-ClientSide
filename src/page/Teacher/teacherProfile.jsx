@@ -11,13 +11,16 @@ const TeacherProfile = () => {
   const navigate = useNavigate();
   const { user: teacher } = useSelector(state => state.auth);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const [editFirstname, setEditFirstname] = useState('');
-  const [editLastname, setEditLastname] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editProfileImage, setEditProfileImage] = useState('');
+  const [editData, setEditData] = useState({
+    username: '',
+    firstname: '',
+    lastname: '',
+    email: '',
+    profileImage: '',
+  });
+
   const [imageFile, setImageFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -26,11 +29,13 @@ const TeacherProfile = () => {
       navigate('/auth/teacher-login');
       return;
     }
-
-    setEditFirstname(teacher.firstname || '');
-    setEditLastname(teacher.lastname || '');
-    setEditEmail(teacher.email || '');
-    setEditProfileImage(teacher.profileImage || '');
+    setEditData({
+      username: teacher.username || '',
+      firstname: teacher.firstname || '',
+      lastname: teacher.lastname || '',
+      email: teacher.email || '',
+      profileImage: teacher.profileImage || '',
+    });
     setLoading(false);
   }, [navigate, teacher]);
 
@@ -38,7 +43,10 @@ const TeacherProfile = () => {
     const file = e.target.files[0];
     if (file) {
       setImageFile(file);
-      setEditProfileImage(URL.createObjectURL(file));
+      setEditData(prev => ({
+        ...prev,
+        profileImage: URL.createObjectURL(file)
+      }));
     }
   };
 
@@ -49,48 +57,46 @@ const TeacherProfile = () => {
         return;
       }
 
-      const formData = new FormData();
-      formData.append('firstname', editFirstname);
-      formData.append('lastname', editLastname);
-      formData.append('email', editEmail);
-      
-      if (imageFile) {
-        formData.append('profileImage', imageFile);
-      }
+      let profileImageUrl = editData.profileImage;
 
+      // If a new image is selected, upload it
       if (imageFile) {
-        const imageResponse = await axios.put(
+        const formData = new FormData();
+        formData.append('profileImage', imageFile);
+
+        const imageRes = await axios.put(
           `http://localhost:3000/api/teachers/${teacher.id}/profile-image`,
           formData,
           { headers: { 'Content-Type': 'multipart/form-data' } }
         );
-        if (imageResponse.data?.data?.profileImage) {
-          setEditProfileImage(imageResponse.data.data.profileImage);
-        }
+
+        profileImageUrl = imageRes.data?.data?.profileImage || profileImageUrl;
       }
 
+      // Update the rest of the profile
       const updateData = {
-        firstname: editFirstname,
-        lastname: editLastname,
-        email: editEmail,
-        profileImage: editProfileImage,
+        username: editData.username,
+        firstname: editData.firstname,
+        lastname: editData.lastname,
+        email: editData.email,
+        profileImage: profileImageUrl,
       };
 
-      const response = await axios.put(
+      await axios.put(
         `http://localhost:3000/api/teachers/${teacher.id}`,
         updateData,
         { headers: { 'Content-Type': 'application/json' } }
       );
 
-      if (response.data) {
-        toast.success('Profile updated successfully!');
-        setIsEditing(false);
-      }
+      toast.success('Profile updated successfully!');
+      setIsEditing(false);
     } catch (err) {
-      console.error('Failed to update profile:', err);
+      console.error(err);
       toast.error(err.response?.data?.message || 'Failed to update profile');
     }
   };
+
+  const fallbackAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(teacher?.firstname || '')}+${encodeURIComponent(teacher?.lastname || '')}&background=35828C&color=fff&size=256`;
 
   if (loading) {
     return (
@@ -110,7 +116,7 @@ const TeacherProfile = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar (hidden by default on small screens) */}
+      {/* Overlay for sidebar on mobile */}
       <div
         className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
         onClick={() => setIsSidebarOpen(false)}
@@ -121,112 +127,108 @@ const TeacherProfile = () => {
         <TeacherSideBar />
       </div>
 
-      {/* Main Content Area */}
+      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-64">
-        {/* Header with Hamburger Icon */}
         <div className="flex items-center justify-between bg-white shadow-md p-4 md:hidden">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <MdMenu size={30} />
           </button>
           <Header />
         </div>
-
-        {/* Header for desktop */}
         <div className="hidden md:block">
           <Header />
         </div>
 
-        {/* Profile content */}
         <div className="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-10 mt-4">
-  <div className="flex flex-col items-center text-center mb-8">
-    <img
-      className="w-40 h-40 rounded-full object-cover border-4 border-[rgba(53,130,140,0.9)] shadow"
-      src={editProfileImage || 'https://i.pravatar.cc/150'}
-      alt="Teacher"
-    />
-    {isEditing && (
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        className="mt-4 p-2 border rounded w-72 text-center text-sm"
-      />
-    )}
-  </div>
+          <div className="flex flex-col items-center text-center mb-8">
+            <div className="text-sm bg-blue-100 text-blue-800 px-3 py-1 rounded-full mb-2">
+              {teacher.role}
+            </div>
+            <img
+              className="w-40 h-40 rounded-full object-cover border-4 border-[rgba(53,130,140,0.9)] shadow"
+              src={editData.profileImage || fallbackAvatar}
+              alt="Teacher"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = fallbackAvatar;
+              }}
+            />
+            {isEditing && (
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="mt-4 p-2 border rounded w-72 text-center text-sm"
+              />
+            )}
+          </div>
 
-  {/* Editable Info */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
-    <div>
-      <p className="text-sm text-gray-500 font-medium">First Name</p>
-      {isEditing ? (
-        <input
-          type="text"
-          value={editFirstname}
-          onChange={(e) => setEditFirstname(e.target.value)}
-          className="p-3 border rounded w-full"
-        />
-      ) : (
-        <p className="text-base text-gray-800">{editFirstname}</p>
-      )}
-    </div>
+          {/* Editable Fields */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+            {['username', 'email', 'firstname', 'lastname'].map((field) => (
+              <div key={field}>
+                <p className="text-sm text-gray-500 font-medium capitalize">{field}</p>
+                {isEditing ? (
+                  <input
+                    type={field === 'email' ? 'email' : 'text'}
+                    value={editData[field]}
+                    onChange={(e) => setEditData(prev => ({ ...prev, [field]: e.target.value }))}
+                    className="p-3 border rounded w-full"
+                  />
+                ) : (
+                  <p className="text-base text-gray-800">{editData[field]}</p>
+                )}
+              </div>
+            ))}
 
-    <div>
-      <p className="text-sm text-gray-500 font-medium">Last Name</p>
-      {isEditing ? (
-        <input
-          type="text"
-          value={editLastname}
-          onChange={(e) => setEditLastname(e.target.value)}
-          className="p-3 border rounded w-full"
-        />
-      ) : (
-        <p className="text-base text-gray-800">{editLastname}</p>
-      )}
-    </div>
+            <div className="md:col-span-2">
+              <p className="text-sm text-gray-500 font-medium">Department</p>
+              <p className="text-base text-gray-800">
+                {teacher.departmentName || 'Not assigned'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                (Department cannot be edited from profile)
+              </p>
+            </div>
+          </div>
 
-    <div className="md:col-span-2">
-      <p className="text-sm text-gray-500 font-medium">Email Address</p>
-      {isEditing ? (
-        <input
-          type="email"
-          value={editEmail}
-          onChange={(e) => setEditEmail(e.target.value)}
-          className="p-3 border rounded w-full"
-        />
-      ) : (
-        <p className="text-base text-gray-800">{editEmail}</p>
-      )}
-    </div>
-  </div>
-
-  {/* Buttons */}
-  <div className="flex justify-center mt-10 space-x-6">
-    {isEditing ? (
-      <>
-        <button
-          onClick={handleUpdate}
-          className="bg-[rgba(53,130,140,0.9)] hover:bg-[rgba(53,130,140,1)] text-white px-8 py-3 rounded-full shadow-lg"
-        >
-          Save Changes
-        </button>
-
-        <button
-          onClick={() => setIsEditing(false)}
-          className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-3 rounded-full shadow-lg"
-        >
-          Cancel
-        </button>
-      </>
-    ) : (
-      <button
-        onClick={() => setIsEditing(true)}
-        className="bg-[rgba(53,130,140,0.9)] hover:bg-[rgba(53,130,140,1)] text-white px-8 py-3 rounded-full shadow-lg"
-      >
-        Edit Profile
-      </button>
-    )}
-  </div>
-</div>
+          {/* Buttons */}
+          <div className="flex justify-center mt-10 space-x-6">
+            {isEditing ? (
+              <>
+                <button
+                  onClick={handleUpdate}
+                  className="bg-[rgba(53,130,140,0.9)] hover:bg-[rgba(53,130,140,1)] text-white px-8 py-3 rounded-full shadow-lg"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => {
+                    setEditData({
+                      username: teacher.username || '',
+                      firstname: teacher.firstname || '',
+                      lastname: teacher.lastname || '',
+                      email: teacher.email || '',
+                      profileImage: teacher.profileImage || '',
+                    });
+                    setImageFile(null);
+                    setIsEditing(false);
+                  }}
+                  className="bg-gray-400 hover:bg-gray-500 text-white px-8 py-3 rounded-full shadow-lg"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-[rgba(53,130,140,0.9)] hover:bg-[rgba(53,130,140,1)] text-white px-8 py-3 rounded-full shadow-lg"
+              >
+                Edit Profile
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

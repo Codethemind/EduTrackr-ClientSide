@@ -1,7 +1,50 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 const ViewUserModal = ({ user, onClose }) => {
   if (!user) return null; // safety check
+
+  const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch departments and courses
+  useEffect(() => {
+    const fetchDepartmentsAndCourses = async () => {
+      try {
+        setLoading(true);
+        const [departmentsResponse, coursesResponse] = await Promise.all([
+          axios.get('http://localhost:3000/api/departments'),
+          axios.get('http://localhost:3000/api/courses')
+        ]);
+
+        setAvailableDepartments(departmentsResponse.data.data);
+        setAvailableCourses(coursesResponse.data.data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDepartmentsAndCourses();
+  }, []);
+
+  // Get department name by ID
+  const getDepartmentName = (departmentId) => {
+    const department = availableDepartments.find(dept => dept._id === departmentId);
+    return department ? department.name : departmentId;
+  };
+
+  // Get course details by ID
+  const getUserCourses = () => {
+    if (!user.courses || !user.courses.length) return [];
+
+    return user.courses.map(courseId => {
+      const course = availableCourses.find(c => c._id === courseId);
+      return course || { name: "Unknown Course", code: "N/A" };
+    });
+  };
 
   const renderCommonDetails = () => (
     <>
@@ -53,7 +96,7 @@ const ViewUserModal = ({ user, onClose }) => {
     <>
       <div>
         <p className="text-sm text-gray-500">Department</p>
-        <p className="font-medium">{user.department}</p>
+        <p className="font-medium">{loading ? 'Loading...' : getDepartmentName(user.department)}</p>
       </div>
 
       <div>
@@ -63,13 +106,19 @@ const ViewUserModal = ({ user, onClose }) => {
 
       <div>
         <p className="text-sm text-gray-500">Courses</p>
-        <ul className="list-disc ml-5">
-          {user.courses?.map((course, index) => (
-            <li key={index}>
-              {course.name} ({course.code})
-            </li>
-          ))}
-        </ul>
+        {loading ? (
+          <p>Loading courses...</p>
+        ) : user.courses && user.courses.length > 0 ? (
+          <ul className="list-disc ml-5">
+            {getUserCourses().map((course, index) => (
+              <li key={index}>
+                {course.name} ({course.code})
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-gray-500">No courses assigned</p>
+        )}
       </div>
 
       <div>
@@ -82,7 +131,7 @@ const ViewUserModal = ({ user, onClose }) => {
   const renderTeacherDetails = () => (
     <div>
       <p className="text-sm text-gray-500">Department</p>
-      <p className="font-medium">{user.department}</p>
+      <p className="font-medium">{loading ? 'Loading...' : getDepartmentName(user.department)}</p>
     </div>
   );
 
@@ -99,13 +148,19 @@ const ViewUserModal = ({ user, onClose }) => {
           </button>
         </div>
 
-        <div className="space-y-4">
-          {renderCommonDetails()}
+        {loading ? (
+          <div className="flex justify-center items-center h-40">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {renderCommonDetails()}
 
-          {user.role === 'Student' && renderStudentDetails()}
-          {user.role === 'Teacher' && renderTeacherDetails()}
-          {/* For Admin, no extra fields needed beyond common ones */}
-        </div>
+            {user.role === 'Student' && renderStudentDetails()}
+            {user.role === 'Teacher' && renderTeacherDetails()}
+            {/* For Admin, no extra fields needed beyond common ones */}
+          </div>
+        )}
 
         <div className="mt-6 text-right">
           <button

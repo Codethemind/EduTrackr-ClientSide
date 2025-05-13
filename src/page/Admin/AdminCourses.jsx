@@ -2,126 +2,139 @@ import React, { useState, useEffect } from 'react';
 import axios from '../../api/axiosInstance.jsx';
 import Sidebar from '../../components/admin/Commen/Sidebar.jsx';
 import Header from '../../components/admin/Commen/Header.jsx';
-import DepartmentTable from '../../components/admin/departments/DepartmentTable.jsx';
-import AddDepartmentModal from '../../components/admin/departments/AddDepartmentModal.jsx';
-import EditDepartmentModal from '../../components/admin/departments/EditDepartmentModal.jsx';
-import ViewDepartmentModal from '../../components/admin/departments/ViewDepartmentModal.jsx';
-import DeleteDepartmentModal from '../../components/admin/departments/DeleteDepartmentModal.jsx';
+import CourseTable from '../../components/admin/courses/CourseTable.jsx';
+import AddCourseModal from '../../components/admin/courses/AddCourseModal.jsx';
+import EditCourseModal from '../../components/admin/courses/EditCourseModal.jsx';
+import ViewCourseModal from '../../components/admin/courses/ViewCourseModal.jsx';
+import DeleteCourseModal from '../../components/admin/courses/DeleteCourseModal.jsx';
 import Pagination from '../../components/admin/users/Pagination.jsx';
 import { toast } from 'react-hot-toast';
 
-const AdminDepartments = () => {
+const AdminCourses = () => {
+  const [courses, setCourses] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedDepartment, setSelectedDepartment] = useState(null);
+  const [selectedCourse, setSelectedCourse] = useState(null);
   const [modalType, setModalType] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [departmentsPerPage, setDepartmentsPerPage] = useState(10);
+  const [coursesPerPage, setCoursesPerPage] = useState(10);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
+    fetchCourses();
     fetchDepartments();
   }, []);
 
-  const fetchDepartments = async () => {
+  const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('/api/departments');
-      setDepartments(response.data.data || []);
+      const response = await axios.get('/api/courses');
+      setCourses(response.data.data || []);
       setError(null);
     } catch (err) {
-      console.error('Error fetching departments:', err);
-      setError('Failed to fetch departments.');
+      console.error('Error fetching courses:', err);
+      setError('Failed to fetch courses.');
     } finally {
       setLoading(false);
     }
   };
 
+  const fetchDepartments = async () => {
+    try {
+      const response = await axios.get('/api/departments');
+      setDepartments(response.data.data || []);
+    } catch (err) {
+      console.error('Error fetching departments:', err);
+      toast.error('Failed to fetch departments');
+    }
+  };
+
   const handleAdd = () => {
-    setSelectedDepartment(null);
+    setSelectedCourse(null);
     setModalType('add');
   };
 
-  const handleEdit = (department) => {
-    setSelectedDepartment(department);
+  const handleEdit = (course) => {
+    setSelectedCourse(course);
     setModalType('edit');
   };
 
-  const handleView = (department) => {
-    setSelectedDepartment(department);
+  const handleView = (course) => {
+    setSelectedCourse(course);
     setModalType('view');
   };
 
-  const handleDelete = (department) => {
-    setSelectedDepartment(department);
+  const handleDelete = (course) => {
+    setSelectedCourse(course);
     setModalType('delete');
   };
 
   const handleCloseModal = () => {
-    setSelectedDepartment(null);
+    setSelectedCourse(null);
     setModalType(null);
   };
 
-  const handleSaveDepartment = async (departmentData) => {
+  const handleSaveCourse = async (courseData) => {
     try {
       let response;
       
-      if (departmentData._id) {
-        // Update existing department
-        response = await axios.put(`/api/departments/${departmentData._id}`, departmentData);
+      if (courseData._id) {
+        // Update existing course
+        response = await axios.put(`/api/courses/${courseData._id}`, courseData);
         if (response.data && response.data.success) {
-          setDepartments(prevDepartments => 
-            prevDepartments.map(dept => 
-              dept._id === departmentData._id ? response.data.data : dept
+          setCourses(prevCourses => 
+            prevCourses.map(course => 
+              course._id === courseData._id ? response.data.data : course
             )
           );
-          toast.success('Department updated successfully!');
+          toast.success('Course updated successfully!');
         }
       } else {
-        // Create new department
-        response = await axios.post('/api/departments/create', departmentData);
+        // Create new course
+        response = await axios.post('/api/courses/create', courseData);
         if (response.data && response.data.success) {
-          setDepartments(prevDepartments => [...prevDepartments, response.data.data]);
-          toast.success('Department added successfully!');
+          setCourses(prevCourses => [...prevCourses, response.data.data]);
+          toast.success('Course added successfully!');
         }
       }
 
       handleCloseModal();
     } catch (err) {
-      console.error('Error saving department:', err);
-      toast.error(err.response?.data?.message || 'Failed to save department');
+      console.error('Error saving course:', err);
+      toast.error(err.response?.data?.message || 'Failed to save course');
     }
   };
 
   const handleConfirmDelete = async () => {
-    if (!selectedDepartment) return;
+    if (!selectedCourse) return;
     try {
-      const response = await axios.delete(`/api/departments/${selectedDepartment._id}`);
+      const response = await axios.delete(`/api/courses/${selectedCourse._id}`);
       
       if (response.data && response.data.success) {
-        setDepartments(prevDepartments => 
-          prevDepartments.filter(dept => dept._id !== selectedDepartment._id)
+        setCourses(prevCourses => 
+          prevCourses.filter(course => course._id !== selectedCourse._id)
         );
-        toast.success('Department deleted successfully!');
+        toast.success('Course deleted successfully!');
         handleCloseModal();
       }
     } catch (err) {
-      console.error('Error deleting department:', err);
-      toast.error(err.response?.data?.message || 'Failed to delete department');
+      console.error('Error deleting course:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete course');
     }
   };
 
-  const filteredDepartments = departments.filter(department =>
-    department.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    department.code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredCourses = courses.filter(course =>
+    course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    course.department?.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const indexOfLastDepartment = currentPage * departmentsPerPage;
-  const indexOfFirstDepartment = indexOfLastDepartment - departmentsPerPage;
-  const currentDepartments = filteredDepartments.slice(indexOfFirstDepartment, indexOfLastDepartment);
-  const totalPages = Math.ceil(filteredDepartments.length / departmentsPerPage);
+  const indexOfLastCourse = currentPage * coursesPerPage;
+  const indexOfFirstCourse = indexOfLastCourse - coursesPerPage;
+  const currentCourses = filteredCourses.slice(indexOfFirstCourse, indexOfLastCourse);
+  const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-[#F5F7FB] to-white">
@@ -130,7 +143,7 @@ const AdminDepartments = () => {
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <Sidebar activePage="departments" onClose={() => setIsSidebarOpen(false)} />
+        <Sidebar activePage="courses" onClose={() => setIsSidebarOpen(false)} />
       </div>
 
       <div className="flex-1 flex flex-col">
@@ -142,8 +155,8 @@ const AdminDepartments = () => {
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Department Management</h1>
-              <p className="text-sm sm:text-base text-gray-500">Manage academic departments</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Course Management</h1>
+              <p className="text-sm sm:text-base text-gray-500">Manage academic courses</p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center">
@@ -152,9 +165,9 @@ const AdminDepartments = () => {
                 </label>
                 <select
                   id="rowsPerPage"
-                  value={departmentsPerPage}
+                  value={coursesPerPage}
                   onChange={(e) => {
-                    setDepartmentsPerPage(Number(e.target.value));
+                    setCoursesPerPage(Number(e.target.value));
                     setCurrentPage(1);
                   }}
                   className="border border-gray-300 rounded-md px-2 py-1 text-sm"
@@ -169,7 +182,7 @@ const AdminDepartments = () => {
                 onClick={handleAdd}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition"
               >
-                + Add Department
+                + Add Course
               </button>
             </div>
           </div>
@@ -177,7 +190,7 @@ const AdminDepartments = () => {
           <div className="mb-6">
             <input
               type="text"
-              placeholder="Search departments..."
+              placeholder="Search courses..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full max-w-md px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -196,14 +209,14 @@ const AdminDepartments = () => {
             </div>
           ) : (
             <>
-              <DepartmentTable
-                departments={currentDepartments}
+              <CourseTable
+                courses={currentCourses}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onView={handleView}
               />
               
-              {filteredDepartments.length > 0 && (
+              {filteredCourses.length > 0 && (
                 <div className="mt-6">
                   <Pagination
                     currentPage={currentPage}
@@ -216,27 +229,29 @@ const AdminDepartments = () => {
           )}
 
           {modalType === 'add' && (
-            <AddDepartmentModal
+            <AddCourseModal
+              departments={departments}
               onClose={handleCloseModal}
-              onSave={handleSaveDepartment}
+              onSave={handleSaveCourse}
             />
           )}
-          {modalType === 'edit' && selectedDepartment && (
-            <EditDepartmentModal
-              department={selectedDepartment}
+          {modalType === 'edit' && selectedCourse && (
+            <EditCourseModal
+              course={selectedCourse}
+              departments={departments}
               onClose={handleCloseModal}
-              onSave={handleSaveDepartment}
+              onSave={handleSaveCourse}
             />
           )}
-          {modalType === 'view' && selectedDepartment && (
-            <ViewDepartmentModal
-              department={selectedDepartment}
+          {modalType === 'view' && selectedCourse && (
+            <ViewCourseModal
+              course={selectedCourse}
               onClose={handleCloseModal}
             />
           )}
-          {modalType === 'delete' && selectedDepartment && (
-            <DeleteDepartmentModal
-              department={selectedDepartment}
+          {modalType === 'delete' && selectedCourse && (
+            <DeleteCourseModal
+              course={selectedCourse}
               onClose={handleCloseModal}
               onDeleteSuccess={handleConfirmDelete}
             />
@@ -247,4 +262,4 @@ const AdminDepartments = () => {
   );
 };
 
-export default AdminDepartments; 
+export default AdminCourses; 
