@@ -13,12 +13,22 @@ import AdminCourses from './page/Admin/AdminCourses';
 import AdminProfile from './page/Admin/AdminProfile';
 
 // Teacher Components
-import TeacherDashboard from './page/Teacher/TeacherDashboard';
-import TeacherProfile from './page/Teacher/TeacherProfile'; // Fix filename casing
+import TeacherDashboard from './page/teacher/TeacherDashboard';
+import TeacherProfile from './page/teacher/TeacherProfile';
+import AssignmentsPage from './page/teacher/AssignmentsPage';
+import CreateAssignmentPage from './page/teacher/CreateAssignmentPage';
+import EditAssignmentPage from './page/teacher/EditAssignmentPage';
+import ClassesPage from './page/teacher/ClassesPage';
+import CreateClassPage from './page/teacher/CreateClassPage';
+import EditClassPage from './page/teacher/EditClassPage';
+import StudentsPage from './page/teacher/StudentsPage';
+import StudentDetailsPage from './page/teacher/StudentDetailsPage';
 
 // Student Components
-import StudentDashboard from './page/Student/StudentDashboard'; // Correct naming
-import StudentProfile from './page/Student/Profile'; // More clear name
+import StudentDashboard from './page/student/StudentDashboard';
+import StudentProfile from './page/student/Profile';
+import StudentAssignmentsPage from './page/student/AssignmentsPage';
+import AssignmentViewPage from './page/student/AssignmentViewPage';
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -52,14 +62,12 @@ const App = () => {
       />
       <Routes>
         {/* Public Auth Routes */}
-<Route path="/" element={<Navigate to="/auth/student-login" replace />} />
-<Route path="/auth/admin-login" element={<AuthRoute element={<AdminLogin />} />} />
-<Route path="/auth/teacher-login" element={<AuthRoute element={<TeacherLogin />} />} />
-<Route path="/auth/student-login" element={<AuthRoute element={<StudentLogin />} />} />
-<Route path="/auth/forgot-password" element={<AuthRoute element={<ForgotPassword />} />} />
-<Route path="/auth/reset-password/:token" element={<AuthRoute element={<ResetPassword />} />} />
-
-        
+        <Route path="/" element={<Navigate to="/auth/student-login" replace />} />
+        <Route path="/auth/admin-login" element={<AuthRoute element={<AdminLogin />} />} />
+        <Route path="/auth/teacher-login" element={<AuthRoute element={<TeacherLogin />} />} />
+        <Route path="/auth/student-login" element={<AuthRoute element={<StudentLogin />} />} />
+        <Route path="/auth/forgot-password" element={<AuthRoute element={<ForgotPassword />} />} />
+        <Route path="/auth/reset-password/:token" element={<AuthRoute element={<ResetPassword />} />} />
 
         {/* Protected Admin Routes */}
         <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
@@ -74,16 +82,27 @@ const App = () => {
         <Route element={<ProtectedRoute allowedRoles={['Teacher']} />}>
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/profile" element={<TeacherProfile />} />
+          <Route path="/teacher/assignments" element={<AssignmentsPage />} />
+          <Route path="/teacher/assignments/create" element={<CreateAssignmentPage />} />
+          <Route path="/teacher/assignments/:id/edit" element={<EditAssignmentPage />} />
+          <Route path="/teacher/my-classes" element={<ClassesPage />} />
+          <Route path="/teacher/my-classes/create" element={<CreateClassPage />} />
+          <Route path="/teacher/my-classes/:id/edit" element={<EditClassPage />} />
+          <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
+          <Route path="/teacher/students" element={<StudentsPage />} />
+          <Route path="/teacher/students/:id" element={<StudentDetailsPage />} />
         </Route>
 
         {/* Protected Student Routes */}
         <Route element={<ProtectedRoute allowedRoles={['Student']} />}>
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/profile" element={<StudentProfile />} />
+          <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
+          <Route path="/student/assignments/:id" element={<AssignmentViewPage />} />
         </Route>
 
         {/* Catch All - Redirect */}
-        {/* <Route path="*" element={<Navigate to="/auth/admin-login" replace />} /> */}
+        <Route path="*" element={<Navigate to="/auth/student-login" replace />} />
       </Routes>
     </>
   );

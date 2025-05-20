@@ -5,146 +5,115 @@ const ViewUserModal = ({ user, onClose }) => {
   if (!user) return null; // safety check
 
   const [availableDepartments, setAvailableDepartments] = useState([]);
-  const [availableCourses, setAvailableCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch departments and courses
   useEffect(() => {
-    const fetchDepartmentsAndCourses = async () => {
+    const fetchDepartments = async () => {
       try {
         setLoading(true);
-        const [departmentsResponse, coursesResponse] = await Promise.all([
-          axios.get('http://localhost:3000/api/departments'),
-          axios.get('http://localhost:3000/api/courses')
-        ]);
-
+        const departmentsResponse = await axios.get('http://localhost:3000/api/departments');
         setAvailableDepartments(departmentsResponse.data.data);
-        setAvailableCourses(coursesResponse.data.data);
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching departments:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchDepartmentsAndCourses();
+    fetchDepartments();
   }, []);
 
-  // Get department name by ID
   const getDepartmentName = (departmentId) => {
     const department = availableDepartments.find(dept => dept._id === departmentId);
     return department ? department.name : departmentId;
   };
 
-  // Get course details by ID
-  const getUserCourses = () => {
-    if (!user.courses || !user.courses.length) return [];
+  const renderCourses = () => {
+    if (!user.courses || !Array.isArray(user.courses) || user.courses.length === 0) {
+      return <p className="text-sm text-gray-500">No courses assigned</p>;
+    }
 
-    return user.courses.map(courseId => {
-      const course = availableCourses.find(c => c._id === courseId);
-      return course || { name: "Unknown Course", code: "N/A" };
-    });
+    if (user.courses[0] && (user.courses[0].name || user.courses[0].courseId)) {
+      return (
+        <ul className="list-disc ml-5">
+          {user.courses.map((course, index) => (
+            <li key={index}>
+              {course.name || course.courseName || 'Unnamed Course'} 
+              ({course.code || course.courseCode || 'N/A'})
+            </li>
+          ))}
+        </ul>
+      );
+    }
+
+    return <p className="text-sm text-gray-500">Course information format not recognized</p>;
   };
+
+  // A reusable component for each label-value pair, formatted for grid layout
+  const DetailItem = ({ label, children }) => (
+    <div className="flex flex-col">
+      <span className="text-sm text-gray-500">{label}</span>
+      <span className="font-medium break-words">{children}</span>
+    </div>
+  );
 
   const renderCommonDetails = () => (
     <>
-      {/* Profile Image */}
       {user.profileImage && (
         <div className="flex justify-center mb-6">
           <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-100">
-            <img 
-              src={user.profileImage} 
+            <img
+              src={user.profileImage}
               alt={`${user.firstname || ''} ${user.lastname || ''}`}
-              className="w-full h-full object-cover" 
+              className="w-full h-full object-cover"
             />
           </div>
         </div>
       )}
 
-      <div>
-        <p className="text-sm text-gray-500">Username</p>
-        <p className="font-medium">{user.username}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+        <DetailItem label="Username">{user.username}</DetailItem>
+        <DetailItem label="Email">{user.email}</DetailItem>
+        <DetailItem label="Role">{user.role}</DetailItem>
+        {user.firstname && <DetailItem label="First Name">{user.firstname}</DetailItem>}
+        {user.lastname && <DetailItem label="Last Name">{user.lastname}</DetailItem>}
       </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Email</p>
-        <p className="font-medium">{user.email}</p>
-      </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Role</p>
-        <p className="font-medium">{user.role}</p>
-      </div>
-
-      {user.firstname && (
-        <div>
-          <p className="text-sm text-gray-500">First Name</p>
-          <p className="font-medium">{user.firstname}</p>
-        </div>
-      )}
-
-      {user.lastname && (
-        <div>
-          <p className="text-sm text-gray-500">Last Name</p>
-          <p className="font-medium">{user.lastname}</p>
-        </div>
-      )}
     </>
   );
 
   const renderStudentDetails = () => (
-    <>
-      <div>
-        <p className="text-sm text-gray-500">Department</p>
-        <p className="font-medium">{loading ? 'Loading...' : getDepartmentName(user.department)}</p>
-      </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Class</p>
-        <p className="font-medium">{user.class}</p>
-      </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Courses</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-4">
+      <DetailItem label="Department">{loading ? 'Loading...' : getDepartmentName(user.department)}</DetailItem>
+      <DetailItem label="Class">{user.class}</DetailItem>
+      <div className="md:col-span-2">
+        <p className="text-sm text-gray-500 mb-1">Courses</p>
         {loading ? (
           <p>Loading courses...</p>
-        ) : user.courses && user.courses.length > 0 ? (
-          <ul className="list-disc ml-5">
-            {getUserCourses().map((course, index) => (
-              <li key={index}>
-                {course.name} ({course.code})
-              </li>
-            ))}
-          </ul>
         ) : (
-          <p className="text-sm text-gray-500">No courses assigned</p>
+          renderCourses()
         )}
       </div>
-
-      <div>
-        <p className="text-sm text-gray-500">Blocked Status</p>
-        <p className="font-medium">{user.isBlock ? 'Blocked' : 'Active'}</p>
-      </div>
-    </>
+      <DetailItem label="Status">{user.isBlock ? 'Blocked' : 'Active'}</DetailItem>
+    </div>
   );
 
   const renderTeacherDetails = () => (
-    <div>
-      <p className="text-sm text-gray-500">Department</p>
-      <p className="font-medium">{loading ? 'Loading...' : getDepartmentName(user.department)}</p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-4">
+      <DetailItem label="Department">{loading ? 'Loading...' : getDepartmentName(user.department)}</DetailItem>
     </div>
   );
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-start justify-center pt-20 px-4">
+      <div className="relative max-w-md w-full p-6 border shadow-lg rounded-md bg-white">
         <div className="mb-4 flex justify-between items-center">
           <h3 className="text-lg font-medium">User Details</h3>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
+            aria-label="Close modal"
           >
-            <i className="ti ti-x text-xl"></i>
+            ✖
           </button>
         </div>
 
@@ -153,12 +122,12 @@ const ViewUserModal = ({ user, onClose }) => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {renderCommonDetails()}
 
             {user.role === 'Student' && renderStudentDetails()}
             {user.role === 'Teacher' && renderTeacherDetails()}
-            {/* For Admin, no extra fields needed beyond common ones */}
+            {/* Admin only has common details */}
           </div>
         )}
 

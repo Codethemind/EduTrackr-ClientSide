@@ -28,7 +28,7 @@ const TeacherSideBar = () => {
   const menuItems = {
     MAIN: [
       { icon: MdDashboard, label: 'Dashboard', path: '/teacher/dashboard' },
-      { icon: MdClass, label: 'My Classes', path: '/teacher/classes' },
+      { icon: MdClass, label: 'My Classes', path: '/teacher/my-classes' },
       { icon: MdPeople, label: 'Students', path: '/teacher/students' },
       { icon: MdAssignment, label: 'Assignments', path: '/teacher/assignments' },
       { icon: MdGrade, label: 'Grades', path: '/teacher/grades' },
@@ -39,11 +39,9 @@ const TeacherSideBar = () => {
     ],
     CONTENT: [
       { icon: MdDescription, label: 'Resources', path: '/teacher/resources' },
-      
     ],
     ACCOUNT: [
-      { icon: MdPerson, label: 'Profile', path: `/teacher/profile` },
-     
+      { icon: MdPerson, label: 'Profile', path: '/teacher/profile' },
       { icon: MdExitToApp, label: 'Logout', path: '#' }, // No path for logout, will trigger function
     ],
   };
@@ -66,7 +64,7 @@ const TeacherSideBar = () => {
             <button
               key={item.path}
               onClick={handleLogout} // Trigger logout function on button click
-              className={`flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100`}
+              className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
             >
               <Icon className="w-5 h-5 mr-3" />
               {item.label}
@@ -75,7 +73,9 @@ const TeacherSideBar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center px-4 py-2 text-sm ${isActive(item.path) ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-100'}`}
+              className={`flex items-center px-4 py-2 text-sm ${
+                isActive(item.path) ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-100'
+              }`}
             >
               <Icon className="w-5 h-5 mr-3" />
               {item.label}

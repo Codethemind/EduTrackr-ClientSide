@@ -59,10 +59,10 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
 
         let endpoint = '';
         switch (role) {
-          case 'admin': endpoint = '/api/admins/profile'; break;
-          case 'teacher': endpoint = '/api/teachers/profile'; break;
-          case 'student': endpoint = '/api/students/profile'; break;
-          default: endpoint = '/api/admins/profile';
+          case 'admin': endpoint = `/api/admins/${user.id}`; break;
+          case 'teacher': endpoint = `/api/teachers/${user.id}`; break;
+          case 'student': endpoint = `/api/students/${user.id}`; break;
+          default: endpoint = `/api/admins/${user.id}`;
         }
 
         const response = await axios.get(endpoint, {
@@ -226,12 +226,7 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
                 >
                   <MdDashboard className="mr-2" /> Dashboard
                 </button>
-                {/* <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                  onClick={() => navigate(`/${role}/settings`)}
-                >
-                  <MdSettings className="mr-2" /> Settings
-                </button> */}
+              
                 <button
                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center"
                   onClick={handleLogout}

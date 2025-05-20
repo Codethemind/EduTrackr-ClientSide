@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
 import axios from 'axios';
 
@@ -20,7 +20,7 @@ const AddUserModal = ({ onClose, onSave }) => {
   const [errors, setErrors] = useState({});
   const [availableCourses, setAvailableCourses] = useState([]);
   const [availableDepartments, setAvailableDepartments] = useState([]);
-  const [availableClasses] = useState(['First Year', 'Second Year', 'Third Year', 'Fourth Year']);
+  const [availableClasses] = useState(['First Sem', 'Second Sem', 'Third Sem', 'Fourth Sem', 'Fifth Sem', 'Sixth Sem']);
   const [selectedCourses, setSelectedCourses] = useState([]);
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState('');
@@ -51,10 +51,31 @@ const AddUserModal = ({ onClose, onSave }) => {
     fetchDepartmentsAndCourses();
   }, []);
 
-  // Filter courses based on selected department
-  const filteredCourses = newUser.department
-    ? availableCourses.filter(course => course.departmentId === newUser.department)
-    : [];
+  // Helper function to convert semester name to numeric value
+  const getSemesterNumber = (semesterName) => {
+    const semesterMap = {
+      'First Sem': 1,
+      'Second Sem': 2,
+      'Third Sem': 3,
+      'Fourth Sem': 4,
+      'Fifth Sem': 5,
+      'Sixth Sem': 6
+    };
+    return semesterMap[semesterName];
+  };
+
+  // Filter courses based on selected department AND semester
+  const filteredCourses = useMemo(() => {
+    if (!newUser.department || !newUser.class) {
+      return [];
+    }
+    
+    const semesterNumber = getSemesterNumber(newUser.class);
+    
+    return availableCourses.filter(
+      course => course.departmentId === newUser.department && course.semester === semesterNumber
+    );
+  }, [newUser.department, newUser.class, availableCourses]);
 
   const validateForm = () => {
     const validationErrors = {};
@@ -86,7 +107,7 @@ const AddUserModal = ({ onClose, onSave }) => {
         validationErrors.department = 'Department is required';
       }
       if (!newUser.class) {
-        validationErrors.class = 'Class is required';
+        validationErrors.class = 'Semester is required';
       }
       if (selectedCourses.length === 0) {
         validationErrors.courses = 'At least one course must be selected';
@@ -235,16 +256,26 @@ const AddUserModal = ({ onClose, onSave }) => {
     const { name, value, type, checked } = e.target;
     
     if (name === 'role') {
-      // Reset department and courses when role changes
+      // Reset department, semester, and courses when role changes
       setNewUser(prev => ({
         ...prev,
         [name]: value,
         department: '',
+        class: '',
         courses: []
       }));
       setSelectedCourses([]);
     } else if (name === 'department') {
-      // Reset courses when department changes
+      // Reset semester and courses when department changes
+      setNewUser(prev => ({
+        ...prev,
+        [name]: value,
+        class: '',
+        courses: []
+      }));
+      setSelectedCourses([]);
+    } else if (name === 'class') {
+      // Reset courses when semester changes
       setNewUser(prev => ({
         ...prev,
         [name]: value,
@@ -447,14 +478,15 @@ const AddUserModal = ({ onClose, onSave }) => {
                 </div>
 
                 <div>
-                  <label className="block mb-1 text-sm font-medium">Class*</label>
+                  <label className="block mb-1 text-sm font-medium">Semester*</label>
                   <select
                     name="class"
                     value={newUser.class}
                     onChange={handleChange}
                     className={`border rounded-md w-full p-2 ${errors.class ? 'border-red-500' : ''}`}
+                    disabled={!newUser.department} // Disable if department is not selected
                   >
-                    <option value="">Select Class</option>
+                    <option value="">Select Semester</option>
                     {availableClasses.map((cls, index) => (
                       <option key={index} value={cls}>
                         {cls}
@@ -462,11 +494,14 @@ const AddUserModal = ({ onClose, onSave }) => {
                     ))}
                   </select>
                   {errors.class && <p className="text-xs text-red-500">{errors.class}</p>}
+                  {!newUser.department && (
+                    <p className="text-xs text-blue-500">Please select a department first</p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block mb-1 text-sm font-medium">Courses*</label>
-                  <div className="border rounded-md p-2 max-h-40 overflow-y-auto">
+                  <div className={`border rounded-md p-2 max-h-40 overflow-y-auto ${!newUser.class ? 'bg-gray-100' : ''}`}>
                     {filteredCourses.length > 0 ? (
                       filteredCourses.map((course) => (
                         <div key={course._id} className="flex items-center mb-1">
@@ -476,15 +511,20 @@ const AddUserModal = ({ onClose, onSave }) => {
                             checked={selectedCourses.includes(course._id)}
                             onChange={() => handleCourseSelection(course._id)}
                             className="mr-2"
+                            disabled={!newUser.class} // Disable if semester is not selected
                           />
-                          <label htmlFor={course._id} className="text-sm">
+                          <label htmlFor={course._id} className={`text-sm ${!newUser.class ? 'text-gray-400' : ''}`}>
                             {course.name} ({course.code})
                           </label>
                         </div>
                       ))
                     ) : (
                       <p className="text-sm text-gray-500">
-                        No courses available for this department
+                        {!newUser.department
+                          ? 'Please select a department first'
+                          : !newUser.class
+                          ? 'Please select a semester first'
+                          : 'No courses available for this department and semester'}
                       </p>
                     )}
                   </div>

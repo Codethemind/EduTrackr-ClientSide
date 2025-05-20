@@ -1,8 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  accessToken: localStorage.getItem('accessToken') || null,
   user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
+  accessToken: localStorage.getItem('accessToken') || null,
+  isAuthenticated: false,
+  loading: false,
+  error: null,
 };
 
 const authSlice = createSlice({
@@ -13,22 +16,20 @@ const authSlice = createSlice({
       const { accessToken, user } = action.payload;
       state.accessToken = accessToken;
       state.user = user || null;
-      localStorage.setItem('accessToken', accessToken); // ✅ Store accessToken on login
+      localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('user', JSON.stringify(user));
     },
     logout: (state) => {
       state.accessToken = null;
       state.user = null;
-      localStorage.removeItem('accessToken'); // ✅ Clear localStorage when logging out
+      localStorage.removeItem('accessToken');
     },
-    refreshTokenSuccess: (state, action) => {  // ✅ NEW: handle only token refresh
+    refreshTokenSuccess: (state, action) => {
       const accessToken = action.payload;
       state.accessToken = accessToken;
-      localStorage.setItem('accessToken', accessToken); // ✅ Update localStorage too
+      localStorage.setItem('accessToken', accessToken);
     },
   },
-  
-
 });
 
 export const { loginSuccess, logout, refreshTokenSuccess } = authSlice.actions;
