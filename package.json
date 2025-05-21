@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@radix-ui/react-tabs": "^1.1.12",
     "@reduxjs/toolkit": "^2.7.0",
     "axios": "^1.8.4",
     "jwt-decode": "^4.0.0",
+    "lucide-react": "^0.511.0",
     "phosphor-react": "^1.4.1",
     "prop-types": "^15.8.1",
     "react": "^18.2.0",
@@ -25,7 +27,8 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^6.22.0",
     "recharts": "^2.15.2",
-    "sweetalert2": "^11.19.1"
+    "sweetalert2": "^11.19.1",
+    "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.55",

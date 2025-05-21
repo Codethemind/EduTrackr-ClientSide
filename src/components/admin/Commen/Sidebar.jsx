@@ -43,6 +43,7 @@ const Sidebar = ({ activePage, onClose }) => {
     ]},
     { section: 'MANAGEMENT', items: [
       { name: 'Announcements', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/announcements' },
+      { name: 'Schedule', icon: <MdGrade className="w-5 h-5" />, path: '/admin/schedule' },
       { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/admin/grades' },
     ]},
     { section: 'ACCOUNT', items: [

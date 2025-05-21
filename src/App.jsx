@@ -11,6 +11,7 @@ import AdminUsers from './page/Admin/AdminUsers';
 import AdminDepartments from './page/Admin/AdminDepartments';
 import AdminCourses from './page/Admin/AdminCourses';
 import AdminProfile from './page/Admin/AdminProfile';
+import AdminSchedule from './page/Admin/AdminSchedule';
 
 // Teacher Components
 import TeacherDashboard from './page/teacher/TeacherDashboard';
@@ -23,6 +24,7 @@ import CreateClassPage from './page/teacher/CreateClassPage';
 import EditClassPage from './page/teacher/EditClassPage';
 import StudentsPage from './page/teacher/StudentsPage';
 import StudentDetailsPage from './page/teacher/StudentDetailsPage';
+import ClassAttendancePage from './page/teacher/ClassAttendancePage';
 
 // Student Components
 import StudentDashboard from './page/student/StudentDashboard';
@@ -76,6 +78,7 @@ const App = () => {
           <Route path="/admin/departments" element={<AdminDepartments />} />
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
+          <Route path="/admin/schedule" element={<AdminSchedule />} />
         </Route>
 
         {/* Protected Teacher Routes */}
@@ -89,6 +92,7 @@ const App = () => {
           <Route path="/teacher/my-classes/create" element={<CreateClassPage />} />
           <Route path="/teacher/my-classes/:id/edit" element={<EditClassPage />} />
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
+          <Route path="/teacher/my-classes/:classId/attendance" element={<ClassAttendancePage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
           <Route path="/teacher/students/:id" element={<StudentDetailsPage />} />
         </Route>
