@@ -31,6 +31,9 @@ export const createNewSchedule = createAsyncThunk(
   async (scheduleData, { rejectWithValue }) => {
     try {
       const response = await scheduleApi.createSchedule(scheduleData);
+      if (!response.success) {
+        return rejectWithValue(response.message || 'Failed to create schedule');
+      }
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
@@ -47,7 +50,7 @@ export const updateExistingSchedule = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
-  }
+  } 
 );
 
 export const deleteExistingSchedule = createAsyncThunk(
@@ -106,12 +109,17 @@ const scheduleSlice = createSlice({
       })
       .addCase(fetchAllSchedules.fulfilled, (state, action) => {
         state.loading = false;
-        state.schedules = action.payload;
+        if (action.payload.success && Array.isArray(action.payload.data)) {
+          state.schedules = action.payload.data;
+        } else {
+          state.schedules = [];
+        }
         state.success = true;
       })
       .addCase(fetchAllSchedules.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+        state.schedules = [];
       })
       // Fetch schedules by department
       .addCase(fetchSchedulesByDepartment.pending, (state) => {
@@ -134,7 +142,9 @@ const scheduleSlice = createSlice({
       })
       .addCase(createNewSchedule.fulfilled, (state, action) => {
         state.loading = false;
-        state.schedules.push(action.payload);
+        if (action.payload.success && action.payload.data) {
+          state.schedules = Array.isArray(state.schedules) ? [...state.schedules, action.payload.data] : [action.payload.data];
+        }
         state.success = true;
       })
       .addCase(createNewSchedule.rejected, (state, action) => {
@@ -165,7 +175,9 @@ const scheduleSlice = createSlice({
       })
       .addCase(deleteExistingSchedule.fulfilled, (state, action) => {
         state.loading = false;
-        state.schedules = state.schedules.filter(schedule => schedule.id !== action.payload.scheduleId);
+        if (action.payload.success) {
+          state.schedules = state.schedules.filter(schedule => schedule._id !== action.payload.scheduleId);
+        }
         state.success = true;
       })
       .addCase(deleteExistingSchedule.rejected, (state, action) => {

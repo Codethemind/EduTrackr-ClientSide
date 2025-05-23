@@ -90,37 +90,39 @@ const ScheduleTable = () => {
   };
 
   // Apply filters and search
-  useEffect(() => {
-    if (!Array.isArray(schedules)) return;
+ useEffect(() => {
+  if (!Array.isArray(schedules)) return;
 
-    let result = [...schedules];
-    
-    // Apply filters
-    if (filters.department) {
-      result = result.filter(s => s.departmentId === filters.department);
-    }
-    
-    if (filters.day) {
-      result = result.filter(s => s.day === filters.day);
-    }
-    
-    if (filters.semester) {
-      result = result.filter(s => s.semester === filters.semester);
-    }
-    
-    // Apply search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(s => 
-        s.courseName?.toLowerCase().includes(term) ||
-        s.courseCode?.toLowerCase().includes(term) ||
-        s.teacherName?.toLowerCase().includes(term) ||
-        s.roomName?.toLowerCase().includes(term)
-      );
-    }
-    
-    setFilteredSchedules(result);
-  }, [schedules, filters, searchTerm]);
+  let result = [...schedules];
+ console.log('rsul',result)
+  // Department filter
+  if (filters.department) {
+    result = result.filter(s => s.departmentId?._id === filters.department);
+  }
+
+  // Day filter
+  if (filters.day) {
+    result = result.filter(s => s.day === filters.day);
+  }
+
+  // Semester filter
+  if (filters.semester) {
+    result = result.filter(s => s.semester === filters.semester);
+  }
+
+  // Search filter
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase();
+    result = result.filter(s =>
+      s.courseId?.name?.toLowerCase().includes(term) ||
+      s.courseId?.code?.toLowerCase().includes(term) ||
+      `${s.teacherId?.firstname} ${s.teacherId?.lastname}`.toLowerCase().includes(term)
+    );
+  }
+
+  setFilteredSchedules(result);
+}, [schedules, filters, searchTerm]);
+
 
   if (loading || isLoading) {
     return (
@@ -244,80 +246,46 @@ const ScheduleTable = () => {
       
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Course
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Department
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Teacher
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Schedule
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Room
-              </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Semester
-              </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredSchedules.length > 0 ? (
-              filteredSchedules.map((schedule) => (
-                <tr key={schedule._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{schedule.courseCode}</div>
-                    <div className="text-sm text-gray-500">{schedule.courseName}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {schedule.departmentName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {schedule.teacherName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{schedule.day}</div>
-                    <div className="text-sm text-gray-500">
-                      {schedule.startTime} - {schedule.endTime}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {schedule.roomName}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {schedule.semester}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button className="text-indigo-600 hover:text-indigo-900 mr-3">
-                      <Edit size={18} />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteSchedule(schedule._id)}
-                      className="text-red-600 hover:text-red-900"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
-                  No schedules found. Please add a new schedule or adjust your filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <table className="min-w-full divide-y divide-gray-200 mt-4">
+  <thead className="bg-gray-50">
+    <tr>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Course</th>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Department</th>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Teacher</th>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Day</th>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Time</th>
+      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Actions</th>
+    </tr>
+  </thead>
+  <tbody className="bg-white divide-y divide-gray-200">
+    {filteredSchedules.map((schedule) => (
+      <tr key={schedule._id}>
+        <td className="px-4 py-2 text-sm text-gray-900">{schedule.courseId?.name || 'N/A'}</td>
+        <td className="px-4 py-2 text-sm text-gray-900">{schedule.departmentId?.name || 'N/A'}</td>
+        <td className="px-4 py-2 text-sm text-gray-900">
+          {schedule.teacherId?.firstname} {schedule.teacherId?.lastname}
+        </td>
+        <td className="px-4 py-2 text-sm text-gray-900">{schedule.day}</td>
+        <td className="px-4 py-2 text-sm text-gray-900">{schedule.startTime} - {schedule.endTime}</td>
+        <td className="px-4 py-2 text-sm text-gray-900 space-x-2">
+          <button
+            className="text-blue-600 hover:underline"
+            onClick={() => console.log('Edit', schedule._id)}
+          >
+            Edit
+          </button>
+          <button
+            className="text-red-600 hover:underline"
+            onClick={() => handleDeleteSchedule(schedule._id)}
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
       </div>
     </div>
   );

@@ -74,9 +74,11 @@ const ScheduleForm = () => {
 
           // Handle teachers data
           if (teachersRes.data.success && Array.isArray(teachersRes.data.data)) {
-            const departmentTeachers = teachersRes.data.data.filter(teacher => 
-              teacher.department === formData.department
-            );
+            console.log('All teachers:', teachersRes.data.data);
+            const departmentTeachers = teachersRes.data.data.filter(teacher => {
+              console.log('Checking teacher:', teacher);
+              return teacher.department === formData.department;
+            });
             console.log('Filtered teachers:', departmentTeachers);
             setTeachers(departmentTeachers);
           } else {
@@ -105,18 +107,11 @@ const ScheduleForm = () => {
     console.log(`Changing ${name} to:`, value);
     
     setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-    
-    // Reset dependent fields when department changes
-    if (name === 'department') {
-      setFormData(prev => ({
-        ...prev,
-        course: '',
-        teacher: ''
-      }));
-    }
+  ...prev,
+  [name]: value,
+  ...(name === 'department' && { course: '', teacher: '' })
+}));
+
   };
 
   const handleSubmit = async (e) => {
@@ -128,11 +123,21 @@ const ScheduleForm = () => {
       toast.error('Please fill all required fields');
       return;
     }
+
+    // Validate teacher ID format (should be a MongoDB ObjectId)
+    if (!/^[0-9a-fA-F]{24}$/.test(formData.teacher)) {
+      toast.error('Invalid teacher ID format');
+      return;
+    }
     
     try {
       // Get selected course to get semester
       const selectedCourse = courses.find(course => course._id === formData.course);
       console.log('Selected course:', selectedCourse);
+      
+      // Get selected teacher
+      const selectedTeacher = teachers.find(teacher => teacher.id === formData.teacher);
+      console.log('Selected teacher:', selectedTeacher);
       
       // Create schedule object
       const scheduleData = {
@@ -249,8 +254,8 @@ const ScheduleForm = () => {
               >
                 <option value="">Select Teacher</option>
                 {Array.isArray(teachers) && teachers.map(teacher => (
-                  <option key={teacher._id} value={teacher._id}>
-                    {teacher.name || teacher.username}
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.firstname} {teacher.lastname} ({teacher.username})
                   </option>
                 ))}
               </select>

@@ -1,9 +1,16 @@
 // components/admin/schedule/DepartmentSchedule.jsx
 import React, { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchAllSchedules } from '../../../redux/slices/scheduleSlice';
+import axios from '../../../api/axiosInstance';
+import toast from 'react-hot-toast';
 
 const DepartmentSchedule = ({ department }) => {
-  const [schedules, setSchedules] = useState([]);
+  const dispatch = useDispatch();
+  const { schedules = [], loading: scheduleLoading } = useSelector((state) => state.schedule);
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
+  const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState('Monday');
   
@@ -17,78 +24,75 @@ const DepartmentSchedule = ({ department }) => {
     if (hour < 18) timeSlots.push(`${hour.toString().padStart(2, '0')}:30`);
   }
 
-  // Mock API call to get schedules for a specific department
+  // Fetch schedules and departments from backend
   useEffect(() => {
-    // In a real application, this would be an API call
-    setLoading(true);
-    
-    // Simulate API delay
-    setTimeout(() => {
-      // These would come from an API
-      const mockSchedules = [
-        {
-          id: 1,
-          departmentName: 'Computer Science',
-          courseCode: 'CS101',
-          courseName: 'Introduction to Programming',
-          teacherName: 'Dr. Johnson',
-          day: 'Monday',
-          startTime: '09:00',
-          endTime: '10:30',
-          roomName: 'Room 101',
-          semester: 'Spring 2025'
-        },
-        {
-          id: 2,
-          departmentName: 'Computer Science',
-          courseCode: 'CS201',
-          courseName: 'Data Structures',
-          teacherName: 'Prof. Williams',
-          day: 'Wednesday',
-          startTime: '13:00',
-          endTime: '14:30',
-          roomName: 'Lab 201',
-          semester: 'Spring 2025'
-        },
-        {
-          id: 3,
-          departmentName: 'Computer Science',
-          courseCode: 'CS150',
-          courseName: 'Computer Networks',
-          teacherName: 'Dr. Johnson',
-          day: 'Monday',
-          startTime: '11:00',
-          endTime: '12:30',
-          roomName: 'Room 102',
-          semester: 'Spring 2025'
-        },
-        {
-          id: 4,
-          departmentName: 'Business Administration',
-          courseCode: 'BA120',
-          courseName: 'Marketing 101',
-          teacherName: 'Dr. Smith',
-          day: 'Tuesday',
-          startTime: '11:00',
-          endTime: '12:30',
-          roomName: 'Room 102',
-          semester: 'Spring 2025'
-        }
-      ];
-      
-      // Filter by department
-      const filteredSchedules = department 
-        ? mockSchedules.filter(s => s.departmentName === department)
-        : mockSchedules;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        // Fetch schedules using Redux
+        const schedulesResult = await dispatch(fetchAllSchedules()).unwrap();
+        console.log('Schedules fetched:', schedulesResult);
         
-      setSchedules(filteredSchedules);
-      setLoading(false);
-    }, 500);
-  }, [department]);
+        // Fetch departments
+        const deptResponse = await axios.get('/api/departments');
+        console.log('Departments fetched:', deptResponse.data);
+        
+        if (deptResponse.data.success) {
+          setDepartments(deptResponse.data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load schedule data');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [dispatch]);
+
+  // Filter schedules based on selected department
+  useEffect(() => {
+    console.log('Filtering schedules:', { schedules, department, departments });
+    
+    if (!Array.isArray(schedules)) {
+      console.log('Schedules is not an array:', schedules);
+      return;
+    }
+
+    let result = [...schedules];
+    console.log('All schedules:', result);
+    
+    // Filter by department if one is selected
+    if (department) {
+      // Find the department ID by name
+      const selectedDept = departments.find(dept => dept.name === department);
+      console.log('Selected department:', selectedDept);
+      
+      if (selectedDept) {
+        result = result.filter(s => {
+          const matches = s.departmentId?._id === selectedDept._id || s.departmentId === selectedDept._id;
+          console.log('Schedule department check:', {
+            scheduleId: s._id,
+            scheduleDeptId: s.departmentId?._id || s.departmentId,
+            selectedDeptId: selectedDept._id,
+            matches
+          });
+          return matches;
+        });
+      } else {
+        console.log('Department not found in departments list');
+        result = [];
+      }
+    }
+    
+    console.log('Filtered schedules:', result);
+    setFilteredSchedules(result);
+  }, [schedules, department, departments]);
   
   // Helper function to determine if a class is scheduled at a particular time
   const getClassAtTime = (day, time) => {
-    return schedules.find(schedule => {
+    return filteredSchedules.find(schedule => {
       if (schedule.day !== day) return false;
       
       const scheduleStart = getMinutesFromTime(schedule.startTime);
@@ -113,10 +117,16 @@ const DepartmentSchedule = ({ department }) => {
     return Math.ceil((end - start) / 30);
   };
 
+  // Get department name for display
+  const getDepartmentDisplayName = () => {
+    if (!department) return 'All Departments';
+    return department;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
       <h2 className="text-xl font-semibold mb-4">
-        {department ? `${department} Department Schedule` : 'All Departments Schedule'}
+        {getDepartmentDisplayName()} Schedule
       </h2>
       
       {/* Day selector */}
@@ -142,7 +152,17 @@ const DepartmentSchedule = ({ department }) => {
         </div>
       </div>
       
-      {loading ? (
+      {/* Show debug info in development */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-3 bg-gray-100 rounded text-xs">
+          <div>Total Schedules: {schedules.length}</div>
+          <div>Filtered Schedules: {filteredSchedules.length}</div>
+          <div>Selected Department: {department || 'All'}</div>
+          <div>Selected Day: {selectedDay}</div>
+        </div>
+      )}
+      
+      {(loading || scheduleLoading) ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
         </div>
@@ -177,13 +197,16 @@ const DepartmentSchedule = ({ department }) => {
                         className="px-2 py-2 bg-blue-50 border border-blue-200 rounded-md"
                       >
                         <div className="mb-1 font-medium text-blue-800">
-                          {classAtTime.courseCode} - {classAtTime.courseName}
+                          {classAtTime.courseId?.code || 'N/A'} - {classAtTime.courseId?.name || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-600">
-                          {classAtTime.teacherName}
+                          {classAtTime.teacherId?.firstname} {classAtTime.teacherId?.lastname}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {classAtTime.roomName} • {classAtTime.startTime} - {classAtTime.endTime}
+                          {classAtTime.roomId?.name || 'Room TBA'} • {classAtTime.startTime} - {classAtTime.endTime}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {classAtTime.departmentId?.name || 'N/A'}
                         </div>
                       </td>
                     </tr>
@@ -216,6 +239,15 @@ const DepartmentSchedule = ({ department }) => {
               })}
             </tbody>
           </table>
+        </div>
+      )}
+      
+      {/* Show message if no schedules found */}
+      {!loading && !scheduleLoading && filteredSchedules.length === 0 && (
+        <div className="text-center py-8">
+          <p className="text-gray-500">
+            No schedules found for {getDepartmentDisplayName()}
+          </p>
         </div>
       )}
     </div>
