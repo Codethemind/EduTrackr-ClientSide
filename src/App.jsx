@@ -31,6 +31,7 @@ import StudentDashboard from './page/student/StudentDashboard';
 import StudentProfile from './page/student/Profile';
 import StudentAssignmentsPage from './page/student/AssignmentsPage';
 import AssignmentViewPage from './page/student/AssignmentViewPage';
+import StudentClassesPage from './page/student/StudentClassesPage'
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -103,6 +104,7 @@ const App = () => {
           <Route path="/student/profile" element={<StudentProfile />} />
           <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
           <Route path="/student/assignments/:id" element={<AssignmentViewPage />} />
+          <Route path="/student/classPage" element={<StudentClassesPage />} />
         </Route>
 
         {/* Catch All - Redirect */}
