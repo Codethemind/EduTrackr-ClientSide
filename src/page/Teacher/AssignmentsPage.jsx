@@ -143,16 +143,43 @@ const AssignmentsPage = () => {
     }
   };
 
+  // Create maps for course and department names
+  const courseNameMap = new Map(teacherSchedules.map(s => [s.courseId?._id, s.courseId?.name]));
+  const departmentNameMap = new Map(teacherSchedules.map(s => [s.departmentId?._id, s.departmentId?.name]));
+
+  // Get unique courses and departments from schedules
+  const uniqueCourses = [...new Set(teacherSchedules.map(s => s.courseId?._id).filter(Boolean))];
+  const uniqueDepartments = [...new Set(teacherSchedules.map(s => s.departmentId?._id).filter(Boolean))];
+
   // Filter and sort assignments
   const filteredAssignments = assignments.filter(assignment => {
-    if (filters.course !== 'all' && assignment.courseId?._id !== filters.course) return false;
-    if (filters.department !== 'all' && assignment.departmentId?._id !== filters.department) return false;
-    if (filters.status !== 'all') {
-      const now = new Date();
-      const dueDate = new Date(assignment.dueDate);
-      if (filters.status === 'active' && dueDate < now) return false;
-      if (filters.status === 'expired' && dueDate >= now) return false;
+    const now = new Date();
+    const dueDate = new Date(assignment.dueDate);
+    const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
+
+    // Course filter
+    if (filters.course !== 'all' && assignment.courseId?._id !== filters.course) {
+      return false;
     }
+
+    // Department filter
+    if (filters.department !== 'all' && assignment.departmentId?._id !== filters.department) {
+      return false;
+    }
+
+    // Status filter
+    if (filters.status !== 'all') {
+      if (filters.status === 'active' && dueDate < now) {
+        return false;
+      }
+      if (filters.status === 'expired' && dueDate >= now) {
+        return false;
+      }
+      if (filters.status === 'due-soon' && (daysUntilDue > 3 || daysUntilDue < 0)) {
+        return false;
+      }
+    }
+
     return true;
   }).sort((a, b) => {
     switch (filters.sortBy) {
@@ -162,14 +189,14 @@ const AssignmentsPage = () => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       case 'title':
         return a.title.localeCompare(b.title);
+      case 'submissions':
+        return (b.submissions?.length || 0) - (a.submissions?.length || 0);
+      case 'maxMarks':
+        return b.maxMarks - a.maxMarks;
       default:
         return 0;
     }
   });
-
-  // Get unique courses and departments from schedules
-  const uniqueCourses = [...new Set(teacherSchedules.map(s => s.courseId?.name).filter(Boolean))];
-  const uniqueDepartments = [...new Set(teacherSchedules.map(s => s.departmentId?.name).filter(Boolean))];
 
   // Calculate statistics
   const activeAssignments = assignments.filter(a => new Date(a.dueDate) >= new Date()).length;
@@ -267,6 +294,8 @@ const AssignmentsPage = () => {
               setFilters={setFilters}
               courses={uniqueCourses}
               departments={uniqueDepartments}
+              courseNameMap={courseNameMap}
+              departmentNameMap={departmentNameMap}
             />
 
             {/* Assignments List */}
@@ -306,6 +335,8 @@ const AssignmentsPage = () => {
                     assignment={assignment}
                     onUpdate={handleUpdateAssignment}
                     onDelete={handleDeleteAssignment}
+                    courseNameMap={courseNameMap}
+                    departmentNameMap={departmentNameMap}
                   />
                 ))}
               </div>

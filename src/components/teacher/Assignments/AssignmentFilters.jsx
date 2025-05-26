@@ -1,6 +1,6 @@
 import React from 'react';
 
-const AssignmentFilters = ({ filters, setFilters, courses, departments }) => {
+const AssignmentFilters = ({ filters, setFilters, courses, departments, courseNameMap, departmentNameMap }) => {
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
       ...prev,
@@ -26,9 +26,9 @@ const AssignmentFilters = ({ filters, setFilters, courses, departments }) => {
   const getFilterDisplayName = (filterType, value) => {
     switch (filterType) {
       case 'course':
-        return `Course: ${value}`;
+        return `Course: ${courseNameMap.get(value) || value}`;
       case 'department':
-        return `Department: ${value}`;
+        return `Department: ${departmentNameMap.get(value) || value}`;
       case 'status':
         return `Status: ${value.charAt(0).toUpperCase() + value.slice(1)}`;
       default:
@@ -65,9 +65,9 @@ const AssignmentFilters = ({ filters, setFilters, courses, departments }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="all">All Courses</option>
-            {courses?.map((course, index) => (
-              <option key={index} value={course}>
-                {course}
+            {courses?.map((courseId) => (
+              <option key={courseId} value={courseId}>
+                {courseNameMap.get(courseId)}
               </option>
             ))}
           </select>
@@ -84,9 +84,9 @@ const AssignmentFilters = ({ filters, setFilters, courses, departments }) => {
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="all">All Departments</option>
-            {departments?.map((department, index) => (
-              <option key={index} value={department}>
-                {department}
+            {departments?.map((departmentId) => (
+              <option key={departmentId} value={departmentId}>
+                {departmentNameMap.get(departmentId)}
               </option>
             ))}
           </select>

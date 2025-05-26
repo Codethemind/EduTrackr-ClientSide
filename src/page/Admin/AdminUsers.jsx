@@ -40,6 +40,7 @@ const AdminUserManagement = () => {
       const admins = adminRes.data.data || [];
       const teachers = teacherRes.data.data || [];
       const students = studentRes.data.data || [];
+console.log('sds',admins,teachers,students)
 
       setUsers([...admins, ...teachers, ...students]);
       setError(null);
@@ -98,15 +99,21 @@ const AdminUserManagement = () => {
   };
 
   const handleConfirmDelete = async (id) => {
-    if (!selectedUser) return;
-    try {
-      setUsers((prevUsers) => prevUsers.filter((u) => u.id !== selectedUser.id));
-      handleCloseModal();
-      
-    } catch (err) {
-      console.error('Error deleting user:', err);
-    }
-  };
+  if (!selectedUser) return;
+  try {
+    setUsers((prevUsers) =>
+      prevUsers.filter((u) => {
+        // Check for either `id` or `_id` to handle both cases
+        const userId = u.id || u._id;
+        const selectedUserId = selectedUser.id || selectedUser._id;
+        return userId !== selectedUserId;
+      })
+    );
+    handleCloseModal();
+  } catch (err) {
+    console.error('Error deleting user:', err);
+  }
+};
 
   const handleSaveUser = async (userData) => {
     try {

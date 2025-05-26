@@ -4,8 +4,6 @@ import Sidebar from '../../components/admin/Commen/Sidebar';
 import Header from '../../components/admin/Commen/Header';
 import ScheduleForm from '../../components/admin/schedule/ScheduleForm';
 import ScheduleTable from '../../components/admin/schedule/ScheduleTable';
-import DepartmentSelector from '../../components/admin/schedule/DepartmentSelector';
-import DepartmentSchedule from '../../components/admin/schedule/DepartmentSchedule';
 import WeeklyCalendarView from '../../components/admin/schedule/WeeklyCalendarView';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { ListFilter, Calendar, Grid3X3 } from 'lucide-react';
@@ -15,81 +13,9 @@ const AdminSchedule = () => {
   const [viewMode, setViewMode] = useState('table');
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [schedules, setSchedules] = useState([]);
-  const [departments, setDepartments] = useState([
-    { id: 1, name: 'Computer Science', courseCount: 8 },
-    { id: 2, name: 'Business Administration', courseCount: 6 },
-    { id: 3, name: 'Engineering', courseCount: 10 },
-    { id: 4, name: 'Arts & Humanities', courseCount: 7 }
-  ]);
+  const [departments, setDepartments] = useState([]);
 
-  // Load schedules (mock data for demonstration)
-  useEffect(() => {
-    // This would be replaced with an actual API call
-    const mockSchedules = [
-      {
-        id: 1,
-        departmentName: 'Computer Science',
-        courseCode: 'CS101',
-        courseName: 'Introduction to Programming',
-        teacherName: 'Dr. Johnson',
-        day: 'Monday',
-        startTime: '09:00',
-        endTime: '10:30',
-        roomName: 'Room 101',
-        semester: 'Spring 2025'
-      },
-      {
-        id: 2,
-        departmentName: 'Computer Science',
-        courseCode: 'CS201',
-        courseName: 'Data Structures',
-        teacherName: 'Prof. Williams',
-        day: 'Wednesday',
-        startTime: '13:00',
-        endTime: '14:30',
-        roomName: 'Lab 201',
-        semester: 'Spring 2025'
-      },
-      {
-        id: 3,
-        departmentName: 'Business Administration',
-        courseCode: 'BA120',
-        courseName: 'Marketing 101',
-        teacherName: 'Dr. Smith',
-        day: 'Tuesday',
-        startTime: '11:00',
-        endTime: '12:30',
-        roomName: 'Room 102',
-        semester: 'Spring 2025'
-      },
-      {
-        id: 4,
-        departmentName: 'Engineering',
-        courseCode: 'EN220',
-        courseName: 'Thermodynamics',
-        teacherName: 'Prof. Johnson',
-        day: 'Thursday',
-        startTime: '10:00',
-        endTime: '11:30',
-        roomName: 'Lab 301',
-        semester: 'Spring 2025'
-      },
-      {
-        id: 5,
-        departmentName: 'Arts & Humanities',
-        courseCode: 'HU110',
-        courseName: 'World Literature',
-        teacherName: 'Dr. Williams',
-        day: 'Friday',
-        startTime: '14:00',
-        endTime: '15:30',
-        roomName: 'Room 201',
-        semester: 'Spring 2025'
-      }
-    ];
-    
-    setSchedules(mockSchedules);
-  }, []);
+  
 
   // Handle adding a new schedule
   const handleScheduleAdded = (newSchedule) => {
@@ -148,10 +74,6 @@ const AdminSchedule = () => {
                     <ListFilter size={16} className="mr-2" />
                     Table View
                   </TabsTrigger>
-                  <TabsTrigger value="department" className="data-[state=active]:bg-white">
-                    <Grid3X3 size={16} className="mr-2" />
-                    Department View
-                  </TabsTrigger>
                   <TabsTrigger value="weekly" className="data-[state=active]:bg-white">
                     <Calendar size={16} className="mr-2" />
                     Weekly View
@@ -169,17 +91,6 @@ const AdminSchedule = () => {
           {/* Different View Modes */}
           {viewMode === 'table' && (
             <ScheduleTable />
-          )}
-          
-          {viewMode === 'department' && (
-            <>
-              <DepartmentSelector 
-                departments={departments}
-                selectedDepartment={selectedDepartment}
-                onDepartmentChange={setSelectedDepartment}
-              />
-              <DepartmentSchedule department={selectedDepartment} />
-            </>
           )}
           
           {viewMode === 'weekly' && (

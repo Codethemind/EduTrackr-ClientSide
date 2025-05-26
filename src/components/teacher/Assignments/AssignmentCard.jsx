@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
+  console.log(assignment)
   const [showDetails, setShowDetails] = useState(false);
   const [showSubmissions, setShowSubmissions] = useState(false);
 
@@ -72,22 +73,16 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
             </h3>
             <div className="flex items-center space-x-3 text-sm text-gray-600">
               <span className="font-medium text-blue-600">
-                {assignment.courseId?.name} ({assignment.courseId?.code})
+                {assignment.courseName} ({assignment.courseId?.code})
               </span>
               <span>•</span>
-              <span>{assignment.departmentId?.name}</span>
+              <span>{assignment.departmentName}</span>
             </div>
           </div>
           <div className="ml-4 flex items-center space-x-2">
             {getStatusBadge()}
-            {/* Menu dropdown */}
-            <div className="relative">
-              <button className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"></path>
-                </svg>
-              </button>
-            </div>
+           
+            
           </div>
         </div>
 

@@ -34,15 +34,12 @@ const StudentAssignmentsPage = () => {
       if (!studentId || !accessToken) return;
 
       try {
-        // First, get student's department information
         const studentResponse = await axios.get(`/api/students/${studentId}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
 
         if (studentResponse.data.success) {
           const student = studentResponse.data.data;
-          
-          // Then fetch schedules for student's department
           if (student.departmentId) {
             const schedulesResponse = await axios.get(`/api/schedules/department/${student.departmentId}`, {
               headers: { Authorization: `Bearer ${accessToken}` }
@@ -71,7 +68,6 @@ const StudentAssignmentsPage = () => {
 
       setIsLoading(true);
       try {
-        // First, get student's department information
         const studentResponse = await axios.get(`/api/students/${studentId}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
@@ -79,14 +75,19 @@ const StudentAssignmentsPage = () => {
         if (studentResponse.data.success) {
           const student = studentResponse.data.data;
           
-          // Then fetch assignments for student's department
           if (student.departmentId) {
             const assignmentsResponse = await axios.get(`/api/assignments/department/${student.departmentId}`, {
               headers: { Authorization: `Bearer ${accessToken}` }
             });
             
             if (assignmentsResponse.data.success) {
-              setAssignments(assignmentsResponse.data.data);
+              // Map assignments to include hasSubmitted based on submissions array
+              const updatedAssignments = assignmentsResponse.data.data.map(assignment => ({
+                ...assignment,
+                hasSubmitted: assignment.submissions?.length > 0,
+                submissions: assignment.submissions || [] // Ensure submissions is always an array
+              }));
+              setAssignments(updatedAssignments);
             } else {
               toast.error('Failed to load assignments');
             }
@@ -107,26 +108,17 @@ const StudentAssignmentsPage = () => {
   const handleSubmitAssignment = async (assignmentId, submissionData) => {
     try {
       const formData = new FormData();
-      
-      // Basic required fields
       formData.append('studentId', studentId);
       formData.append('studentName', `${authState.user.firstname} ${authState.user.lastname}`.trim());
-      
-      // Validation fields
       formData.append('hasSubmissionText', String(!!submissionData.submissionText?.trim()));
       formData.append('fileCount', String(submissionData.files?.length || 0));
 
-      // Handle text submission
       if (submissionData.submissionText?.trim()) {
         formData.append('submissionText', submissionData.submissionText.trim());
       }
 
-      // Handle files
       if (submissionData.files?.length > 0) {
-        // Append file names as a JSON array
         formData.append('fileNames', JSON.stringify(submissionData.files.map(f => f.name)));
-        
-        // Append each file
         submissionData.files.forEach(file => {
           formData.append('files', file);
         });
@@ -144,11 +136,14 @@ const StudentAssignmentsPage = () => {
       );
 
       if (response.data.success) {
-        // Update the assignment in the local state to reflect the new submission
         setAssignments(prev => 
           prev.map(assignment => 
             assignment._id === assignmentId 
-              ? { ...assignment, hasSubmitted: true, submission: response.data.data }
+              ? { 
+                  ...assignment, 
+                  hasSubmitted: true, 
+                  submissions: [response.data.data, ...(assignment.submissions || [])]
+                }
               : assignment
           )
         );
@@ -156,23 +151,11 @@ const StudentAssignmentsPage = () => {
         setSelectedAssignment(null);
         toast.success('Assignment submitted successfully!');
       } else {
-        console.error('Server returned error:', response.data);
         toast.error(response.data.message || 'Failed to submit assignment');
       }
     } catch (error) {
       console.error('Error submitting assignment:', error);
-      if (error.response) {
-        console.error('Error response data:', error.response.data);
-        console.error('Error response status:', error.response.status);
-        console.error('Error response headers:', error.response.headers);
-        toast.error(error.response.data.message || 'Failed to submit assignment');
-      } else if (error.request) {
-        console.error('Error request:', error.request);
-        toast.error('No response from server. Please try again.');
-      } else {
-        console.error('Error message:', error.message);
-        toast.error('Failed to submit assignment');
-      }
+      toast.error(error.response?.data?.message || 'Failed to submit assignment');
     }
   };
 
@@ -198,13 +181,13 @@ const StudentAssignmentsPage = () => {
       
       switch (filters.status) {
         case 'pending':
-          return !assignment.hasSubmitted && dueDate >= now;
+          return !assignment.submissions?.length && dueDate >= now;
         case 'submitted':
-          return assignment.hasSubmitted;
+          return assignment.submissions?.length > 0;
         case 'overdue':
-          return !assignment.hasSubmitted && dueDate < now;
+          return !assignment.submissions?.length && dueDate < now;
         case 'upcoming':
-          return !assignment.hasSubmitted && dueDate >= now;
+          return !assignment.submissions?.length && dueDate >= now;
         default:
           return true;
       }
@@ -218,29 +201,24 @@ const StudentAssignmentsPage = () => {
         return new Date(b.createdAt) - new Date(a.createdAt);
       case 'title':
         return a.title.localeCompare(b.title);
-      case 'status':
-        // Sort by submission status
-        if (a.hasSubmitted && !b.hasSubmitted) return 1;
-        if (!a.hasSubmitted && b.hasSubmitted) return -1;
-        return 0;
       default:
         return 0;
     }
   });
 
   // Get unique courses and departments from schedules
-  const uniqueCourses = [...new Set(studentSchedules.map(s => s.courseId?.name).filter(Boolean))];
-  const uniqueDepartments = [...new Set(studentSchedules.map(s => s.departmentId?.name).filter(Boolean))];
+  const uniqueCourses = [...new Set(studentSchedules.map(s => s.courseId).filter(Boolean))];
+  const uniqueDepartments = [...new Set(studentSchedules.map(s => s.departmentId).filter(Boolean))];
 
   // Calculate statistics
-  const pendingAssignments = assignments.filter(a => !a.hasSubmitted && new Date(a.dueDate) >= new Date()).length;
-  const submittedAssignments = assignments.filter(a => a.hasSubmitted).length;
-  const overdueAssignments = assignments.filter(a => !a.hasSubmitted && new Date(a.dueDate) < new Date()).length;
+  const pendingAssignments = assignments.filter(a => !a.submissions?.length && new Date(a.dueDate) >= new Date()).length;
+  const submittedAssignments = assignments.filter(a => a.submissions?.length > 0).length;
+  const overdueAssignments = assignments.filter(a => !a.submissions?.length && new Date(a.dueDate) < new Date()).length;
   const upcomingDeadlines = assignments.filter(a => {
     const dueDate = new Date(a.dueDate);
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-    return !a.hasSubmitted && dueDate <= threeDaysFromNow && dueDate >= new Date();
+    return !a.submissions?.length && dueDate <= threeDaysFromNow && dueDate >= new Date();
   }).length;
 
   return (

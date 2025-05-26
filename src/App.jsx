@@ -18,8 +18,6 @@ import TeacherDashboard from './page/teacher/TeacherDashboard';
 import TeacherProfile from './page/teacher/TeacherProfile';
 import AssignmentsPage from './page/teacher/AssignmentsPage';
 import ClassesPage from './page/teacher/ClassesPage';
-import CreateClassPage from './page/teacher/CreateClassPage';
-import EditClassPage from './page/teacher/EditClassPage';
 import StudentsPage from './page/teacher/StudentsPage';
 import StudentDetailsPage from './page/teacher/StudentDetailsPage';
 import AddGrade from './page/teacher/AddGrade'
@@ -87,8 +85,6 @@ const App = () => {
           <Route path="/teacher/profile" element={<TeacherProfile />} />
           <Route path="/teacher/assignments" element={<AssignmentsPage />} />
           <Route path="/teacher/my-classes" element={<ClassesPage />} />
-          <Route path="/teacher/my-classes/create" element={<CreateClassPage />} />
-          <Route path="/teacher/my-classes/:id/edit" element={<EditClassPage />} />
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
           <Route path="/teacher/students/:id" element={<StudentDetailsPage />} />

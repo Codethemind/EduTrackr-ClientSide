@@ -1,4 +1,3 @@
-// components/admin/schedule/ScheduleTable.jsx
 import React, { useState, useEffect } from 'react';
 import { Search, Edit, Trash2, Filter } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -15,35 +14,50 @@ const ScheduleTable = () => {
   const [filters, setFilters] = useState({
     department: '',
     day: '',
-    semester: ''
   });
   const [departments, setDepartments] = useState([]);
+  const [semesters, setSemesters] = useState([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  
-  const daysOfWeek = [
-    'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
-  ];
-  
-  const semesters = ['Spring 2025', 'Fall 2025', 'Summer 2025'];
 
-  // Fetch schedules and departments
+  const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Fetch schedules, departments, and semesters
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
         // Fetch schedules
         const response = await dispatch(fetchAllSchedules()).unwrap();
-        console.log('Schedules response:', response);
+        console.log('Schedules response:', response); // Debug response
+
+        // Ensure response is an array
+        const schedulesArray = Array.isArray(response)
+          ? response
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
         
+        if (!schedulesArray.length) {
+          console.warn('No schedules found in response');
+        }
+
         // Fetch departments
         const deptResponse = await axios.get('/api/departments');
         console.log('Departments response:', deptResponse.data);
         if (deptResponse.data.success) {
           setDepartments(deptResponse.data.data);
         }
+
+        // Derive semesters from schedules for EditScheduleModal
+        const uniqueSemesters = [
+          ...new Set(
+            schedulesArray.map((schedule) => schedule.courseId?.semester).filter(Boolean)
+          ),
+        ].sort((a, b) => a - b);
+        setSemesters(uniqueSemesters.length > 0 ? uniqueSemesters : [1, 2, 3, 4, 5, 6, 7, 8]);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast.error('Failed to load data');
@@ -83,30 +97,28 @@ const ScheduleTable = () => {
   // Handle successful edit
   const handleEditSuccess = () => {
     handleEditModalClose();
-    // Refresh schedules
     dispatch(fetchAllSchedules());
   };
-  
+
   // Handle search
   const handleSearch = (e) => {
     setSearchTerm(e.target.value);
   };
-  
+
   // Handle filter change
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
-  
+
   // Clear all filters
   const clearFilters = () => {
     setFilters({
       department: '',
       day: '',
-      semester: ''
     });
     setSearchTerm('');
   };
@@ -116,30 +128,25 @@ const ScheduleTable = () => {
     if (!Array.isArray(schedules)) return;
 
     let result = [...schedules];
-    console.log('result', result);
 
     // Department filter
     if (filters.department) {
-      result = result.filter(s => s.departmentId?._id === filters.department);
+      result = result.filter((s) => s.departmentId?._id === filters.department);
     }
 
     // Day filter
     if (filters.day) {
-      result = result.filter(s => s.day === filters.day);
-    }
-
-    // Semester filter
-    if (filters.semester) {
-      result = result.filter(s => s.semester === filters.semester);
+      result = result.filter((s) => s.day === filters.day);
     }
 
     // Search filter
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
-      result = result.filter(s =>
-        s.courseId?.name?.toLowerCase().includes(term) ||
-        s.courseId?.code?.toLowerCase().includes(term) ||
-        `${s.teacherId?.firstname} ${s.teacherId?.lastname}`.toLowerCase().includes(term)
+      result = result.filter(
+        (s) =>
+          s.courseId?.name?.toLowerCase().includes(term) ||
+          s.courseId?.code?.toLowerCase().includes(term) ||
+          `${s.teacherId?.firstname} ${s.teacherId?.lastname}`.toLowerCase().includes(term)
       );
     }
 
@@ -168,7 +175,7 @@ const ScheduleTable = () => {
         <div className="p-6 border-b border-gray-200">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <h2 className="text-xl font-semibold">Class Schedules</h2>
-            
+
             <div className="flex flex-col sm:flex-row w-full md:w-auto gap-3">
               {/* Search */}
               <div className="relative flex-grow">
@@ -183,7 +190,7 @@ const ScheduleTable = () => {
                   className="pl-10 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                 />
               </div>
-              
+
               {/* Filter Button */}
               <button
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -194,11 +201,11 @@ const ScheduleTable = () => {
               </button>
             </div>
           </div>
-          
+
           {/* Filter Panel */}
           {isFilterOpen && (
             <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {/* Department Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -211,12 +218,14 @@ const ScheduleTable = () => {
                     className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   >
                     <option value="">All Departments</option>
-                    {departments.map(dept => (
-                      <option key={dept._id} value={dept._id}>{dept.name}</option>
+                    {departments.map((dept) => (
+                      <option key={dept._id} value={dept._id}>
+                        {dept.name}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
+
                 {/* Day Filter */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -229,30 +238,14 @@ const ScheduleTable = () => {
                     className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
                   >
                     <option value="">All Days</option>
-                    {daysOfWeek.map(day => (
-                      <option key={day} value={day}>{day}</option>
+                    {daysOfWeek.map((day) => (
+                      <option key={day} value={day}>
+                        {day}
+                      </option>
                     ))}
                   </select>
                 </div>
-                
-                {/* Semester Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Semester
-                  </label>
-                  <select
-                    name="semester"
-                    value={filters.semester}
-                    onChange={handleFilterChange}
-                    className="block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-blue-500"
-                  >
-                    <option value="">All Semesters</option>
-                    {semesters.map(sem => (
-                      <option key={sem} value={sem}>{sem}</option>
-                    ))}
-                  </select>
-                </div>
-                
+
                 {/* Clear Filters */}
                 <div className="flex items-end">
                   <button
@@ -266,7 +259,7 @@ const ScheduleTable = () => {
             </div>
           )}
         </div>
-        
+
         {/* Table */}
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 mt-4">
@@ -277,6 +270,7 @@ const ScheduleTable = () => {
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Teacher</th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Day</th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Time</th>
+                <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Semester</th>
                 <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">Actions</th>
               </tr>
             </thead>
@@ -289,7 +283,10 @@ const ScheduleTable = () => {
                     {schedule.teacherId?.firstname} {schedule.teacherId?.lastname}
                   </td>
                   <td className="px-4 py-2 text-sm text-gray-900">{schedule.day}</td>
-                  <td className="px-4 py-2 text-sm text-gray-900">{schedule.startTime} - {schedule.endTime}</td>
+                  <td className="px-4 py-2 text-sm text-gray-900">
+                    {schedule.startTime} - {schedule.endTime}
+                  </td>
+                  <td className="px-4 py-2 text-sm text-gray-900">{schedule.courseId?.semester || 'N/A'}</td>
                   <td className="px-4 py-2 text-sm text-gray-900">
                     <div className="flex items-center space-x-2">
                       <button
@@ -314,7 +311,7 @@ const ScheduleTable = () => {
               ))}
               {filteredSchedules.length === 0 && (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
                     No schedules found
                   </td>
                 </tr>
@@ -332,6 +329,7 @@ const ScheduleTable = () => {
           onClose={handleEditModalClose}
           onSuccess={handleEditSuccess}
           departments={departments}
+          semesters={semesters}
         />
       )}
     </>

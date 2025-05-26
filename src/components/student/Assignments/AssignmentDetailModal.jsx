@@ -2,10 +2,10 @@ import React from 'react';
 
 const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission }) => {
   if (!isOpen || !assignment) return null;
-
+console.log(assignment)
   const dueDate = new Date(assignment.dueDate);
   const now = new Date();
-  const isOverdue = dueDate < now && !assignment.hasSubmitted;
+  const isOverdue = dueDate < now && !assignment.submissions?.length;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -15,10 +15,11 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
           <div>
             <h2 className="text-2xl font-bold text-gray-900">{assignment.title}</h2>
             <p className="text-gray-600 mt-1">
-              {assignment.courseId?.name} • {assignment.departmentId?.name}
+              {assignment.courseName} • {assignment.departmentName}
             </p>
           </div>
           <button
+            aria-label="Close modal"
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
@@ -41,22 +42,20 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                     </svg>
                     <span className="text-gray-700">
-                      {assignment.teacherId?.name || assignment.teacherId?.firstName + ' ' + assignment.teacherId?.lastName}
+                      {assignment.teacherId?.username || 'Unknown Teacher'}
                     </span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3a1 1 0 011-1h6a1 1 0 011 1v4m-7 0h8m-8 0l-1 1m9-1l1 1m-5 7v6a1 1 0 01-1 1H9a1 1 0 01-1-1v-6m4-4V8a1 1 0 00-1-1h-2a1 1 0 00-1 1v1m4 0V8a1 1 0 00-1-1H9a1 1 0 00-1 1v1"></path>
                     </svg>
-                    <span className="text-gray-700">
-                      {assignment.type?.charAt(0).toUpperCase() + assignment.type?.slice(1) || 'Assignment'}
-                    </span>
+                    <span className="text-gray-700">Assignment</span>
                   </div>
                   <div className="flex items-center text-sm">
                     <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414A1 1 0 0120 8.414V17a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2v-5"></path>
                     </svg>
-                    <span className="text-gray-700">{assignment.maxPoints} points</span>
+                    <span className="text-gray-700">{assignment.maxMarks} points</span>
                   </div>
                 </div>
               </div>
@@ -90,9 +89,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
           {/* Description */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
-            <div className="prose max-w-none">
-              <p className="text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
-            </div>
+            <p className="text-gray-700 whitespace-pre-wrap">{assignment.description}</p>
           </div>
 
           {/* Instructions */}
@@ -106,7 +103,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
           )}
 
           {/* Attachments */}
-          {assignment.attachments && assignment.attachments.length > 0 && (
+          {assignment.attachments?.length > 0 && (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Attachments</h3>
               <div className="space-y-2">
@@ -126,7 +123,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
           )}
 
           {/* Submission Status */}
-          {assignment.hasSubmitted ? (
+          {assignment.submissions?.length > 0 ? (
             <div className="mb-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-3">Your Submission</h3>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4">
@@ -137,17 +134,17 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                   <span className="text-green-800 font-medium">Submitted</span>
                 </div>
                 <p className="text-green-700 text-sm">
-                  Submitted on {new Date(assignment.submission?.submittedAt).toLocaleDateString()} at{' '}
-                  {new Date(assignment.submission?.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  Submitted on {new Date(assignment.submissions[0].submittedAt).toLocaleDateString()} at{' '}
+                  {new Date(assignment.submissions[0].submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
-                {assignment.submission?.grade !== undefined && (
+                {assignment.submissions[0].grade !== undefined && (
                   <div className="mt-2 p-3 bg-white rounded border">
                     <p className="text-sm font-medium text-gray-700">
-                      Grade: {assignment.submission.grade}/{assignment.maxPoints}
+                      Grade: {assignment.submissions[0].grade}/{assignment.maxMarks}
                     </p>
-                    {assignment.submission.feedback && (
+                    {assignment.submissions[0].feedback && (
                       <p className="text-sm text-gray-600 mt-1">
-                        Feedback: {assignment.submission.feedback}
+                        Feedback: {assignment.submissions[0].feedback}
                       </p>
                     )}
                   </div>
@@ -179,7 +176,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
           >
             Close
           </button>
-          {!assignment.hasSubmitted && (
+          {assignment.submissions?.length === 0 && (assignment.allowLateSubmission || !isOverdue) && (
             <button
               onClick={() => {
                 onClose();
