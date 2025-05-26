@@ -63,20 +63,18 @@ const TeacherLogin = () => {
     try {
       setLoading(true);
       
-      const response = await axios.post('/auth/loginTeacher', formData);
+      const response = await axios.post('/auth/loginTeacher', formData,{
+  withCredentials: true,
+});
       const { accessToken, teacher } = response.data.data;
-      // Save token to localStorage if rememberMe is checked
-      if (formData.rememberMe) {
-        localStorage.setItem('accessToken', accessToken);
-      } else {
-        // For session only
-        sessionStorage.setItem('accessToken', accessToken);
-      }
-      
-      // Update Redux store
+
+      // Update Redux store with token and user data
       dispatch(loginSuccess({
         accessToken,
-        user: teacher,
+        user: {
+          ...teacher,
+          role: 'teacher' // Ensure role is lowercase to match backend expectations
+        }
       }));
       
       // Display success message
@@ -86,25 +84,27 @@ const TeacherLogin = () => {
       const from = location.state?.from?.pathname || '/teacher/dashboard';
       navigate(from, { replace: true });
   
-  } catch (err) {
-  console.log("Caught error:", err);
-  setLoading(false);
-  if (err.response) {
-    const status = err.response.status;
-    const message = err.response.data?.message || 'Login failed';
-    if (status === 401) {
-      toast.error(message);
-    } else if (status === 500) {
-      toast.error('Server error. Please try again later.');
-    } else {
-      toast.error(message);
+    } catch (err) {
+      console.log("Caught error:", err);
+      setLoading(false);
+      if (err.response) {
+        const status = err.response.status;
+        const message = err.response.data?.message || 'Login failed';
+        if (status === 401) {
+          toast.error(message);
+        } else if (status === 500) {
+          toast.error('Server error. Please try again later.');
+        } else {
+          toast.error(message);
+        }
+      } else if (err.request) {
+        toast.error('No response from server. Please try again.');
+      } else {
+        toast.error(err.message || 'Something went wrong.');
+      }
+    } finally {
+      setLoading(false);
     }
-  } else if (err.request) {
-    toast.error('No response from server. Please try again.');
-  } else {
-    toast.error(err.message || 'Something went wrong.');
-  }
-}
   };
 
   return (

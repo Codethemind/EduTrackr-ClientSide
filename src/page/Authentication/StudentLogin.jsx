@@ -43,7 +43,9 @@ const StudentLogin = () => {
       setError('');
       setLoading(true);
   
-      const response = await axios.post('/auth/loginStudent', formData);
+      const response = await axios.post('/auth/loginStudent', formData,{
+  withCredentials: true,
+});
       console.log(response)
       const { accessToken, student } = response.data.data;
     

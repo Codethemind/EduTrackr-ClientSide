@@ -17,21 +17,20 @@ import AdminSchedule from './page/Admin/AdminSchedule';
 import TeacherDashboard from './page/teacher/TeacherDashboard';
 import TeacherProfile from './page/teacher/TeacherProfile';
 import AssignmentsPage from './page/teacher/AssignmentsPage';
-import CreateAssignmentPage from './page/teacher/CreateAssignmentPage';
-import EditAssignmentPage from './page/teacher/EditAssignmentPage';
 import ClassesPage from './page/teacher/ClassesPage';
 import CreateClassPage from './page/teacher/CreateClassPage';
 import EditClassPage from './page/teacher/EditClassPage';
 import StudentsPage from './page/teacher/StudentsPage';
 import StudentDetailsPage from './page/teacher/StudentDetailsPage';
-import ClassAttendancePage from './page/teacher/ClassAttendancePage';
+import AddGrade from './page/teacher/AddGrade'
+
 
 // Student Components
 import StudentDashboard from './page/student/StudentDashboard';
 import StudentProfile from './page/student/Profile';
-import StudentAssignmentsPage from './page/student/AssignmentsPage';
-import AssignmentViewPage from './page/student/AssignmentViewPage';
+import StudentAssignmentsPage from './page/student/StudentAssignmentsPage';
 import StudentClassesPage from './page/student/StudentClassesPage'
+import Grade from './page/student/Grade'
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -87,15 +86,13 @@ const App = () => {
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/profile" element={<TeacherProfile />} />
           <Route path="/teacher/assignments" element={<AssignmentsPage />} />
-          <Route path="/teacher/assignments/create" element={<CreateAssignmentPage />} />
-          <Route path="/teacher/assignments/:id/edit" element={<EditAssignmentPage />} />
           <Route path="/teacher/my-classes" element={<ClassesPage />} />
           <Route path="/teacher/my-classes/create" element={<CreateClassPage />} />
           <Route path="/teacher/my-classes/:id/edit" element={<EditClassPage />} />
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
-          <Route path="/teacher/my-classes/:classId/attendance" element={<ClassAttendancePage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
           <Route path="/teacher/students/:id" element={<StudentDetailsPage />} />
+          <Route path="/teacher/grades" element={<AddGrade />} />
         </Route>
 
         {/* Protected Student Routes */}
@@ -103,8 +100,8 @@ const App = () => {
           <Route path="/student/dashboard" element={<StudentDashboard />} />
           <Route path="/student/profile" element={<StudentProfile />} />
           <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
-          <Route path="/student/assignments/:id" element={<AssignmentViewPage />} />
           <Route path="/student/classPage" element={<StudentClassesPage />} />
+          <Route path="/student/grades" element={<Grade />} />
         </Route>
 
         {/* Catch All - Redirect */}

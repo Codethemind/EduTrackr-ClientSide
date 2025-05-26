@@ -1,7 +1,4 @@
 import axios from 'axios';
-import store from '../redux/store';
-import { refreshTokenSuccess, logout } from '../redux/slices/authSlice';
-
 
 const API_BASE_URL = 'http://localhost:3000';
 

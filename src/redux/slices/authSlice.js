@@ -1,11 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
 const initialState = {
-  user: localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null,
-  accessToken: localStorage.getItem('accessToken') || null,
-  isAuthenticated: false,
-  loading: false,
-  error: null,
+  accessToken: localStorage.getItem('accessToken') || null, // Load from localStorage on init
+  user: JSON.parse(localStorage.getItem('user')) || null,
+  isAuthenticated: !!localStorage.getItem('accessToken'),
 };
 
 const authSlice = createSlice({
@@ -13,24 +11,32 @@ const authSlice = createSlice({
   initialState,
   reducers: {
     loginSuccess: (state, action) => {
-      const { accessToken, user } = action.payload;
-      state.accessToken = accessToken;
-      state.user = user || null;
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('user', JSON.stringify(user));
+      state.accessToken = action.payload.accessToken;
+      state.user = action.payload.user;
+      state.isAuthenticated = true;
+      
+      // Persist to localStorage
+      localStorage.setItem('accessToken', action.payload.accessToken);
+      localStorage.setItem('user', JSON.stringify(action.payload.user));
+    },
+    refreshTokenSuccess: (state, action) => {
+      state.accessToken = action.payload;
+      state.isAuthenticated = true;
+      
+      // Update localStorage
+      localStorage.setItem('accessToken', action.payload);
     },
     logout: (state) => {
       state.accessToken = null;
       state.user = null;
+      state.isAuthenticated = false;
+      
+      // Clear localStorage
       localStorage.removeItem('accessToken');
-    },
-    refreshTokenSuccess: (state, action) => {
-      const accessToken = action.payload;
-      state.accessToken = accessToken;
-      localStorage.setItem('accessToken', accessToken);
+      localStorage.removeItem('user');
     },
   },
 });
 
-export const { loginSuccess, logout, refreshTokenSuccess } = authSlice.actions;
+export const { loginSuccess, refreshTokenSuccess, logout } = authSlice.actions;
 export default authSlice.reducer;

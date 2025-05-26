@@ -54,7 +54,9 @@ const handleSubmit = async (e) => {
 
   try {
     setLoading(true);
-    const response = await axios.post('auth/loginAdmin', formData);
+    const response = await axios.post('auth/loginAdmin', formData,{
+  withCredentials: true,
+});
     const { accessToken, admin } = response.data.data;
 
     if (formData.rememberMe) {
