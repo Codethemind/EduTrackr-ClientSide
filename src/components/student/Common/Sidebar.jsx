@@ -35,12 +35,12 @@ const Sidebar = () => {
       { name: 'Dashboard', icon: <MdDashboard className="w-5 h-5" />, path: '/student/dashboard' },
       { name: 'My Courses', icon: <MdBook className="w-5 h-5" />, path: '/student/classPage' },
       { name: 'Assignments', icon: <MdAssignment className="w-5 h-5" />, path: '/student/assignments' },
-      { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/student/grades' },
+      // { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/student/grades' },
     ]},
-    { section: 'RESOURCES', items: [
-      { name: 'Course Materials', icon: <MdLibraryBooks className="w-5 h-5" />, path: '/student/materials' },
+    // { section: 'RESOURCES', items: [
+    //   { name: 'Course Materials', icon: <MdLibraryBooks className="w-5 h-5" />, path: '/student/materials' },
       
-    ]},
+    // ]},
     { section: 'COMMUNICATION', items: [
       { name: 'Messages', icon: <MdMessage className="w-5 h-5" />, path: '/student/messages' },
     

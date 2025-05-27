@@ -41,53 +41,7 @@ const AssignmentFilters = ({
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
       <div className="flex flex-wrap gap-4">
-        {/* Course Filter */}
-        <div className="flex-1 min-w-[200px]">
-          <label
-            htmlFor="course-filter"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Course
-          </label>
-          <select
-            id="course-filter"
-            aria-label="Filter by course"
-            value={filters.course}
-            onChange={(e) => handleFilterChange('course', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Courses</option>
-            {courses.map((course) => (
-              <option key={course._id || `course-${course.name}`} value={course._id}>
-                {course.name || 'Unknown Course'}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Department Filter */}
-        <div className="flex-1 min-w-[200px]">
-          <label
-            htmlFor="department-filter"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Department
-          </label>
-          <select
-            id="department-filter"
-            aria-label="Filter by department"
-            value={filters.department}
-            onChange={(e) => handleFilterChange('department', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="all">All Departments</option>
-            {departments.map((department) => (
-              <option key={department._id || `dept-${department.name}`} value={department._id}>
-                {department.name || 'Unknown Department'}
-              </option>
-            ))}
-          </select>
-        </div>
+      
 
         {/* Status Filter */}
         <div className="flex-1 min-w-[200px]">

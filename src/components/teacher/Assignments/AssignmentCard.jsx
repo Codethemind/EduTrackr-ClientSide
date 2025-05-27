@@ -73,7 +73,7 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
             </h3>
             <div className="flex items-center space-x-3 text-sm text-gray-600">
               <span className="font-medium text-blue-600">
-                {assignment.courseName} ({assignment.courseId?.code})
+                {assignment.courseName} 
               </span>
               <span>•</span>
               <span>{assignment.departmentName}</span>

@@ -61,6 +61,7 @@ const AssignmentsPage = () => {
         });
         
         if (response.data.success) {
+          console.log('Raw Assignments:', JSON.stringify(response.data.data, null, 2)); // Debug log
           setAssignments(response.data.data);
         } else {
           toast.error('Failed to load assignments');
@@ -148,8 +149,16 @@ const AssignmentsPage = () => {
   const departmentNameMap = new Map(teacherSchedules.map(s => [s.departmentId?._id, s.departmentId?.name]));
 
   // Get unique courses and departments from schedules
-  const uniqueCourses = [...new Set(teacherSchedules.map(s => s.courseId?._id).filter(Boolean))];
-  const uniqueDepartments = [...new Set(teacherSchedules.map(s => s.departmentId?._id).filter(Boolean))];
+  const uniqueCourses = teacherSchedules.length
+    ? [...new Set(teacherSchedules.map(s => s.courseId?._id).filter(Boolean))]
+    : [];
+  const uniqueDepartments = teacherSchedules.length
+    ? [...new Set(teacherSchedules.map(s => s.departmentId?._id).filter(Boolean))]
+    : [];
+
+  // Debug unique courses and departments
+  console.log('Unique Courses:', uniqueCourses);
+  console.log('Unique Departments:', uniqueDepartments);
 
   // Filter and sort assignments
   const filteredAssignments = assignments.filter(assignment => {
@@ -158,13 +167,19 @@ const AssignmentsPage = () => {
     const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
     // Course filter
-    if (filters.course !== 'all' && assignment.courseId?._id !== filters.course) {
-      return false;
+    if (filters.course !== 'all') {
+      const assignmentCourseId = typeof assignment.courseId === 'object' ? assignment.courseId?._id : assignment.courseId;
+      if (assignmentCourseId !== filters.course) {
+        return false;
+      }
     }
 
     // Department filter
-    if (filters.department !== 'all' && assignment.departmentId?._id !== filters.department) {
-      return false;
+    if (filters.department !== 'all') {
+      const assignmentDepartmentId = typeof assignment.departmentId === 'object' ? assignment.departmentId?._id : assignment.departmentId;
+      if (assignmentDepartmentId !== filters.department) {
+        return false;
+      }
     }
 
     // Status filter
@@ -197,6 +212,11 @@ const AssignmentsPage = () => {
         return 0;
     }
   });
+
+  // Debug filters
+  useEffect(() => {
+    console.log('Filters:', filters);
+  }, [filters]);
 
   // Calculate statistics
   const activeAssignments = assignments.filter(a => new Date(a.dueDate) >= new Date()).length;

@@ -19,7 +19,6 @@ import TeacherProfile from './page/teacher/TeacherProfile';
 import AssignmentsPage from './page/teacher/AssignmentsPage';
 import ClassesPage from './page/teacher/ClassesPage';
 import StudentsPage from './page/teacher/StudentsPage';
-import StudentDetailsPage from './page/teacher/StudentDetailsPage';
 import AddGrade from './page/teacher/AddGrade'
 
 
@@ -87,7 +86,6 @@ const App = () => {
           <Route path="/teacher/my-classes" element={<ClassesPage />} />
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
-          <Route path="/teacher/students/:id" element={<StudentDetailsPage />} />
           <Route path="/teacher/grades" element={<AddGrade />} />
         </Route>
 

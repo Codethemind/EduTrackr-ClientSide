@@ -59,50 +59,51 @@ const StudentAssignmentsPage = () => {
   }, [studentId, accessToken]);
 
   // Fetch assignments for student
-  useEffect(() => {
-    const fetchAssignments = async () => {
-      if (!studentId || !accessToken) {
-        setIsLoading(false);
-        return;
-      }
+ // Fetch assignments for student
+useEffect(() => {
+  const fetchAssignments = async () => {
+    if (!studentId || !accessToken) {
+      setIsLoading(false);
+      return;
+    }
 
-      setIsLoading(true);
-      try {
-        const studentResponse = await axios.get(`/api/students/${studentId}`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+    setIsLoading(true);
+    try {
+      const studentResponse = await axios.get(`/api/students/${studentId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
 
-        if (studentResponse.data.success) {
-          const student = studentResponse.data.data;
-          
-          if (student.departmentId) {
-            const assignmentsResponse = await axios.get(`/api/assignments/department/${student.departmentId}`, {
-              headers: { Authorization: `Bearer ${accessToken}` }
-            });
-            
-            if (assignmentsResponse.data.success) {
-              // Map assignments to include hasSubmitted based on submissions array
-              const updatedAssignments = assignmentsResponse.data.data.map(assignment => ({
-                ...assignment,
-                hasSubmitted: assignment.submissions?.length > 0,
-                submissions: assignment.submissions || [] // Ensure submissions is always an array
-              }));
-              setAssignments(updatedAssignments);
-            } else {
-              toast.error('Failed to load assignments');
-            }
+      if (studentResponse.data.success) {
+        const student = studentResponse.data.data;
+
+        if (student.departmentId) {
+          const assignmentsResponse = await axios.get(`/api/assignments/department/${student.departmentId}`, {
+            headers: { Authorization: `Bearer ${accessToken}` }
+          });
+
+          if (assignmentsResponse.data.success) {
+            // Map assignments to include hasSubmitted based on current student's submissions
+            const updatedAssignments = assignmentsResponse.data.data.map(assignment => ({
+              ...assignment,
+              hasSubmitted: assignment.submissions?.some(submission => submission.studentId === studentId) || false,
+              submissions: assignment.submissions?.filter(submission => submission.studentId === studentId) || []
+            }));
+            setAssignments(updatedAssignments);
+          } else {
+            toast.error('Failed to load assignments');
           }
         }
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
-        toast.error('Failed to load assignments');
-      } finally {
-        setIsLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+      toast.error('Failed to load assignments');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    fetchAssignments();
-  }, [studentId, accessToken]);
+  fetchAssignments();
+}, [studentId, accessToken]);
 
   // Handle assignment submission
   const handleSubmitAssignment = async (assignmentId, submissionData) => {
@@ -224,9 +225,9 @@ const StudentAssignmentsPage = () => {
   return (
     <div className="flex h-screen bg-gray-50">
       <StudentSideBar />
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden ml-64">
         <Header role="student" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 ml-64">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
             {/* Header Section */}
             <div className="mb-8">
