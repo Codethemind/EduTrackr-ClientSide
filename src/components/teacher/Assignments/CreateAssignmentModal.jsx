@@ -347,13 +347,13 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="document">Document Upload</option>
-                      <option value="link">Link/URL</option>
+                      {/* <option value="link">Link/URL</option> */}
                       <option value="text">Text Submission</option>
                     </select>
                   </div>
 
                   {/* File Attachments */}
-                  <div>
+                  {/* <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Attachments (Optional)
                     </label>
@@ -367,10 +367,10 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     <p className="text-xs text-gray-500 mt-1">
                       Supported formats: PDF, DOC, DOCX, PPT, PPTX, TXT, JPG, PNG
                     </p>
-                  </div>
+                  </div> */}
 
                   {/* Group Assignment Settings */}
-                  <div className="space-y-3">
+                  {/* <div className="space-y-3">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -403,10 +403,10 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         {errors.maxGroupSize && <p className="text-red-500 text-xs mt-1">{errors.maxGroupSize}</p>}
                       </div>
                     )}
-                  </div>
+                  </div> */}
 
                   {/* Late Submission Settings */}
-                  <div className="space-y-3">
+                  {/* <div className="space-y-3">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -436,7 +436,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         />
                       </div>
                     )}
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>

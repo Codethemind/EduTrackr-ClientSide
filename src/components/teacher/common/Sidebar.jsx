@@ -15,6 +15,7 @@ import {
   MdPerson,
   MdSettings,
   MdExitToApp,
+  MdSmartToy,
 } from 'react-icons/md';
 
 const TeacherSideBar = () => {
@@ -35,6 +36,8 @@ const TeacherSideBar = () => {
     ],
     COMMUNICATION: [
       { icon: MdChat, label: 'Student Chat', path: '/teacher/chat' },
+      { icon: MdSmartToy, label: 'Ai Assistent', path: '/teacher/ai-assistant' },
+      
       { icon: MdAnnouncement, label: 'Announcements', path: '/teacher/announcements' },
     ],
     CONTENT: [

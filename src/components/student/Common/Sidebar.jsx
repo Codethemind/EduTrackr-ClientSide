@@ -42,7 +42,7 @@ const Sidebar = () => {
       
     // ]},
     { section: 'COMMUNICATION', items: [
-      { name: 'Messages', icon: <MdMessage className="w-5 h-5" />, path: '/student/messages' },
+      { name: 'Messages', icon: <MdMessage className="w-5 h-5" />, path: '/student/chat' },
     
       { name: 'AI Assistant', icon: <MdSmartToy className="w-5 h-5" />, path: '/student/ai-assistant' },
     ]},

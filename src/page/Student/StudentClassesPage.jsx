@@ -230,7 +230,7 @@ const StudentClassesPage = () => {
                                   </svg>
                                   <span className="text-gray-600">Instructor: </span>
                                   <span className="font-semibold text-blue-700 ml-1">
-                                    {schedule.teacherId?.name || 'To Be Announced'}
+                                    {schedule.teacherId?.username || 'To Be Announced'}
                                   </span>
                                 </div>
                                 
@@ -243,13 +243,13 @@ const StudentClassesPage = () => {
                               </div>
 
                               {/* Course Description (if available) */}
-                              {schedule.courseId?.description && (
+                              {/* {schedule.courseId?.description && (
                                 <div className="mt-3 pt-3 border-t border-green-200">
                                   <p className="text-xs text-gray-600 line-clamp-2">
                                     {schedule.courseId.description}
                                   </p>
                                 </div>
-                              )}
+                              )} */}
                             </div>
                           ))}
                         </div>

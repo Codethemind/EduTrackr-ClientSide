@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Header from '../../components/common/Header';
 import StudentSideBar from '../../components/student/Common/Sidebar';
-import GradeTable from '../../components/student/Grades/GradeTable';
+// import GradeTable from '../../components/student/Grades/GradeTable';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 

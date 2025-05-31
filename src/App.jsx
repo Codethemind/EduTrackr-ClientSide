@@ -20,6 +20,8 @@ import AssignmentsPage from './page/teacher/AssignmentsPage';
 import ClassesPage from './page/teacher/ClassesPage';
 import StudentsPage from './page/teacher/StudentsPage';
 import AddGrade from './page/teacher/AddGrade'
+import TeacherChattingPage from './page/teacher/ChattingPage';
+import TeacherAiAssistent from './page/teacher/AiPage'
 
 
 // Student Components
@@ -28,6 +30,8 @@ import StudentProfile from './page/student/Profile';
 import StudentAssignmentsPage from './page/student/StudentAssignmentsPage';
 import StudentClassesPage from './page/student/StudentClassesPage'
 import Grade from './page/student/Grade'
+import StudentChattingPage from './page/student/ChattingPage';
+import StudentAiAssistent from './page/student/AiPage'
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -87,6 +91,8 @@ const App = () => {
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
           <Route path="/teacher/grades" element={<AddGrade />} />
+          <Route path="/teacher/chat" element={<TeacherChattingPage />} />
+          <Route path="/teacher/ai-assistant" element={<TeacherAiAssistent />} />
         </Route>
 
         {/* Protected Student Routes */}
@@ -96,6 +102,8 @@ const App = () => {
           <Route path="/student/assignments" element={<StudentAssignmentsPage />} />
           <Route path="/student/classPage" element={<StudentClassesPage />} />
           <Route path="/student/grades" element={<Grade />} />
+          <Route path="/student/chat" element={<StudentChattingPage />} />
+          <Route path="/student/ai-assistant" element={<StudentAiAssistent />} />
         </Route>
 
         {/* Catch All - Redirect */}
