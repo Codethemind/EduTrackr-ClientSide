@@ -55,28 +55,37 @@ const ChatStudent = () => {
   useEffect(() => {
     if (!userId || !accessToken) return;
 
+    // Disconnect existing socket if any
     if (socketRef.current) {
       socketRef.current.disconnect();
     }
 
+    // Create new socket connection
     socketRef.current = io(SOCKET_URL, {
-      auth: { userId, userModel, token: accessToken },
-      transports: ['websocket', 'polling'],
+      auth: {
+        token: accessToken,
+        userId,
+        userModel
+      },
+      transports: ['websocket'],
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
+      timeout: 10000
     });
 
+    // Socket event handlers
     socketRef.current.on('connect', () => {
-      console.log('Connected to Socket.IO');
+      console.log('Socket connected');
       setSocketConnected(true);
       setError('');
-      socketRef.current.emit('join', userId);
+      // Join user's room
+      socketRef.current.emit('join', { userId, userModel });
     });
 
     socketRef.current.on('disconnect', () => {
-      console.log('Disconnected from Socket.IO');
+      console.log('Socket disconnected');
       setSocketConnected(false);
     });
 
@@ -88,34 +97,25 @@ const ChatStudent = () => {
     });
 
     socketRef.current.on('receiveMessage', (newMessage) => {
+      console.log('Received message:', newMessage);
       if (newMessage.chatId === activeChatId) {
-        setMessages((prev) => {
-          const messageExists = prev.some((msg) => msg._id === newMessage._id);
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg._id === newMessage._id);
           if (!messageExists) {
             return [...prev, newMessage];
           }
           return prev;
         });
+        scrollToBottom();
       }
-      setChatList((prev) => {
-        if (!prev) return prev;
-        const updatedChats = prev.chats.map((chat) =>
-          chat.chatId === newMessage.chatId
-            ? {
-                ...chat,
-                lastMessage: newMessage.message || newMessage.mediaUrl || '',
-                timestamp: newMessage.timestamp || new Date().toISOString(),
-              }
-            : chat
-        );
-        return { ...prev, chats: updatedChats };
-      });
+      updateChatList(newMessage);
     });
 
     socketRef.current.on('messageReaction', (updatedMessage) => {
+      console.log('Message reaction:', updatedMessage);
       if (updatedMessage.chatId === activeChatId) {
-        setMessages((prev) =>
-          prev.map((msg) =>
+        setMessages(prev =>
+          prev.map(msg =>
             msg._id === updatedMessage._id ? { ...msg, reactions: updatedMessage.reactions } : msg
           )
         );
@@ -123,33 +123,47 @@ const ChatStudent = () => {
     });
 
     socketRef.current.on('messageDeleted', (deletedMessage) => {
+      console.log('Message deleted:', deletedMessage);
       if (deletedMessage.chatId === activeChatId) {
-        setMessages((prev) => prev.filter((msg) => msg._id !== deletedMessage._id));
+        setMessages(prev => prev.filter(msg => msg._id !== deletedMessage._id));
       }
       fetchChatList();
     });
 
     socketRef.current.on('newChat', ({ chatId, contact, contactModel }) => {
+      console.log('New chat:', { chatId, contact, contactModel });
       fetchChatList();
       if (contactModel === 'Teacher') {
         setActiveChatId(chatId);
         setActiveTeacher({
           id: contact,
-          name: teachers.find((t) => t._id === contact)?.name || 'Teacher',
+          name: teachers.find(t => t._id === contact)?.name || 'Teacher'
         });
       }
     });
 
     socketRef.current.on('messageSent', (sentMessage) => {
-      console.log('Message sent confirmation:', sentMessage);
+      console.log('Message sent:', sentMessage);
+      if (sentMessage.chatId === activeChatId) {
+        setMessages(prev => {
+          const messageExists = prev.some(msg => msg._id === sentMessage._id);
+          if (!messageExists) {
+            return [...prev, sentMessage];
+          }
+          return prev;
+        });
+        scrollToBottom();
+      }
+      updateChatList(sentMessage);
     });
 
     socketRef.current.on('error', (err) => {
-      console.error('Socket.IO error:', err);
+      console.error('Socket error:', err);
       setError('Real-time messaging error');
-      toast.error(err.message || 'Socket.IO error');
+      toast.error(err.message || 'Socket error');
     });
 
+    // Cleanup on unmount
     return () => {
       if (socketRef.current) {
         socketRef.current.disconnect();
@@ -158,6 +172,23 @@ const ChatStudent = () => {
     };
   }, [userId, accessToken]);
 
+  // Update chat list with new message
+  const updateChatList = (message) => {
+    setChatList(prev => {
+      if (!prev) return prev;
+      const updatedChats = prev.chats.map(chat =>
+        chat.chatId === message.chatId
+          ? {
+              ...chat,
+              lastMessage: message.message || message.mediaUrl || '',
+              timestamp: message.timestamp || new Date().toISOString()
+            }
+          : chat
+      );
+      return { ...prev, chats: updatedChats };
+    });
+  };
+
   // Fetch teachers by department
   const fetchTeachers = async () => {
     if (!departmentId || !accessToken) return;
@@ -165,10 +196,10 @@ const ChatStudent = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/teachers`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
       const filteredTeachers = response.data.data.filter(
-        (teacher) => teacher.department === departmentId
+        teacher => teacher.department === departmentId
       );
       setTeachers(filteredTeachers);
       setError('');
@@ -188,7 +219,7 @@ const ChatStudent = () => {
     try {
       const response = await axios.get(`${API_URL}/messages/chatlist`, {
         params: { userId },
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
       setChatList(response.data.data);
       setError('');
@@ -206,10 +237,11 @@ const ChatStudent = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/messages/messages/${chatId}`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+        headers: { Authorization: `Bearer ${accessToken}` }
       });
       setMessages(response.data.data || []);
       setError('');
+      scrollToBottom();
     } catch (err) {
       console.error('Fetch messages error:', err);
       setError('Failed to fetch messages');
@@ -261,8 +293,8 @@ const ChatStudent = () => {
           const uploadResponse = await axios.post(`${API_URL}/messages/upload`, formData, {
             headers: {
               Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'multipart/form-data',
-            },
+              'Content-Type': 'multipart/form-data'
+            }
           });
           const mediaUrl = uploadResponse.data.data.url;
 
@@ -272,7 +304,13 @@ const ChatStudent = () => {
             receiverModel: 'Teacher',
             message: messageText,
             mediaUrl,
-            replyTo: replyTo?._id,
+            replyTo: replyTo?._id
+          }, (response) => {
+            if (response.error) {
+              console.error('Socket sendMedia error:', response.error);
+              toast.error(response.error);
+              setMessage(messageText);
+            }
           });
         } catch (err) {
           console.error('Upload error:', err);
@@ -285,10 +323,17 @@ const ChatStudent = () => {
           receiver: activeTeacher.id,
           receiverModel: 'Teacher',
           message: messageText,
-          replyTo: replyTo?._id,
+          replyTo: replyTo?._id
+        }, (response) => {
+          if (response.error) {
+            console.error('Socket sendMessage error:', response.error);
+            toast.error(response.error);
+            setMessage(messageText);
+          }
         });
       }
     } else {
+      // Fallback to HTTP if socket is not connected
       const formData = new FormData();
       formData.append('chatId', activeChatId);
       formData.append('sender', userId);
@@ -303,23 +348,12 @@ const ChatStudent = () => {
         const response = await axios.post(`${API_URL}/messages/send`, formData, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'multipart/form-data',
-          },
+            'Content-Type': 'multipart/form-data'
+          }
         });
-        setMessages((prev) => [...prev, response.data.data]);
-        setChatList((prev) => {
-          if (!prev) return prev;
-          const updatedChats = prev.chats.map((chat) =>
-            chat.chatId === activeChatId
-              ? {
-                  ...chat,
-                  lastMessage: messageText || file?.name || '',
-                  timestamp: new Date().toISOString(),
-                }
-              : chat
-          );
-          return { ...prev, chats: updatedChats };
-        });
+        setMessages(prev => [...prev, response.data.data]);
+        updateChatList(response.data.data);
+        scrollToBottom();
       } catch (err) {
         console.error('Send message error:', err);
         setError('Failed to send message');
