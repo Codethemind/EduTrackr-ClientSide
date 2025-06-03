@@ -103,24 +103,59 @@ console.log(assignment)
           )}
 
           {/* Attachments */}
-          {assignment.attachments?.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-3">Attachments</h3>
-              <div className="space-y-2">
-                {assignment.attachments.map((attachment, index) => (
-                  <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
-                    <svg className="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-                    </svg>
-                    <span className="text-gray-700 flex-1">{attachment.name}</span>
-                    <button className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                      Download
-                    </button>
-                  </div>
-                ))}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Attachments</h3>
+            
+            {/* Teacher's Attachments */}
+            {assignment.attachments?.length > 0 && (
+              <div className="mb-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Assignment Files</h4>
+                <div className="space-y-2">
+                  {assignment.attachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg">
+                      <svg className="w-5 h-5 text-gray-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                      </svg>
+                      <span className="text-gray-700 flex-1">{attachment.name}</span>
+                      <a 
+                        href={attachment.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        Download
+                      </a>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+
+            {/* Student's Submission Attachments */}
+            {assignment.submissions?.length > 0 && assignment.submissions[0].attachments?.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Your Submitted Files</h4>
+                <div className="space-y-2">
+                  {assignment.submissions[0].attachments.map((attachment, index) => (
+                    <div key={index} className="flex items-center p-3 bg-green-50 rounded-lg">
+                      <svg className="w-5 h-5 text-green-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                      </svg>
+                      <span className="text-gray-700 flex-1">{attachment.name}</span>
+                      <a 
+                        href={attachment.url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Submission Status */}
           {assignment.submissions?.length > 0 ? (

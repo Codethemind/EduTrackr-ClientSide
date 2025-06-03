@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from '../../../api/axiosInstance';
 
 const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) => {
   const [formData, setFormData] = useState({
@@ -13,7 +14,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
     attachments: [],
     allowLateSubmission: false,
     lateSubmissionPenalty: 10,
-    submissionFormat: 'document', // document, link, text
+    submissionFormat: 'document',
     isGroupAssignment: false,
     maxGroupSize: 1
   });
@@ -75,7 +76,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
       [name]: type === 'checkbox' ? checked : value
     }));
 
-    // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -86,7 +86,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
     const courseId = e.target.value;
     setFormData(prev => ({ ...prev, courseId }));
 
-    // Auto-select department if there's only one department for this course
     const courseDepartments = teacherSchedules
       ?.filter(s => s.courseId?._id === courseId)
       ?.map(s => s.departmentId)
@@ -99,8 +98,13 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
 
   // Handle file attachments
   const handleFileChange = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData(prev => ({ ...prev, attachments: files }));
+    const selectedFiles = Array.from(e.target.files);
+    console.log('Selected files:', selectedFiles);
+    
+    setFormData(prev => ({
+      ...prev,
+      attachments: selectedFiles // Store actual File objects
+    }));
   };
 
   // Validate form
@@ -114,7 +118,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
     if (!formData.departmentId) newErrors.departmentId = 'Department selection is required';
     if (formData.maxMarks < 1) newErrors.maxMarks = 'Maximum marks must be at least 1';
 
-    // Check if due date is in the future
     const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
     if (dueDateTime <= new Date()) {
       newErrors.dueDate = 'Due date must be in the future';
@@ -136,18 +139,39 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
 
     setIsSubmitting(true);
     try {
-      // Combine date and time
       const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
       
-      const assignmentData = {
-        ...formData,
-        dueDate: dueDateTime.toISOString(),
-        maxGroupSize: formData.isGroupAssignment ? formData.maxGroupSize : 1
-      };
+      const formDataToSend = new FormData();
+      
+      formDataToSend.append('title', formData.title);
+      formDataToSend.append('description', formData.description);
+      formDataToSend.append('instructions', formData.instructions);
+      formDataToSend.append('dueDate', dueDateTime.toISOString());
+      formDataToSend.append('maxMarks', formData.maxMarks.toString());
+      formDataToSend.append('courseId', formData.courseId);
+      formDataToSend.append('departmentId', formData.departmentId);
+      formDataToSend.append('allowLateSubmission', formData.allowLateSubmission.toString());
+      formDataToSend.append('lateSubmissionPenalty', formData.lateSubmissionPenalty.toString());
+      formDataToSend.append('submissionFormat', formData.submissionFormat);
+      formDataToSend.append('isGroupAssignment', formData.isGroupAssignment.toString());
+      formDataToSend.append('maxGroupSize', (formData.isGroupAssignment ? formData.maxGroupSize : 1).toString());
+      
+      if (formData.attachments && formData.attachments.length > 0) {
+        formData.attachments.forEach((file) => {
+          formDataToSend.append('attachments', file);
+        });
+      }
 
-      await onSubmit(assignmentData);
+      console.log('Submitting assignment with FormData');
+      
+      await onSubmit(formDataToSend);
+      onClose();
     } catch (error) {
       console.error('Error submitting assignment:', error);
+      setErrors(prev => ({
+        ...prev,
+        submit: 'Failed to create assignment'
+      }));
     } finally {
       setIsSubmitting(false);
     }
@@ -158,13 +182,9 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
       <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        {/* Background overlay */}
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" onClick={onClose}></div>
-
-        {/* Modal panel */}
         <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
           <form onSubmit={handleSubmit}>
-            {/* Header */}
             <div className="bg-white px-6 py-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Create New Assignment</h3>
@@ -179,13 +199,9 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                 </button>
               </div>
             </div>
-
-            {/* Form Content */}
             <div className="bg-white px-6 py-4 max-h-96 overflow-y-auto">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Left Column */}
                 <div className="space-y-4">
-                  {/* Title */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Assignment Title *
@@ -202,8 +218,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     />
                     {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title}</p>}
                   </div>
-
-                  {/* Course */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Course *
@@ -225,8 +239,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     </select>
                     {errors.courseId && <p className="text-red-500 text-xs mt-1">{errors.courseId}</p>}
                   </div>
-
-                  {/* Department */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Department *
@@ -248,8 +260,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     </select>
                     {errors.departmentId && <p className="text-red-500 text-xs mt-1">{errors.departmentId}</p>}
                   </div>
-
-                  {/* Due Date and Time */}
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -280,8 +290,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                       />
                     </div>
                   </div>
-
-                  {/* Max Marks */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Maximum Marks *
@@ -299,10 +307,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     {errors.maxMarks && <p className="text-red-500 text-xs mt-1">{errors.maxMarks}</p>}
                   </div>
                 </div>
-
-                {/* Right Column */}
                 <div className="space-y-4">
-                  {/* Description */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Description *
@@ -319,8 +324,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     />
                     {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description}</p>}
                   </div>
-
-                  {/* Instructions */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Instructions
@@ -334,8 +337,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                       placeholder="Detailed instructions for students"
                     />
                   </div>
-
-                  {/* Submission Format */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Submission Format
@@ -347,13 +348,10 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="document">Document Upload</option>
-                      {/* <option value="link">Link/URL</option> */}
                       <option value="text">Text Submission</option>
                     </select>
                   </div>
-
-                  {/* File Attachments */}
-                  {/* <div>
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Attachments (Optional)
                     </label>
@@ -367,10 +365,41 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                     <p className="text-xs text-gray-500 mt-1">
                       Supported formats: PDF, DOC, DOCX, PPT, PPTX, TXT, JPG, PNG
                     </p>
-                  </div> */}
-
-                  {/* Group Assignment Settings */}
-                  {/* <div className="space-y-3">
+                    {formData.attachments && formData.attachments.length > 0 && (
+                      <div className="mt-2 space-y-1">
+                        {formData.attachments.map((file, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                            <div className="flex items-center space-x-2">
+                              <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                              </svg>
+                              <span className="truncate">{file.name}</span>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <span className="text-xs text-gray-500">
+                                {(file.size / 1024).toFixed(1)} KB
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setFormData(prev => ({
+                                    ...prev,
+                                    attachments: prev.attachments.filter((_, i) => i !== index)
+                                  }));
+                                }}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="space-y-3">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -383,7 +412,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         Group Assignment
                       </label>
                     </div>
-
                     {formData.isGroupAssignment && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -403,10 +431,8 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         {errors.maxGroupSize && <p className="text-red-500 text-xs mt-1">{errors.maxGroupSize}</p>}
                       </div>
                     )}
-                  </div> */}
-
-                  {/* Late Submission Settings */}
-                  {/* <div className="space-y-3">
+                  </div>
+                  <div className="space-y-3">
                     <div className="flex items-center">
                       <input
                         type="checkbox"
@@ -419,7 +445,6 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         Allow Late Submissions
                       </label>
                     </div>
-
                     {formData.allowLateSubmission && (
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -436,12 +461,10 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
                         />
                       </div>
                     )}
-                  </div> */}
+                  </div>
                 </div>
               </div>
             </div>
-
-            {/* Footer */}
             <div className="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
               <button
                 type="button"

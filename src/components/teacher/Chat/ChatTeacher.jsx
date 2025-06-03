@@ -1,158 +1,361 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Paperclip, Smile, MoreVertical, Phone, Video, Search, Menu } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import { Send, Paperclip, Smile, Search, Menu, MoreVertical, Trash2 } from 'lucide-react';
+import axios from '../../../api/axiosInstance';
+import io from 'socket.io-client';
+import toast from 'react-hot-toast';
+
+const API_URL = 'http://localhost:3000/api';
+const SOCKET_URL = 'http://localhost:3000';
 
 const ChatTeacher = () => {
+  const authState = useSelector((state) => state.auth);
+  const userId = authState?.user?._id || authState?.user?.id;
+  const teacherDepartmentId = authState?.user?.departmentId;
+  const accessToken = authState?.accessToken;
+  const userModel = 'Teacher';
+
   const [message, setMessage] = useState('');
-  const [activeStudentId, setActiveStudentId] = useState(1);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [activeStudent, setActiveStudent] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  
-  const students = [
-    {
-      id: 1,
-      name: 'Alex Johnson',
-      avatar: '👨‍🎓',
-      lastMessage: 'Thank you for the explanation!',
-      timestamp: '09:20 AM',
-      unread: 0,
-      online: true
-    },
-    {
-      id: 2,
-      name: 'Emma Davis',
-      avatar: '👩‍🎓',
-      lastMessage: 'Can we schedule a meeting?',
-      timestamp: '08:45 AM',
-      unread: 2,
-      online: true
-    },
-    {
-      id: 3,
-      name: 'Michael Chen',
-      avatar: '👨‍🎓',
-      lastMessage: 'I submitted my assignment',
-      timestamp: 'Yesterday',
-      unread: 0,
-      online: false
-    },
-    {
-      id: 4,
-      name: 'Sarah Wilson',
-      avatar: '👩‍🎓',
-      lastMessage: 'Could you review my essay?',
-      timestamp: 'Tuesday',
-      unread: 1,
-      online: false
-    },
-    {
-      id: 5,
-      name: 'David Brown',
-      avatar: '👨‍🎓',
-      lastMessage: 'Thanks for the feedback!',
-      timestamp: 'Monday',
-      unread: 0,
-      online: true
-    },
-    {
-      id: 6,
-      name: 'Lisa Garcia',
-      avatar: '👩‍🎓',
-      lastMessage: 'When is the next class?',
-      timestamp: 'Sunday',
-      unread: 3,
-      online: false
-    }
-  ];
-
-  const conversations = {
-    1: [
-      {
-        id: 1,
-        sender: 'student',
-        content: 'Good morning! I have a question about today\'s assignment.',
-        timestamp: '09:15 AM',
-        avatar: '👨‍🎓'
-      },
-      {
-        id: 2,
-        sender: 'teacher',
-        content: 'Good morning! Of course, I\'m here to help. What specific part would you like to discuss?',
-        timestamp: '09:16 AM',
-        avatar: '👩‍🏫'
-      },
-      {
-        id: 3,
-        sender: 'student',
-        content: 'I\'m having trouble understanding the concept of photosynthesis. Could you explain it in simpler terms?',
-        timestamp: '09:18 AM',
-        avatar: '👨‍🎓'
-      },
-      {
-        id: 4,
-        sender: 'teacher',
-        content: 'Absolutely! Think of photosynthesis like cooking. Plants use sunlight as their "oven," carbon dioxide as one ingredient, and water as another. They mix these together to make their food (glucose) and release oxygen as a bonus! 🌱',
-        timestamp: '09:20 AM',
-        avatar: '👩‍🏫'
-      }
-    ],
-    2: [
-      {
-        id: 1,
-        sender: 'student',
-        content: 'Hi! I was wondering if we could schedule a one-on-one meeting to discuss my progress?',
-        timestamp: '08:40 AM',
-        avatar: '👩‍🎓'
-      },
-      {
-        id: 2,
-        sender: 'student',
-        content: 'I have some questions about the upcoming project requirements.',
-        timestamp: '08:45 AM',
-        avatar: '👩‍🎓'
-      }
-    ],
-    3: [
-      {
-        id: 1,
-        sender: 'student',
-        content: 'I just submitted my math assignment. Please let me know if you need anything else.',
-        timestamp: 'Yesterday',
-        avatar: '👨‍🎓'
-      }
-    ]
-  };
-
-  const [allConversations, setAllConversations] = useState(conversations);
+  const [chatList, setChatList] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [allStudents, setAllStudents] = useState([]);
+  const [messages, setMessages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [socketConnected, setSocketConnected] = useState(false);
+  const [file, setFile] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
   const messagesEndRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const socketRef = useRef(null);
 
-  const activeStudent = students.find(s => s.id === activeStudentId);
-  const currentMessages = allConversations[activeStudentId] || [];
+  // Validate authentication data
+  useEffect(() => {
+    if (!userId || !accessToken) {
+      console.error('Missing auth data:', { userId, accessToken });
+      setError('Please log in to access chat');
+      toast.error('Authentication required');
+      setLoading(false);
+    }
+    if (!teacherDepartmentId) {
+      setError('Teacher department information missing');
+      toast.error('Department information required');
+    }
+  }, [userId, accessToken, teacherDepartmentId]);
 
+  // Scroll to bottom of messages
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
-  }, [currentMessages, activeStudentId]);
+  }, [messages]);
 
-  const handleSendMessage = () => {
-    if (message.trim()) {
-      const newMessage = {
-        id: (currentMessages.length || 0) + 1,
-        sender: 'teacher',
-        content: message,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        avatar: '👩‍🏫'
-      };
-      
-      setAllConversations(prev => ({
-        ...prev,
-        [activeStudentId]: [...(prev[activeStudentId] || []), newMessage]
-      }));
-      setMessage('');
+  // Initialize Socket.IO
+  useEffect(() => {
+    if (!userId || !accessToken) return;
+
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+
+    socketRef.current = io(SOCKET_URL, {
+      auth: { userId, userModel, token: accessToken },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+    });
+
+    socketRef.current.on('connect', () => {
+      console.log('Connected to Socket.IO');
+      setSocketConnected(true);
+      setError('');
+      socketRef.current.emit('join', userId);
+    });
+
+    socketRef.current.on('disconnect', () => {
+      console.log('Disconnected from Socket.IO');
+      setSocketConnected(false);
+    });
+
+    socketRef.current.on('connect_error', (error) => {
+      console.error('Socket connection error:', error);
+      setSocketConnected(false);
+      setError('Failed to connect to real-time messaging');
+      toast.error('Connection failed. Messages may not be real-time.');
+    });
+
+    socketRef.current.on('receiveMessage', (newMessage) => {
+      if (newMessage.chatId === activeChatId) {
+        setMessages((prev) => {
+          const messageExists = prev.some((msg) => msg._id === newMessage._id);
+          if (!messageExists) {
+            return [...prev, newMessage];
+          }
+          return prev;
+        });
+      }
+      setChatList((prev) => {
+        if (!prev) return prev;
+        const updatedChats = prev.chats.map((chat) =>
+          chat.chatId === newMessage.chatId
+            ? {
+                ...chat,
+                lastMessage: newMessage.message || newMessage.mediaUrl || '',
+                timestamp: newMessage.timestamp || new Date().toISOString(),
+              }
+            : chat
+        );
+        return { ...prev, chats: updatedChats };
+      });
+    });
+
+    socketRef.current.on('messageReaction', (updatedMessage) => {
+      if (updatedMessage.chatId === activeChatId) {
+        setMessages((prevMessages) =>
+          prevMessages.map((msg) =>
+            msg._id === updatedMessage._id ? { ...msg, reactions: updatedMessage.reactions } : msg
+          )
+        );
+      }
+    });
+
+    socketRef.current.on('messageDeleted', (deletedMessage) => {
+      if (deletedMessage.chatId === activeChatId) {
+        setMessages((prev) => prev.filter((msg) => msg._id !== deletedMessage._id));
+      }
+      fetchChatList();
+    });
+
+    socketRef.current.on('newChat', ({ chatId, contact, contactModel }) => {
+      fetchChatList();
+      if (contactModel === 'Student') {
+        setActiveChatId(chatId);
+        setActiveStudent({
+          id: contact,
+          name: students.find((s) => s._id === contact)?.name || 'Student',
+        });
+      }
+    });
+
+    socketRef.current.on('messageSent', (sentMessage) => {
+      console.log('Message sent confirmation:', sentMessage);
+    });
+
+    socketRef.current.on('error', (err) => {
+      console.error('Socket.IO error:', err);
+      setError('Real-time messaging error');
+      toast.error(err.message || 'Socket.IO error');
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, [userId, accessToken]);
+
+  // Fetch students in the teacher's department
+  const fetchStudentsInDepartment = async () => {
+    if (!userId || !accessToken || !teacherDepartmentId) return;
+
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/students`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const allStudentsData = response.data.data || response.data || [];
+      setAllStudents(allStudentsData);
+      const departmentStudents = allStudentsData.filter(
+        (student) => student.departmentId === teacherDepartmentId
+      );
+      setStudents(departmentStudents);
+      setError('');
+    } catch (err) {
+      console.error('Fetch students error:', err);
+      setError('Failed to fetch students');
+      toast.error(err.response?.data?.message || 'Failed to fetch students');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // Fetch chat list
+  const fetchChatList = async () => {
+    if (!userId || !accessToken) return;
+
+    try {
+      const response = await axios.get(`${API_URL}/messages/chatlist`, {
+        params: { userId },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setChatList(response.data.data);
+      setError('');
+    } catch (err) {
+      console.error('Fetch chat list error:', err);
+      setError('Failed to fetch chat list');
+      toast.error(err.response?.data?.message || 'Failed to fetch chat list');
+    }
+  };
+
+  // Fetch messages for active chat
+  const fetchMessages = async (chatId) => {
+    if (!chatId || !accessToken) return;
+
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_URL}/messages/messages/${chatId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      setMessages(response.data.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Fetch messages error:', err);
+      setError('Failed to fetch messages');
+      toast.error(err.response?.data?.message || 'Failed to fetch messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    if (userId && accessToken && teacherDepartmentId) {
+      fetchStudentsInDepartment();
+      fetchChatList();
+    }
+  }, [userId, accessToken, teacherDepartmentId]);
+
+  // Fetch messages when active chat changes
+  useEffect(() => {
+    if (activeChatId) {
+      fetchMessages(activeChatId);
+    } else {
+      setMessages([]);
+    }
+  }, [activeChatId]);
+
+  // Handle file selection
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
+  // Handle sending a message
+  const handleSendMessage = async () => {
+    if (!activeChatId || !activeStudent || !accessToken || (!message.trim() && !file)) return;
+
+    const messageText = message.trim();
+    setMessage('');
+    setFile(null);
+    setReplyTo(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+
+    if (socketRef.current && socketConnected) {
+      if (file) {
+        const formData = new FormData();
+        formData.append('media', file);
+        try {
+          const uploadResponse = await axios.post(`${API_URL}/messages/upload`, formData, {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+          const mediaUrl = uploadResponse.data.data.url;
+
+          socketRef.current.emit(
+            'sendMedia',
+            {
+              chatId: activeChatId,
+              receiver: activeStudent.id,
+              receiverModel: 'Student',
+              message: messageText,
+              mediaUrl,
+              replyTo: replyTo?._id,
+            },
+            (response) => {
+              if (response.error) {
+                console.error('Socket sendMedia error:', response.error);
+                toast.error(response.error);
+                setMessage(messageText);
+              }
+            }
+          );
+        } catch (err) {
+          console.error('Upload error:', err);
+          toast.error(err.response?.data?.message || 'Failed to upload media');
+          setMessage(messageText);
+        }
+      } else {
+        socketRef.current.emit(
+          'sendMessage',
+          {
+            chatId: activeChatId,
+            receiver: activeStudent.id,
+            receiverModel: 'Student',
+            message: messageText,
+            replyTo: replyTo?._id,
+          },
+          (response) => {
+            if (response.error) {
+              console.error('Socket sendMessage error:', response.error);
+              toast.error(response.error);
+              setMessage(messageText);
+            }
+          }
+        );
+      }
+    } else {
+      const formData = new FormData();
+      formData.append('chatId', activeChatId);
+      formData.append('sender', userId);
+      formData.append('senderModel', userModel);
+      formData.append('receiver', activeStudent.id);
+      formData.append('receiverModel', 'Student');
+      if (messageText) formData.append('message', messageText);
+      if (replyTo) formData.append('replyTo', replyTo._id);
+      if (file) formData.append('media', file);
+
+      try {
+        const response = await axios.post(`${API_URL}/messages/send`, formData, {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        setMessages((prev) => [...prev, response.data.data]);
+        setChatList((prev) => {
+          if (!prev) return prev;
+          const updatedChats = prev.chats.map((chat) =>
+            chat.chatId === activeChatId
+              ? {
+                  ...chat,
+                  lastMessage: messageText || file?.name || '',
+                  timestamp: new Date().toISOString(),
+                }
+              : chat
+          );
+          return { ...prev, chats: updatedChats };
+        });
+      } catch (err) {
+        console.error('Send message error:', err);
+        setError('Failed to send message');
+        toast.error(err.response?.data?.message || 'Failed to send message');
+        setMessage(messageText);
+      }
+    }
+  };
+
+  // Handle Enter key press
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -160,23 +363,145 @@ const ChatTeacher = () => {
     }
   };
 
-  const switchToStudent = (studentId) => {
-    setActiveStudentId(studentId);
+  // Handle adding a reaction
+  const handleAddReaction = async (messageId, reaction) => {
+    if (!socketConnected) {
+      try {
+        await axios.post(
+          `${API_URL}/messages/reaction`,
+          { messageId, userId, reaction },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to add reaction');
+      }
+    } else {
+      socketRef.current.emit(
+        'addReaction',
+        { messageId, reaction },
+        (response) => {
+          if (response.error) {
+            console.error('Socket addReaction error:', response.error);
+            toast.error(response.error);
+          }
+        }
+      );
+    }
   };
+
+  // Handle deleting a message
+  const handleDeleteMessage = async (messageId) => {
+    if (!socketConnected) {
+      try {
+        await axios.post(
+          `${API_URL}/messages/delete`,
+          { messageId, userId },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+        fetchChatList();
+      } catch (err) {
+        toast.error(err.response?.data?.message || 'Failed to delete message');
+      }
+    } else {
+      socketRef.current.emit(
+        'deleteMessage',
+        { messageId },
+        (response) => {
+          if (response.error) {
+            console.error('Socket deleteMessage error:', response.error);
+            toast.error(response.error);
+          }
+        }
+      );
+    }
+  };
+
+  // Validate MongoDB ObjectId
+  const isValidObjectId = (id) => {
+    return /^[0-9a-fA-F]{24}$/.test(id);
+  };
+
+  // Initiate a chat with a student
+  const initiateChat = async (studentId) => {
+    if (!userId || !accessToken) {
+      setError('Authentication required');
+      toast.error('Please log in to start a chat');
+      return;
+    }
+
+    // Validate ObjectIds
+    if (!isValidObjectId(studentId) || !isValidObjectId(userId)) {
+      setError('Invalid teacher or student ID');
+      toast.error('Invalid teacher or student ID');
+      return;
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/messages/initiate`,
+        { teacherId: userId, studentId },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      const { chatId } = response.data.data;
+      await fetchChatList();
+      setActiveChatId(chatId);
+      setActiveStudent({
+        id: studentId,
+        name: students.find((s) => s._id === studentId)?.name || 'Student',
+      });
+      toast.success('Chat initiated successfully');
+    } catch (err) {
+      console.error('Initiate chat error:', err);
+      const errorMessage = err.response?.data?.message || 'Failed to initiate chat';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    }
+  };
+
+  // Switch to a different student chat
+  const switchToStudent = (chatId, student) => {
+    setActiveChatId(chatId);
+    setActiveStudent(student);
+  };
+
+  // Render if authentication or department info is missing
+  if (!userId || !accessToken || !teacherDepartmentId) {
+    return (
+      <div className="flex h-screen bg-gray-50 justify-center items-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-2">Please log in and ensure department information is available</p>
+          <p className="text-sm text-gray-500">
+            Missing: {!userId && 'User ID'} {!accessToken && 'Access Token'} {!teacherDepartmentId && 'Department ID'}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
-      <div className={`bg-white border-r border-gray-200 transition-all duration-300 ${sidebarOpen ? 'w-80' : 'w-0'} overflow-hidden`}>
+      <div
+        className={`bg-white border-r border-gray-200 transition-all duration-300 ${
+          sidebarOpen ? 'w-80' : 'w-0'
+        } overflow-hidden`}
+      >
         <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">Students</h1>
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
+            <div className="flex items-center space-x-2">
+              <div
+                className={`w-2 h-2 rounded-full ${socketConnected ? 'bg-green-500' : 'bg-red-500'}`}
+                title={socketConnected ? 'Connected' : 'Disconnected'}
+              />
+              <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
@@ -187,42 +512,71 @@ const ChatTeacher = () => {
             />
           </div>
         </div>
-        
-        <div className="overflow-y-auto h-full">
-          {students.map((student) => (
-            <div
-              key={student.id}
-              onClick={() => switchToStudent(student.id)}
-              className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
-                activeStudentId === student.id ? 'bg-blue-50 border-r-4 border-r-blue-600' : ''
-              }`}
-            >
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg">
-                    {student.avatar}
-                  </div>
-                  {student.online && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-gray-900 truncate">{student.name}</p>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">{student.timestamp}</span>
-                      {student.unread > 0 && (
-                        <span className="bg-blue-600 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center">
-                          {student.unread}
-                        </span>
-                      )}
+        <div className="overflow-y-auto h-[calc(100%-120px)]">
+          {loading && <p className="p-4 text-gray-600">Loading...</p>}
+          {error && <p className="p-4 text-red-600 text-sm">{error}</p>}
+          {!loading && students.length > 0 && (
+            <>
+              <h2 className="p-4 font-semibold text-gray-900">Available Students</h2>
+              {students.map((student) => (
+                <div
+                  key={student._id}
+                  onClick={() => initiateChat(student._id)}
+                  className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg">
+                      👨‍🎓
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-gray-900 truncate">{student.name}</p>
+                      <p className="text-xs text-blue-600 truncate">Student</p>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 truncate mt-1">{student.lastMessage}</p>
                 </div>
-              </div>
-            </div>
-          ))}
+              ))}
+            </>
+          )}
+          {!loading && !error && students.length === 0 && (
+            <p className="p-4 text-gray-600">No students available in your department</p>
+          )}
+          {!loading && chatList?.chats?.length > 0 && (
+            <>
+              <h2 className="p-4 font-semibold text-gray-900">Recent Chats</h2>
+              {chatList.chats.map((chat) => (
+                <div
+                  key={chat.chatId}
+                  onClick={() =>
+                    switchToStudent(chat.chatId, { id: chat.contact._id, name: chat.contact.name })
+                  }
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${
+                    activeChatId === chat.chatId ? 'bg-blue-50 border-r-4 border-r-blue-600' : ''
+                  }`}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center text-lg">
+                      👨‍🎓
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900 truncate">{chat.contact.name}</p>
+                          <p className="text-xs text-blue-600 truncate">Student</p>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {new Date(chat.timestamp).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-600 truncate mt-1">{chat.lastMessage}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
 
@@ -240,26 +594,20 @@ const ChatTeacher = () => {
               </button>
             )}
             <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg">
-              {activeStudent?.avatar}
+              👨‍🎓
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{activeStudent?.name}</h2>
-              <p className={`text-sm ${activeStudent?.online ? 'text-green-600' : 'text-gray-500'}`}>
-                {activeStudent?.online ? '● Online' : '○ Offline'}
+              <h2 className="font-semibold text-gray-900">{activeStudent?.name || 'Select a student'}</h2>
+              <p className="text-sm text-blue-600">
+                Student {socketConnected && <span className="text-green-500">• Online</span>}
               </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full">
               <Search className="w-5 h-5" />
             </button>
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
-              <Phone className="w-5 h-5" />
-            </button>
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
-              <Video className="w-5 h-5" />
-            </button>
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full">
               <MoreVertical className="w-5 h-5" />
             </button>
           </div>
@@ -267,60 +615,182 @@ const ChatTeacher = () => {
 
         {/* Messages Container */}
         <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
-          {currentMessages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.sender === 'teacher' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${msg.sender === 'teacher' ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">
-                  {msg.avatar}
-                </div>
-                <div>
-                  <div
-                    className={`px-4 py-2 rounded-2xl ${
-                      msg.sender === 'teacher'
-                        ? 'bg-blue-600 text-white rounded-br-md'
-                        : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
-                    }`}
-                  >
-                    <p className="text-sm">{msg.content}</p>
+          {loading && <p className="text-center text-gray-600">Loading messages...</p>}
+          {error && <p className="text-center text-red-600 text-sm">{error}</p>}
+          {messages.length > 0 ? (
+            messages.map((msg) => (
+              <div
+                key={msg._id}
+                className={`flex ${msg.sender === userId ? 'justify-end' : 'justify-start'}`}
+              >
+                <div
+                  className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
+                    msg.sender === userId ? 'flex-row-reverse space-x-reverse' : ''
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">
+                    {msg.senderModel === 'Student' ? '👨‍🎓' : '👩‍🏫'}
                   </div>
-                  <p className={`text-xs text-gray-500 mt-1 ${msg.sender === 'teacher' ? 'text-right' : 'text-left'}`}>
-                    {msg.timestamp}
-                  </p>
+                  <div>
+                    {msg.replyTo && (
+                      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded-t-md">
+                        Replying to: {msg.replyTo.message || 'Media'}
+                      </div>
+                    )}
+                    <div
+                      className={`px-4 py-2 rounded-2xl ${
+                        msg.sender === userId
+                          ? 'bg-blue-600 text-white rounded-br-md'
+                          : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'
+                      }`}
+                    >
+                      {msg.isDeleted ? (
+                        <p className="text-sm italic">Message deleted</p>
+                      ) : (
+                        <>
+                          {msg.message && <p className="text-sm">{msg.message}</p>}
+                          {msg.mediaUrl && (
+                            <div className="mt-2">
+                              {msg.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                                <img
+                                  src={msg.mediaUrl}
+                                  alt="Media"
+                                  className="max-w-full rounded-md"
+                                  style={{ maxHeight: '200px' }}
+                                />
+                              ) : (
+                                <a
+                                  href={msg.mediaUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-500 underline"
+                                >
+                                  View File
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <div className="flex items-center mt-1 space-x-2">
+                      <p
+                        className={`text-xs text-gray-500 ${
+                          msg.sender === userId ? 'text-right' : 'text-left'
+                        }`}
+                      >
+                        {new Date(msg.timestamp).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                      {!msg.isDeleted && (
+                        <>
+                          <select
+                            onChange={(e) => handleAddReaction(msg._id, e.target.value)}
+                            value=""
+                            className="text-sm"
+                          >
+                            <option value="" disabled>
+                              React
+                            </option>
+                            {['❤️', '😂', '😢', '💯', '👍', '👎'].map((r) => (
+                              <option key={r} value={r}>
+                                {r}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="flex space-x-1">
+                            {msg.reactions?.map((r, i) => (
+                              <span key={i} className="text-sm">
+                                {r.reaction}
+                              </span>
+                            ))}
+                          </div>
+                          {msg.sender === userId && (
+                            <button
+                              onClick={() => handleDeleteMessage(msg._id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setReplyTo(msg)}
+                            className="text-blue-500 hover:text-blue-700 text-sm"
+                          >
+                            Reply
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
+            ))
+          ) : (
+            !loading &&
+            !error &&
+            activeChatId && <p className="text-center text-gray-600">No messages yet. Start the conversation!</p>
+          )}
+          {!activeChatId && !loading && (
+            <div className="text-center text-gray-500 mt-8">
+              <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center text-2xl mx-auto mb-4">
+                💬
+              </div>
+              <p>Select a student to start chatting</p>
             </div>
-          ))}
+          )}
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Area */}
         <div className="bg-white border-t border-gray-200 px-6 py-4">
+          {replyTo && (
+            <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md mb-2">
+              <span className="text-sm text-gray-600">Replying to: {replyTo.message || 'Media'}</span>
+              <button
+                onClick={() => setReplyTo(null)}
+                className="text-red-500 hover:text-red-700"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
           <div className="flex items-end space-x-3">
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+            >
               <Paperclip className="w-5 h-5" />
             </button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*,.pdf"
+            />
             <div className="flex-1 relative">
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 onKeyPress={handleKeyPress}
-                placeholder={`Message ${activeStudent?.name}...`}
+                placeholder={`Message ${activeStudent?.name || 'student'}...`}
                 className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
                 rows="1"
                 style={{ minHeight: '48px' }}
+                disabled={!activeChatId}
               />
             </div>
-            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors">
+            <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full">
               <Smile className="w-5 h-5" />
             </button>
             <button
               onClick={handleSendMessage}
-              disabled={!message.trim()}
+              disabled={(!message.trim() && !file) || !activeChatId}
               className={`p-3 rounded-full transition-all ${
-                message.trim()
+                message.trim() || file
                   ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
@@ -328,6 +798,12 @@ const ChatTeacher = () => {
               <Send className="w-5 h-5" />
             </button>
           </div>
+          {!socketConnected && (
+            <p className="text-xs text-orange-600 mt-2">
+              ⚠️ Real-time messaging unavailable. Messages will be sent via HTTP.
+            </p>
+          )}
+          {file && <p className="text-xs text-gray-600 mt-2">Selected file: {file.name}</p>}
         </div>
       </div>
     </div>

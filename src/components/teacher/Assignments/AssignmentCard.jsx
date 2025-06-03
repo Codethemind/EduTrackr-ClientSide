@@ -235,31 +235,91 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
         <div className="px-6 py-4 border-t border-gray-200">
           <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Submissions</h4>
           {assignment.submissions && assignment.submissions.length > 0 ? (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
+            <div className="space-y-4 max-h-96 overflow-y-auto">
               {assignment.submissions.slice(0, 5).map((submission, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-medium text-blue-700">
-                        {submission.studentName?.[0] || 'S'}
-                      </span>
+                <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-medium text-blue-700">
+                          {submission.studentName?.[0] || 'S'}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">
+                          {submission.studentName || 'Student'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(submission.submittedAt)}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        {submission.studentName || 'Student'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {formatDate(submission.submittedAt)}
-                      </p>
+                    <div className="flex items-center space-x-2">
+                      {submission.isLate && (
+                        <span className="text-xs text-red-600 font-medium">Late</span>
+                      )}
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="number"
+                          min="0"
+                          max={assignment.maxMarks}
+                          value={submission.grade || ''}
+                          onChange={(e) => {
+                            const newGrade = parseInt(e.target.value);
+                            if (newGrade >= 0 && newGrade <= assignment.maxMarks) {
+                              onUpdate(assignment._id, {
+                                submissionId: submission._id,
+                                grade: newGrade
+                              });
+                            }
+                          }}
+                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                          placeholder="Grade"
+                        />
+                        <span className="text-xs text-gray-500">/ {assignment.maxMarks}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    {submission.isLate && (
-                      <span className="text-xs text-red-600 font-medium">Late</span>
-                    )}
-                    <span className="text-xs text-gray-500">
-                      {submission.grade ? `${submission.grade}/${assignment.maxMarks}` : 'Not graded'}
-                    </span>
+
+                  {/* Submission Attachments */}
+                  {submission.attachments?.length > 0 && (
+                    <div className="mt-3">
+                      <h5 className="text-xs font-medium text-gray-700 mb-2">Submitted Files:</h5>
+                      <div className="space-y-2">
+                        {submission.attachments.map((attachment, idx) => (
+                          <div key={idx} className="flex items-center p-2 bg-gray-50 rounded">
+                            <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+                            </svg>
+                            <span className="text-sm text-gray-700 flex-1">{attachment.name}</span>
+                            <a 
+                              href={attachment.url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-700 text-xs font-medium"
+                            >
+                              View
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Feedback */}
+                  <div className="mt-3">
+                    <textarea
+                      value={submission.feedback || ''}
+                      onChange={(e) => {
+                        onUpdate(assignment._id, {
+                          submissionId: submission._id,
+                          feedback: e.target.value
+                        });
+                      }}
+                      placeholder="Add feedback..."
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+                      rows="2"
+                    />
                   </div>
                 </div>
               ))}

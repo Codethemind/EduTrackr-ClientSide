@@ -136,7 +136,7 @@ const SubmissionModal = ({ isOpen, onClose, assignment, onSubmit }) => {
           </div>
 
           {/* File Upload */}
-          {/* <div className="mb-6">
+          <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Attach Files (Optional)
             </label>
@@ -164,10 +164,10 @@ const SubmissionModal = ({ isOpen, onClose, assignment, onSubmit }) => {
                 <p className="text-xs text-gray-500">PDF, DOC, DOCX, TXT, PNG, JPG, GIF up to 10MB each</p>
               </label>
             </div>
-          </div> */}
+          </div>
 
           {/* File List */}
-          {/* {files.length > 0 && (
+          {files.length > 0 && (
             <div className="mb-6">
               <h4 className="text-sm font-medium text-gray-700 mb-2">Selected Files:</h4>
               <div className="space-y-2">
@@ -196,7 +196,7 @@ const SubmissionModal = ({ isOpen, onClose, assignment, onSubmit }) => {
                 ))}
               </div>
             </div>
-          )} */}
+          )}
 
           {/* Submission Guidelines */}
           <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">

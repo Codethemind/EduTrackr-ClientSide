@@ -34,7 +34,7 @@ const AssignmentsPage = () => {
         const response = await axios.get(`/api/schedules/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-        
+
         if (response.data.success) {
           setTeacherSchedules(response.data.data);
         }
@@ -59,9 +59,9 @@ const AssignmentsPage = () => {
         const response = await axios.get(`/api/assignments/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-        
+
         if (response.data.success) {
-          console.log('Raw Assignments:', JSON.stringify(response.data.data, null, 2)); // Debug log
+          console.log('Raw Assignments:', JSON.stringify(response.data.data, null, 2));
           setAssignments(response.data.data);
         } else {
           toast.error('Failed to load assignments');
@@ -78,13 +78,13 @@ const AssignmentsPage = () => {
   }, [teacherId, accessToken]);
 
   // Handle assignment creation
-  const handleCreateAssignment = async (assignmentData) => {
+  const handleCreateAssignment = async (formData) => {
     try {
-      const response = await axios.post('/api/assignments', {
-        ...assignmentData,
-        teacherId: teacherId
-      }, {
-        headers: { Authorization: `Bearer ${accessToken}` }
+      const response = await axios.post('/api/assignments', formData, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'multipart/form-data' // Required for FormData
+        }
       });
 
       if (response.data.success) {
@@ -108,8 +108,8 @@ const AssignmentsPage = () => {
       });
 
       if (response.data.success) {
-        setAssignments(prev => 
-          prev.map(assignment => 
+        setAssignments(prev =>
+          prev.map(assignment =>
             assignment._id === assignmentId ? response.data.data : assignment
           )
         );
@@ -156,7 +156,6 @@ const AssignmentsPage = () => {
     ? [...new Set(teacherSchedules.map(s => s.departmentId?._id).filter(Boolean))]
     : [];
 
-  // Debug unique courses and departments
   console.log('Unique Courses:', uniqueCourses);
   console.log('Unique Departments:', uniqueDepartments);
 
@@ -166,7 +165,6 @@ const AssignmentsPage = () => {
     const dueDate = new Date(assignment.dueDate);
     const daysUntilDue = Math.ceil((dueDate - now) / (1000 * 60 * 60 * 24));
 
-    // Course filter
     if (filters.course !== 'all') {
       const assignmentCourseId = typeof assignment.courseId === 'object' ? assignment.courseId?._id : assignment.courseId;
       if (assignmentCourseId !== filters.course) {
@@ -174,7 +172,6 @@ const AssignmentsPage = () => {
       }
     }
 
-    // Department filter
     if (filters.department !== 'all') {
       const assignmentDepartmentId = typeof assignment.departmentId === 'object' ? assignment.departmentId?._id : assignment.departmentId;
       if (assignmentDepartmentId !== filters.department) {
@@ -182,7 +179,6 @@ const AssignmentsPage = () => {
       }
     }
 
-    // Status filter
     if (filters.status !== 'all') {
       if (filters.status === 'active' && dueDate < now) {
         return false;
@@ -213,12 +209,10 @@ const AssignmentsPage = () => {
     }
   });
 
-  // Debug filters
   useEffect(() => {
     console.log('Filters:', filters);
   }, [filters]);
 
-  // Calculate statistics
   const activeAssignments = assignments.filter(a => new Date(a.dueDate) >= new Date()).length;
   const expiredAssignments = assignments.filter(a => new Date(a.dueDate) < new Date()).length;
   const totalSubmissions = assignments.reduce((sum, a) => sum + (a.submissions?.length || 0), 0);
@@ -230,7 +224,6 @@ const AssignmentsPage = () => {
         <Header role="teacher" />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
-            {/* Header Section */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
@@ -248,8 +241,6 @@ const AssignmentsPage = () => {
                 </button>
               </div>
             </div>
-
-            {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
@@ -259,12 +250,11 @@ const AssignmentsPage = () => {
                     </svg>
                   </div>
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Total Assignments</p>
+                    <p className="text-sm font-medium text-gray-600">Total既有Assignments</p>
                     <p className="text-2xl font-bold text-gray-900">{assignments.length}</p>
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
@@ -278,7 +268,6 @@ const AssignmentsPage = () => {
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-red-100 rounded-lg">
@@ -292,12 +281,11 @@ const AssignmentsPage = () => {
                   </div>
                 </div>
               </div>
-
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                 <div className="flex items-center">
                   <div className="p-2 bg-purple-100 rounded-lg">
                     <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -307,8 +295,6 @@ const AssignmentsPage = () => {
                 </div>
               </div>
             </div>
-
-            {/* Filters */}
             <AssignmentFilters
               filters={filters}
               setFilters={setFilters}
@@ -317,8 +303,6 @@ const AssignmentsPage = () => {
               courseNameMap={courseNameMap}
               departmentNameMap={departmentNameMap}
             />
-
-            {/* Assignments List */}
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
@@ -333,7 +317,7 @@ const AssignmentsPage = () => {
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Assignments Found</h3>
                 <p className="text-gray-600 mb-6">
-                  {assignments.length === 0 
+                  {assignments.length === 0
                     ? "You haven't created any assignments yet. Create your first assignment to get started."
                     : "No assignments match your current filters. Try adjusting your search criteria."
                   }
@@ -364,8 +348,6 @@ const AssignmentsPage = () => {
           </div>
         </main>
       </div>
-
-      {/* Create Assignment Modal */}
       {isCreateModalOpen && (
         <CreateAssignmentModal
           isOpen={isCreateModalOpen}
