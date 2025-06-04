@@ -38,11 +38,11 @@ const TeacherSideBar = () => {
       { icon: MdChat, label: 'Student Chat', path: '/teacher/chat' },
       { icon: MdSmartToy, label: 'Ai Assistent', path: '/teacher/ai-assistant' },
       
-      { icon: MdAnnouncement, label: 'Announcements', path: '/teacher/announcements' },
+      // { icon: MdAnnouncement, label: 'Announcements', path: '/teacher/announcements' },
     ],
-    CONTENT: [
-      { icon: MdDescription, label: 'Resources', path: '/teacher/resources' },
-    ],
+    // CONTENT: [
+    //   { icon: MdDescription, label: 'Resources', path: '/teacher/resources' },
+    // ],
     ACCOUNT: [
       { icon: MdPerson, label: 'Profile', path: '/teacher/profile' },
       { icon: MdExitToApp, label: 'Logout', path: '#' }, // No path for logout, will trigger function

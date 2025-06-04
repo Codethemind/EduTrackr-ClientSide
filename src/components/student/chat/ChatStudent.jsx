@@ -4,6 +4,7 @@ import { Send, Paperclip, Smile, Search, Menu, MoreVertical, Trash2 } from 'luci
 import axios from '../../../api/axiosInstance';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 
 // Backend configuration
 const API_URL = 'http://localhost:3000/api';
@@ -31,6 +32,20 @@ const ChatStudent = () => {
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const socketRef = useRef(null);
+
+  // Add new state for reactions
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
+  const [selectedMessageForReaction, setSelectedMessageForReaction] = useState(null);
+  const [typingStatus, setTypingStatus] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef(null);
+
+  // Add reaction emojis
+  const reactionEmojis = ['❤️', '😂', '😢', '💯', '👍', '👎', '🎉', '🙏', '🔥', '👏'];
+
+  // Add this near the top of the component
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Validate auth data
   useEffect(() => {
@@ -109,6 +124,14 @@ const ChatStudent = () => {
         scrollToBottom();
       }
       updateChatList(newMessage);
+      
+      // Emit notification for new message
+      if (newMessage.sender !== userId) {
+        emitNotification('message', {
+          sender: activeTeacher?.name || 'Teacher',
+          message: newMessage.message || 'sent a message'
+        });
+      }
     });
 
     socketRef.current.on('messageReaction', (updatedMessage) => {
@@ -119,6 +142,14 @@ const ChatStudent = () => {
             msg._id === updatedMessage._id ? { ...msg, reactions: updatedMessage.reactions } : msg
           )
         );
+      }
+      
+      // Emit notification for reaction
+      if (updatedMessage.sender !== userId) {
+        emitNotification('reaction', {
+          sender: activeTeacher?.name || 'Teacher',
+          reaction: updatedMessage.reactions[updatedMessage.reactions.length - 1]?.reaction
+        });
       }
     });
 
@@ -161,6 +192,12 @@ const ChatStudent = () => {
       console.error('Socket error:', err);
       setError('Real-time messaging error');
       toast.error(err.message || 'Socket error');
+    });
+
+    socketRef.current.on('typing', ({ userId: typingUserId, isTyping: isUserTyping }) => {
+      if (typingUserId !== userId) {
+        setTypingStatus(isUserTyping);
+      }
     });
 
     // Cleanup on unmount
@@ -268,14 +305,125 @@ const ChatStudent = () => {
     }
   }, [activeChatId]);
 
-  // Handle file selection
+  // Update handleFileChange
   const handleFileChange = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+
+    // Check file size (max 5MB)
+    if (selectedFile.size > 5 * 1024 * 1024) {
+      toast.error('File size should be less than 5MB');
+      return;
+    }
+
+    // Check file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(selectedFile.type)) {
+      toast.error('Invalid file type. Allowed types: JPG, PNG, GIF, PDF, DOC, DOCX');
+      return;
+    }
+
+    setFile(selectedFile);
+    setUploadProgress(0);
+  };
+
+  // Add notification handling
+  const emitNotification = async (type, data) => {
+    try {
+      await axios.post(`${API_URL}/notifications/create`, {
+        type,
+        data,
+        role: 'student',
+        userId: activeTeacher?.id
+      }, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+    } catch (error) {
+      console.error('Failed to emit notification:', error);
     }
   };
 
-  // Handle sending a message
+  // Handle typing status
+  const handleTyping = () => {
+    if (!isTyping) {
+      setIsTyping(true);
+      socketRef.current?.emit('typing', {
+        chatId: activeChatId,
+        userId,
+        isTyping: true
+      });
+    }
+
+    // Clear existing timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set new timeout
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      socketRef.current?.emit('typing', {
+        chatId: activeChatId,
+        userId,
+        isTyping: false
+      });
+    }, 2000);
+  };
+
+  // Update handleAddReaction
+  const handleAddReaction = async (messageId, reaction) => {
+    if (!messageId || !reaction) {
+      toast.error('Missing required fields for reaction');
+      return;
+    }
+
+    try {
+      if (!socketConnected) {
+        const response = await axios.post(
+          `${API_URL}/messages/reaction`,
+          { 
+            messageId, 
+            userId, 
+            reaction,
+            userModel: 'Student'
+          },
+          { headers: { Authorization: `Bearer ${accessToken}` } }
+        );
+        
+        if (response.data.success) {
+          setMessages(prev =>
+            prev.map(msg =>
+              msg._id === messageId 
+                ? { 
+                    ...msg, 
+                    reactions: [...(msg.reactions || []), { reaction, userId }] 
+                  } 
+                : msg
+            )
+          );
+        }
+      } else {
+        socketRef.current.emit('addReaction', { 
+          messageId, 
+          reaction,
+          userId,
+          userModel: 'Student'
+        }, (response) => {
+          if (response.error) {
+            toast.error(response.error);
+          }
+        });
+      }
+    } catch (err) {
+      console.error('Reaction error:', err);
+      toast.error(err.response?.data?.message || 'Failed to add reaction');
+    } finally {
+      setShowReactionPicker(false);
+      setSelectedMessageForReaction(null);
+    }
+  };
+
+  // Update handleSendMessage
   const handleSendMessage = async () => {
     if (!activeChatId || !activeTeacher || !accessToken || (!message.trim() && !file)) return;
 
@@ -285,81 +433,124 @@ const ChatStudent = () => {
     setReplyTo(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
 
-    if (socketRef.current && socketConnected) {
-      if (file) {
-        const formData = new FormData();
-        formData.append('media', file);
-        try {
-          const uploadResponse = await axios.post(`${API_URL}/messages/upload`, formData, {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
-          const mediaUrl = uploadResponse.data.data.url;
+    try {
+      if (socketRef.current && socketConnected) {
+        if (file) {
+          const formData = new FormData();
+          formData.append('media', file);
+          setIsUploading(true);
+          setUploadProgress(0);
 
-          socketRef.current.emit('sendMedia', {
+          try {
+            const uploadResponse = await axios.post(`${API_URL}/messages/upload`, formData, {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                'Content-Type': 'multipart/form-data'
+              },
+              onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+              }
+            });
+
+            if (!uploadResponse.data?.data?.url) {
+              throw new Error('Failed to upload file');
+            }
+
+            const mediaUrl = uploadResponse.data.data.url;
+            const mediaType = file.type.startsWith('image/') ? 'image' : 'document';
+
+            socketRef.current.emit('sendMedia', {
+              chatId: activeChatId,
+              sender: userId,
+              senderModel: 'Student',
+              receiver: activeTeacher.id,
+              receiverModel: 'Teacher',
+              message: messageText,
+              mediaUrl,
+              mediaType,
+              replyTo: replyTo?._id
+            }, (response) => {
+              if (response.error) {
+                console.error('Socket sendMedia error:', response.error);
+                toast.error(response.error);
+                setMessage(messageText);
+              } else {
+                emitNotification('media', {
+                  sender: profileData?.name || 'Student',
+                  message: `shared a ${mediaType}`
+                });
+              }
+            });
+          } catch (err) {
+            console.error('Upload error:', err);
+            if (err.code === 'ECONNABORTED') {
+              toast.error('Upload timed out. Please try again with a smaller file or check your connection.');
+            } else {
+              toast.error(err.response?.data?.message || 'Failed to upload media. Please try again.');
+            }
+            setMessage(messageText);
+          } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+          }
+        } else {
+          socketRef.current.emit('sendMessage', {
             chatId: activeChatId,
+            sender: userId,
+            senderModel: 'Student',
             receiver: activeTeacher.id,
             receiverModel: 'Teacher',
             message: messageText,
-            mediaUrl,
             replyTo: replyTo?._id
           }, (response) => {
             if (response.error) {
-              console.error('Socket sendMedia error:', response.error);
+              console.error('Socket sendMessage error:', response.error);
               toast.error(response.error);
               setMessage(messageText);
+            } else if (replyTo) {
+              emitNotification('reply', {
+                sender: profileData?.name || 'Student',
+                message: 'replied to your message'
+              });
             }
           });
-        } catch (err) {
-          console.error('Upload error:', err);
-          toast.error(err.response?.data?.message || 'Failed to upload media');
-          setMessage(messageText);
         }
       } else {
-        socketRef.current.emit('sendMessage', {
-          chatId: activeChatId,
-          receiver: activeTeacher.id,
-          receiverModel: 'Teacher',
-          message: messageText,
-          replyTo: replyTo?._id
-        }, (response) => {
-          if (response.error) {
-            console.error('Socket sendMessage error:', response.error);
-            toast.error(response.error);
-            setMessage(messageText);
-          }
-        });
-      }
-    } else {
-      // Fallback to HTTP if socket is not connected
-      const formData = new FormData();
-      formData.append('chatId', activeChatId);
-      formData.append('sender', userId);
-      formData.append('senderModel', userModel);
-      formData.append('receiver', activeTeacher.id);
-      formData.append('receiverModel', 'Teacher');
-      if (messageText) formData.append('message', messageText);
-      if (replyTo) formData.append('replyTo', replyTo._id);
-      if (file) formData.append('media', file);
+        // Fallback to HTTP if socket is not connected
+        const formData = new FormData();
+        formData.append('chatId', activeChatId);
+        formData.append('sender', userId);
+        formData.append('senderModel', 'Student');
+        formData.append('receiver', activeTeacher.id);
+        formData.append('receiverModel', 'Teacher');
+        if (messageText) formData.append('message', messageText);
+        if (replyTo) formData.append('replyTo', replyTo._id);
+        if (file) {
+          formData.append('media', file);
+          formData.append('mediaType', file.type.startsWith('image/') ? 'image' : 'document');
+        }
 
-      try {
         const response = await axios.post(`${API_URL}/messages/send`, formData, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'multipart/form-data'
           }
         });
-        setMessages(prev => [...prev, response.data.data]);
-        updateChatList(response.data.data);
-        scrollToBottom();
-      } catch (err) {
-        console.error('Send message error:', err);
-        setError('Failed to send message');
-        toast.error(err.response?.data?.message || 'Failed to send message');
-        setMessage(messageText);
+        
+        if (response.data.success) {
+          setMessages(prev => [...prev, response.data.data]);
+          updateChatList(response.data.data);
+          scrollToBottom();
+        } else {
+          throw new Error(response.data.message || 'Failed to send message');
+        }
       }
+    } catch (err) {
+      console.error('Send message error:', err);
+      setError('Failed to send message');
+      toast.error(err.response?.data?.message || 'Failed to send message');
+      setMessage(messageText);
     }
   };
 
@@ -367,22 +558,6 @@ const ChatStudent = () => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
-    }
-  };
-
-  const handleAddReaction = async (messageId, reaction) => {
-    if (!socketConnected) {
-      try {
-        await axios.post(
-          `${API_URL}/messages/reaction`,
-          { messageId, userId, reaction },
-          { headers: { Authorization: `Bearer ${accessToken}` } }
-        );
-      } catch (err) {
-        toast.error(err.response?.data?.message || 'Failed to add reaction');
-      }
-    } else {
-      socketRef.current.emit('addReaction', { messageId, reaction });
     }
   };
 
@@ -445,6 +620,112 @@ const ChatStudent = () => {
     setActiveChatId(chatId);
     setActiveTeacher(teacher);
   };
+
+  // Add message actions component
+  const MessageActions = ({ message }) => (
+    <div className="flex items-center space-x-2 mt-1">
+      <div className="relative">
+        <button
+          onClick={() => {
+            setSelectedMessageForReaction(message);
+            setShowReactionPicker(!showReactionPicker);
+          }}
+          className="text-gray-500 hover:text-gray-700 text-sm"
+        >
+          React
+        </button>
+        {showReactionPicker && selectedMessageForReaction?._id === message._id && (
+          <div className="absolute bottom-full left-0 mb-2 bg-white rounded-lg shadow-lg p-2 border border-gray-200">
+            <div className="grid grid-cols-5 gap-1">
+              {reactionEmojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleAddReaction(message._id, emoji)}
+                  className="p-1 hover:bg-gray-100 rounded"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+      <button
+        onClick={() => setReplyTo(message)}
+        className="text-blue-500 hover:text-blue-700 text-sm"
+      >
+        Reply
+      </button>
+      {message.sender === userId && (
+        <button
+          onClick={() => handleDeleteMessage(message._id)}
+          className="text-red-500 hover:text-red-700"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
+  );
+
+  // Update message rendering
+  const renderMessage = (msg) => (
+    <div key={msg._id} className={`flex ${msg.sender === userId ? 'justify-end' : 'justify-start'}`}>
+      <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${msg.sender === userId ? 'flex-row-reverse space-x-reverse' : ''}`}>
+        <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">
+          {msg.senderModel === 'Student' ? '👨‍🎓' : '👩‍🏫'}
+        </div>
+        <div>
+          {msg.replyTo && (
+            <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded-t-md mb-1">
+              <div className="font-medium">
+                {msg.replyTo.senderModel === 'Student' ? '👨‍🎓' : '👩‍🏫'} {msg.replyTo.sender === userId ? 'You' : activeTeacher?.name}
+              </div>
+              <div className="truncate">
+                {msg.replyTo.message || (msg.replyTo.mediaUrl ? 'Media' : '')}
+              </div>
+            </div>
+          )}
+          <div className={`px-4 py-2 rounded-2xl ${msg.sender === userId ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'}`}>
+            {msg.isDeleted ? (
+              <p className="text-sm italic">Message deleted</p>
+            ) : (
+              <>
+                {msg.message && <p className="text-sm">{msg.message}</p>}
+                {msg.mediaUrl && (
+                  <div className="mt-2">
+                    {msg.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
+                      <img src={msg.mediaUrl} alt="Media" className="max-w-full rounded-md" style={{ maxHeight: '200px' }} />
+                    ) : (
+                      <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+                        View File
+                      </a>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <div className="flex items-center mt-1 space-x-2">
+            <p className={`text-xs text-gray-500 ${msg.sender === userId ? 'text-right' : 'text-left'}`}>
+              {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </p>
+            {!msg.isDeleted && (
+              <>
+                {msg.reactions && msg.reactions.length > 0 && (
+                  <div className="flex space-x-1 bg-gray-100 px-2 py-1 rounded-full">
+                    {msg.reactions.map((r, i) => (
+                      <span key={i} className="text-sm">{r.reaction}</span>
+                    ))}
+                  </div>
+                )}
+                <MessageActions message={msg} />
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   if (!userId || !accessToken || !departmentId) {
     return (
@@ -554,68 +835,14 @@ const ChatStudent = () => {
           {loading && <p className="text-center text-gray-600">Loading messages...</p>}
           {error && <p className="text-center text-red-600 text-sm">{error}</p>}
           {messages.length > 0 ? (
-            messages.map((msg) => (
-              <div key={msg._id} className={`flex ${msg.sender === userId ? 'justify-end' : 'justify-start'}`}>
-                <div className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${msg.sender === userId ? 'flex-row-reverse space-x-reverse' : ''}`}>
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">{msg.senderModel === 'Student' ? '👨‍🎓' : '👩‍🏫'}</div>
-                  <div>
-                    {msg.replyTo && (
-                      <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded-t-md">
-                        Replying to: {msg.replyTo.message || 'Media'}
-                      </div>
-                    )}
-                    <div className={`px-4 py-2 rounded-2xl ${msg.sender === userId ? 'bg-blue-600 text-white rounded-br-md' : 'bg-white text-gray-900 border border-gray-200 rounded-bl-md'}`}>
-                      {msg.isDeleted ? (
-                        <p className="text-sm italic">Message deleted</p>
-                      ) : (
-                        <>
-                          {msg.message && <p className="text-sm">{msg.message}</p>}
-                          {msg.mediaUrl && (
-                            <div className="mt-2">
-                              {msg.mediaUrl.match(/\.(jpg|jpeg|png|gif)$/i) ? (
-                                <img src={msg.mediaUrl} alt="Media" className="max-w-full rounded-md" style={{ maxHeight: '200px' }} />
-                              ) : (
-                                <a href={msg.mediaUrl} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
-                                  View File
-                                </a>
-                              )}
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                    <div className="flex items-center mt-1 space-x-2">
-                      <p className={`text-xs text-gray-500 ${msg.sender === userId ? 'text-right' : 'text-left'}`}>
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                      {!msg.isDeleted && (
-                        <>
-                          <select onChange={(e) => handleAddReaction(msg._id, e.target.value)} value="" className="text-sm">
-                            <option value="" disabled>React</option>
-                            {['❤️', '😂', '😢', '💯', '👍', '👎'].map((r) => (
-                              <option key={r} value={r}>{r}</option>
-                            ))}
-                          </select>
-                          <div className="flex space-x-1">
-                            {msg.reactions?.map((r, i) => (
-                              <span key={i} className="text-sm">{r.reaction}</span>
-                            ))}
-                          </div>
-                          {msg.sender === userId && (
-                            <button onClick={() => handleDeleteMessage(msg._id)} className="text-red-500 hover:text-red-700">
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                          <button onClick={() => setReplyTo(msg)} className="text-blue-500 hover:text-blue-700 text-sm">Reply</button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))
+            messages.map(renderMessage)
           ) : (
             !loading && !error && activeChatId && <p className="text-center text-gray-600">No messages yet. Start the conversation!</p>
+          )}
+          {typingStatus && (
+            <div className="text-sm text-gray-500 italic">
+              {activeTeacher?.name} is typing...
+            </div>
           )}
           {!activeChatId && !loading && (
             <div className="text-center text-gray-500 mt-8">
@@ -635,10 +862,19 @@ const ChatStudent = () => {
             </div>
           )}
           <div className="flex items-end space-x-3">
-            <button onClick={() => fileInputRef.current?.click()} className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-full"
+            >
               <Paperclip className="w-5 h-5" />
             </button>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*,.pdf" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx"
+            />
             <div className="flex-1 relative">
               <textarea
                 value={message}
@@ -668,6 +904,17 @@ const ChatStudent = () => {
             </p>
           )}
           {file && <p className="text-xs text-gray-600 mt-2">Selected file: {file.name}</p>}
+          {isUploading && (
+            <div className="mt-2">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300" 
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+              <p className="text-xs text-gray-600 mt-1">Uploading: {uploadProgress}%</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

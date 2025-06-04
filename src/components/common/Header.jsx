@@ -6,7 +6,7 @@ import { logout } from '../../redux/slices/authSlice';
 import axios from '../../api/axiosInstance';
 import {
   MdNotifications,
-  MdMail,
+  // MdMail,
   MdSearch,
   MdPerson,
   MdSettings,
@@ -14,6 +14,8 @@ import {
   MdDashboard,
   MdMenu,
 } from 'react-icons/md';
+import NotificationDropdown from './NotificationDropdown';
+import { toast } from 'react-hot-toast';
 
 const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
   const navigate = useNavigate();
@@ -26,9 +28,16 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationError, setNotificationError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const MAX_RETRIES = 3;
 
   const dropdownRef = useRef(null);
   const searchRef = useRef(null);
+  const notificationRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -82,6 +91,59 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
     fetchProfileData();
   }, [role, accessToken, user]);
 
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      if (!accessToken || !user?.id) return;
+      
+      try {
+        setNotificationError(false);
+        const response = await axios.get(`/api/notifications`, {
+          headers: { 
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          },
+          params: {
+            userId: user.id,
+            userModel: role?.charAt(0).toUpperCase() + role?.slice(1).toLowerCase() || 'Student',
+            role: role || 'student'
+          }
+        });
+        
+        if (response.data) {
+          setNotifications(response.data.notifications || []);
+          setUnreadCount(response.data.unreadCount || 0);
+          setRetryCount(0); // Reset retry count on success
+        }
+      } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+        setNotificationError(true);
+        
+        // Implement retry logic
+        if (retryCount < MAX_RETRIES) {
+          setRetryCount(prev => prev + 1);
+          // Exponential backoff
+          const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
+          setTimeout(fetchNotifications, delay);
+        } else {
+          // After max retries, set empty state
+          setNotifications([]);
+          setUnreadCount(0);
+        }
+      }
+    };
+
+    fetchNotifications();
+    
+    // Set up polling for new notifications with error handling
+    const interval = setInterval(() => {
+      if (!notificationError) {
+        fetchNotifications();
+      }
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [accessToken, role, retryCount, user?.id]);
+
   const handleSearch = async (query) => {
     setSearchQuery(query);
     if (query.length > 2) {
@@ -106,6 +168,45 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     navigate(`/auth/${role}-login`);
+  };
+
+  const handleMarkAsRead = async (notificationId) => {
+    if (!accessToken || !notificationId || !user?.id) return;
+    
+    try {
+      await axios.post(`/api/notifications/mark-read`, 
+        { 
+          notificationId,
+          userId: user.id,
+          userModel: role?.charAt(0).toUpperCase() + role?.slice(1).toLowerCase() || 'Student',
+          role: role || 'student'
+        },
+        { 
+          headers: { 
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      // Optimistically update UI
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId ? { ...notif, read: true } : notif
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error);
+      // Revert optimistic update on error
+      setNotifications(prev => 
+        prev.map(notif => 
+          notif.id === notificationId ? { ...notif, read: false } : notif
+        )
+      );
+      setUnreadCount(prev => prev + 1);
+      toast.error("Failed to mark notification as read");
+    }
   };
 
   const userName = profileData?.name || user?.username || "User";
@@ -167,18 +268,32 @@ const Header = ({ role, onToggleSidebar, isSidebarOpen }) => {
 
       {/* Right - Notifications & Profile */}
       <div className="flex items-center space-x-5">
-        <div className="relative cursor-pointer">
-          <div className="p-2 rounded-full hover:bg-gray-100">
+        <div className="relative cursor-pointer" ref={notificationRef}>
+          <div 
+            className="p-2 rounded-full hover:bg-gray-100"
+            onClick={() => setShowNotifications(!showNotifications)}
+          >
             <MdNotifications className="text-gray-600 text-xl" />
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {unreadCount}
+              </span>
+            )}
           </div>
+          {showNotifications && (
+            <NotificationDropdown
+              notifications={notifications}
+              onClose={() => setShowNotifications(false)}
+              onMarkAsRead={handleMarkAsRead}
+            />
+          )}
         </div>
-        <div className="relative cursor-pointer">
+        {/* <div className="relative cursor-pointer">
           <div className="p-2 rounded-full hover:bg-gray-100">
             <MdMail className="text-gray-600 text-xl" />
             <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">5</span>
           </div>
-        </div>
+        </div> */}
         <div className="relative" ref={dropdownRef}>
           <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setShowDropdown(!showDropdown)}>
             <div className="flex flex-col items-end mr-2">

@@ -42,7 +42,7 @@ const Sidebar = ({ activePage, onClose }) => {
       { name: 'Courses', icon: <MdClass className="w-5 h-5" />, path: '/admin/courses' },
     ]},
     { section: 'MANAGEMENT', items: [
-      { name: 'Announcements', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/announcements' },
+      // { name: 'Announcements', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/announcements' },
       { name: 'Schedule', icon: <MdGrade className="w-5 h-5" />, path: '/admin/schedule' },
     ]},
     { section: 'ACCOUNT', items: [
