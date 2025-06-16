@@ -1,116 +1,161 @@
 import React from 'react';
-import { FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 const Pagination = ({ 
   currentPage, 
   totalPages, 
   onPageChange,
   itemsPerPage,
-  onItemsPerPageChange,
-  itemsPerPageOptions = [10, 25, 50, 100]
+  totalItems,
+  onItemsPerPageChange 
 }) => {
+  const pageNumbers = [];
+  const maxVisiblePages = 5;
 
-  const generatePageNumbers = () => {
-    const pageNumbers = [];
-    const maxPagesToShow = 5; 
-    
-    if (totalPages <= maxPagesToShow) {
-      for (let i = 1; i <= totalPages; i++) {
-        pageNumbers.push(i);
-      }
-    } else {
-      pageNumbers.push(1);
-      let startPage = Math.max(2, currentPage - 1);
-      let endPage = Math.min(totalPages - 1, currentPage + 1);
-      if (currentPage <= 2) {
-        endPage = Math.min(4, totalPages - 1);
-      } else if (currentPage >= totalPages - 1) {
-        startPage = Math.max(2, totalPages - 3);
-      }
-      if (startPage > 2) {
-        pageNumbers.push('...');
-      }
-      for (let i = startPage; i <= endPage; i++) {
-        pageNumbers.push(i);
-      }
-      if (endPage < totalPages - 1) {
-        pageNumbers.push('...');
-      }
-      if (totalPages > 1) {
-        pageNumbers.push(totalPages);
-      }
-    }
-    
-    return pageNumbers;
-  };
-  
-  const pageNumbers = generatePageNumbers();
-  
-  const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      onPageChange(page);
-    }
-  };
-  
+  // Calculate range of pages to show
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+
+  // Adjust start page if we're near the end
+  if (endPage - startPage + 1 < maxVisiblePages) {
+    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+  }
+
+  for (let i = startPage; i <= endPage; i++) {
+    pageNumbers.push(i);
+  }
+
   return (
-    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-4">
-      <div className="flex items-center">
-        <label className="text-sm text-gray-600 mr-2">Rows per page:</label>
+    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 px-4 py-3 bg-white border-t border-gray-200">
+      {/* Items per page selector */}
+      <div className="flex items-center gap-2">
+        <label htmlFor="itemsPerPage" className="text-sm text-gray-700">
+          Show
+        </label>
         <select
+          id="itemsPerPage"
           value={itemsPerPage}
           onChange={(e) => onItemsPerPageChange(Number(e.target.value))}
-          className="px-2 py-1 border rounded-md text-sm"
+          className="text-sm border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
         >
-          {itemsPerPageOptions.map(option => (
-            <option key={option} value={option}>{option}</option>
-          ))}
+          <option value={5}>5</option>
+          <option value={10}>10</option>
+          <option value={20}>20</option>
+          <option value={50}>50</option>
         </select>
+        <span className="text-sm text-gray-700">items per page</span>
       </div>
 
-      <div className="flex items-center justify-center space-x-1">
-        {/* Previous button */}
-        <button
-          onClick={() => goToPage(currentPage - 1)}
-          disabled={currentPage === 1}
-          className={`px-3 py-2 rounded-md ${
-            currentPage === 1
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          <FaChevronLeft className="h-4 w-4" />
-        </button>
+      {/* Pagination controls */}
+      <div className="flex items-center gap-2">
+        <div className="text-sm text-gray-700">
+          Showing {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)} to{' '}
+          {Math.min(currentPage * itemsPerPage, totalItems)} of {totalItems} items
+        </div>
         
-        {/* Page numbers */}
-        {pageNumbers.map((number, idx) => (
+        <nav className="flex items-center gap-1">
+          {/* First page */}
           <button
-            key={idx}
-            onClick={() => typeof number === 'number' && goToPage(number)}
-            disabled={number === '...'}
-            className={`px-3 py-2 rounded-md ${
-              number === currentPage
-                ? 'bg-blue-600 text-white'
-                : number === '...'
-                ? 'text-gray-600 cursor-default'
-                : 'text-gray-600 hover:bg-gray-100'
+            onClick={() => onPageChange(1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {number}
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+            </svg>
           </button>
-        ))}
-        
-        {/* Next button */}
-        <button
-          onClick={() => goToPage(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className={`px-3 py-2 rounded-md ${
-            currentPage === totalPages
-              ? 'text-gray-400 cursor-not-allowed'
-              : 'text-gray-600 hover:bg-gray-100'
-          }`}
-        >
-          <FaChevronRight className="h-4 w-4" />
-        </button>
+
+          {/* Previous page */}
+          <button
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+            className={`p-2 rounded-md ${
+              currentPage === 1
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+
+          {/* Page numbers */}
+          {startPage > 1 && (
+            <>
+              <button
+                onClick={() => onPageChange(1)}
+                className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+              >
+                1
+              </button>
+              {startPage > 2 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+            </>
+          )}
+
+          {pageNumbers.map((number) => (
+            <button
+              key={number}
+              onClick={() => onPageChange(number)}
+              className={`px-3 py-1 text-sm rounded-md ${
+                currentPage === number
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              {number}
+            </button>
+          ))}
+
+          {endPage < totalPages && (
+            <>
+              {endPage < totalPages - 1 && (
+                <span className="px-2 text-gray-500">...</span>
+              )}
+              <button
+                onClick={() => onPageChange(totalPages)}
+                className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+              >
+                {totalPages}
+              </button>
+            </>
+          )}
+
+          {/* Next page */}
+          <button
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Last page */}
+          <button
+            onClick={() => onPageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className={`p-2 rounded-md ${
+              currentPage === totalPages
+                ? 'text-gray-400 cursor-not-allowed'
+                : 'text-gray-700 hover:bg-gray-100'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+            </svg>
+          </button>
+        </nav>
       </div>
     </div>
   );

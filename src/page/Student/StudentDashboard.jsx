@@ -1,162 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import Sidebar from '../../components/student/Common/Sidebar';
 import Header from '../../components/student/Common/Header';
 import StatsCard from '../../components/student/Dashboard/StatsCard';
-import CourseProgress from '../../components/student/Dashboard/CourseProgress';
 import UpcomingAssignments from '../../components/student/Dashboard/UpcomingAssignments';
 import TodaySchedule from '../../components/student/Dashboard/TodaySchedule';
-import RecentAnnouncements from '../../components/student/Dashboard/RecentAnnouncements';
-import { MdSchool, MdAssignment, MdTrendingUp, MdMenu } from 'react-icons/md'; // Hamburger icon
+import AssignmentDetailModal from '../../components/student/assignments/AssignmentDetailModal';
+import { MdSchool, MdAssignment, MdTrendingUp, MdMenu } from 'react-icons/md';
+import axios from '../../api/axiosInstance';
+import toast from 'react-hot-toast';
 
 const Dashboard = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Sidebar toggle state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [stats, setStats] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const authState = useSelector((state) => state.auth);
+  const studentId = authState?.user?._id || authState?.user?.id;
+  const accessToken = authState?.accessToken;
 
-  // Sample data - replace with actual data from your API
-  const stats = [
-    {
-      title: 'Active Courses',
-      value: '5',
-      trend: 'up',
-      trendValue: '1 new this semester',
-      icon: MdSchool
-    },
-    {
-      title: 'Pending Assignments',
-      value: '8',
-      trend: 'up',
-      trendValue: '3 due this week',
-      icon: MdAssignment
-    },
-    {
-      title: 'Overall GPA',
-      value: '87%',
-      trend: 'up',
-      trendValue: '2% increase',
-      icon: MdTrendingUp
-    }
-  ];
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      if (!studentId || !accessToken) {
+        setIsLoading(false);
+        return;
+      }
 
-  const courses = [
-    {
-      name: 'CS101: Introduction to Programming',
-      instructor: 'Prof. Emily Johnson',
-      schedule: 'MWF 8:00 AM',
-      grade: 'A-',
-      progress: 75
-    },
-    {
-      name: 'CS201: Data Structures',
-      instructor: 'Prof. Michael Brown',
-      schedule: 'MWF 10:30 AM',
-      grade: 'B+',
-      progress: 60
-    },
-    {
-      name: 'CS301: Algorithms',
-      instructor: 'Prof. Sarah Davis',
-      schedule: 'TR 9:00 AM',
-      grade: 'B',
-      progress: 45
-    }
-  ];
+      setIsLoading(true);
+      try {
+        const studentResponse = await axios.get(`/api/students/${studentId}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
 
-  const assignments = [
-    {
-      title: 'Binary Search Tree Implementation',
-      course: 'CS201: Data Structures',
-      dueDate: 'Tomorrow, 11:59 PM',
-      weight: 15,
-      status: 'Started'
-    },
-    {
-      title: 'Database Normalization Exercise',
-      course: 'CS401: Database Systems',
-      dueDate: 'Dec 10, 11:59 PM',
-      weight: 10,
-      status: 'Not Started'
-    },
-    {
-      title: 'Software Requirements Document',
-      course: 'CS301: Software Engineering',
-      dueDate: 'Dec 15, 11:59 PM',
-      weight: 20,
-      status: 'Not Started'
-    }
-  ];
+        if (studentResponse.data.success) {
+          const student = studentResponse.data.data;
 
-  const schedule = [
-    {
-      time: '8:00 AM',
-      duration: '1h 30m',
-      title: 'CS101: Introduction to Programming',
-      location: 'Room 301, Computer Science Building'
-    },
-    {
-      time: '10:30 AM',
-      duration: '1h 30m',
-      title: 'CS201: Data Structures',
-      location: 'Room 305, Computer Science Building'
-    },
-    {
-      time: '2:00 PM',
-      duration: '1h',
-      title: 'Study Group: Algorithm Practice',
-      location: 'Library, Study Room 4'
-    },
-    {
-      time: '4:00 PM',
-      duration: '1h 30m',
-      title: 'CS401: Database Systems',
-      location: 'Room 201, Computer Science Building'
-    }
-  ];
+          const assignmentsResponse = await axios.get(
+            `/api/assignments/department/${student.departmentId}`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
 
-  const announcements = [
-    {
-      course: 'CS201: Data Structures',
-      title: 'Assignment Deadline Extended',
-      time: 'Today, 9:15 AM',
-      instructor: 'Prof. Michael Brown',
-      content: 'The deadline for the Binary Search Tree implementation assignment has been extended to Friday, December 8th at 11:59 PM due to the upcoming midterm exams.'
-    },
-    {
-      course: 'CS401: Database Systems',
-      title: 'Guest Lecture: Big Data Analytics',
-      time: 'Yesterday, 2:30 PM',
-      instructor: 'Prof. Jennifer Lee',
-      content: 'We will have a guest lecture on Big Data Analytics next Monday. Attendance is mandatory as the content will be included in the final exam.'
-    }
-  ];
+          const schedulesResponse = await axios.get(
+            `/api/schedules/department/${student.departmentId}`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+
+          if (assignmentsResponse.data.success && schedulesResponse.data.success) {
+            const assignments = assignmentsResponse.data.data;
+            const schedules = schedulesResponse.data.data;
+
+            const pendingAssignments = assignments.filter(
+              (a) => !a.submissions?.some((s) => s.studentId === studentId) && new Date(a.dueDate) >= new Date()
+            ).length;
+
+            const activeCourses = new Set(schedules.map((s) => s.courseId?._id)).size;
+
+            setStats([
+              {
+                title: 'Active Courses',
+                value: activeCourses,
+                trend: 'up',
+                trendValue: `${activeCourses} this semester`,
+                icon: MdSchool,
+              },
+              {
+                title: 'Pending Assignments',
+                value: pendingAssignments,
+                trend: 'up',
+                trendValue: `${pendingAssignments} due`,
+                icon: MdAssignment,
+              },
+              {
+                title: 'GPA',
+                value: 'N/A',
+                trend: 'up',
+                trendValue: 'Current semester',
+                icon: MdTrendingUp,
+              },
+            ]);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+        toast.error('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, [studentId, accessToken]);
+
+  const handleViewAssignment = (assignment) => {
+    setSelectedAssignment(assignment);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleStartSubmission = (assignment) => {
+    // Navigate to assignments page for submission
+    window.location.href = `/student/assignments/${assignment._id}`;
+  };
 
   return (
     <div className="flex h-screen bg-gray-50">
-      {/* Sidebar (hidden by default on small screens) */}
       <div
-        className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden ${isSidebarOpen ? 'block' : 'hidden'}`}
+        className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden ${
+          isSidebarOpen ? 'block' : 'hidden'
+        }`}
         onClick={() => setIsSidebarOpen(false)}
       />
+
       <div
-        className={`fixed left-0 top-0 bottom-0 z-40 bg-white w-64 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 transition-transform ease-in-out duration-300`}
+        className={`fixed left-0 top-0 bottom-0 z-40 bg-white w-64 transform ${
+          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } md:translate-x-0 transition-transform ease-in-out duration-300`}
       >
         <Sidebar />
       </div>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-64">
-        {/* Header with Hamburger Icon */}
         <div className="flex items-center justify-between bg-white shadow-md p-4 md:hidden">
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <MdMenu size={30} />
           </button>
-          <Header />
+          <Header role="student" />
         </div>
 
-        {/* Header for desktop */}
         <div className="hidden md:block">
-          <Header />
+          <Header role="student" />
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 overflow-y-auto no-scrollbar p-8">
           <div className="max-w-7xl mx-auto">
             <div className="mb-8">
@@ -164,29 +142,46 @@ const Dashboard = () => {
               <p className="text-gray-600">Welcome back! Here's an overview of your academic progress.</p>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-              {stats.map((stat, index) => (
-                <StatsCard key={index} {...stat} />
-              ))}
-            </div>
-
-            {/* Two-Column Layout for Desktop, Single Column for Mobile */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <div className="grid grid-cols-1 gap-6">
-                  <UpcomingAssignments assignments={assignments} />
-                  <CourseProgress courses={courses} />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
+                <p className="mt-4 text-lg text-gray-600">Loading dashboard...</p>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                  {stats.map((stat, index) => (
+                    <StatsCard key={index} {...stat} />
+                  ))}
                 </div>
-              </div>
-              <div className="space-y-6">
-                <TodaySchedule schedule={schedule} />
-                <RecentAnnouncements announcements={announcements} />
-              </div>
-            </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <div className="grid grid-cols-1 gap-6">
+                      <UpcomingAssignments onView={handleViewAssignment} />
+                    </div>
+                  </div>
+                  <div className="space-y-6">
+                    <TodaySchedule />
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
+
+      {isDetailModalOpen && selectedAssignment && (
+        <AssignmentDetailModal
+          isOpen={isDetailModalOpen}
+          onClose={() => {
+            setIsDetailModalOpen(false);
+            setSelectedAssignment(null);
+          }}
+          assignment={selectedAssignment}
+          onStartSubmission={handleStartSubmission}
+        />
+      )}
     </div>
   );
 };

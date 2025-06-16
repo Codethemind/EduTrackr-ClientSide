@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../../../api/axiosInstance';
 
-const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) => {
+const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules, teacherId }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -103,7 +103,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
     
     setFormData(prev => ({
       ...prev,
-      attachments: selectedFiles // Store actual File objects
+      attachments: selectedFiles
     }));
   };
 
@@ -117,6 +117,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
     if (!formData.courseId) newErrors.courseId = 'Course selection is required';
     if (!formData.departmentId) newErrors.departmentId = 'Department selection is required';
     if (formData.maxMarks < 1) newErrors.maxMarks = 'Maximum marks must be at least 1';
+    if (!teacherId) newErrors.teacherId = 'Teacher ID is required'; // Validate teacherId
 
     const dueDateTime = new Date(`${formData.dueDate}T${formData.dueTime}`);
     if (dueDateTime <= new Date()) {
@@ -150,6 +151,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
       formDataToSend.append('maxMarks', formData.maxMarks.toString());
       formDataToSend.append('courseId', formData.courseId);
       formDataToSend.append('departmentId', formData.departmentId);
+      formDataToSend.append('teacherId', teacherId); // Add teacherId
       formDataToSend.append('allowLateSubmission', formData.allowLateSubmission.toString());
       formDataToSend.append('lateSubmissionPenalty', formData.lateSubmissionPenalty.toString());
       formDataToSend.append('submissionFormat', formData.submissionFormat);
@@ -162,7 +164,7 @@ const CreateAssignmentModal = ({ isOpen, onClose, onSubmit, teacherSchedules }) 
         });
       }
 
-      console.log('Submitting assignment with FormData');
+      console.log('Submitting assignment with FormData:', Object.fromEntries(formDataToSend)); // Debug log
       
       await onSubmit(formDataToSend);
       onClose();

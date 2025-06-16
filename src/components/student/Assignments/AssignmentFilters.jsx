@@ -6,16 +6,46 @@ const AssignmentFilters = ({
   setFilters,
   courses = [],
   departments = [],
-  isStudent = false,
+  courseNameMap = new Map(),
+  departmentNameMap = new Map(),
+  isStudent = true,
 }) => {
   console.log('AssignmentFilters props:', { filters, courses, departments, isStudent });
 
-  const handleFilterChange = (filterType, value) => {
-    console.log('Filter changed:', { filterType, value });
+  const handleFilterChange = (filterName, value) => {
+    console.log('Filter changed:', { filterName, value });
     setFilters((prev) => ({
       ...prev,
-      [filterType]: value,
+      [filterName]: value,
     }));
+  };
+
+  const clearAllFilters = () => {
+    setFilters({
+      course: 'all',
+      department: 'all',
+      status: 'all',
+      sortBy: 'dueDate',
+    });
+  };
+
+  const hasActiveFilters = filters.course !== 'all' || filters.department !== 'all' || filters.status !== 'all';
+
+  const removeFilter = (filterName) => {
+    handleFilterChange(filterName, 'all');
+  };
+
+  const getFilterDisplayName = (filterType, value) => {
+    switch (filterType) {
+      case 'course':
+        return `Course: ${courseNameMap?.get(value) || value || 'Unknown'}`;
+      case 'department':
+        return `Department: ${departmentNameMap?.get(value) || value || 'Unknown'}`;
+      case 'status':
+        return `Status: ${value.charAt(0).toUpperCase() + value.slice(1)}`;
+      default:
+        return value;
+    }
   };
 
   const statusOptions = isStudent
@@ -40,24 +70,71 @@ const AssignmentFilters = ({
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
-      <div className="flex flex-wrap gap-4">
-      
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-lg font-semibold text-gray-900">Filter Assignments</h3>
+        {hasActiveFilters && (
+          <button
+            onClick={clearAllFilters}
+            className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span>Clear All</span>
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Course Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Course
+          </label>
+          <select
+            value={filters.course}
+            onChange={(e) => handleFilterChange('course', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="all">All Courses</option>
+            {courses?.map((courseId) => (
+              <option key={courseId} value={courseId}>
+                {courseNameMap.get(courseId)}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Department Filter */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Department
+          </label>
+          <select
+            value={filters.department}
+            onChange={(e) => handleFilterChange('department', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          >
+            <option value="all">All Departments</option>
+            {departments?.map((departmentId) => (
+              <option key={departmentId} value={departmentId}>
+                {departmentNameMap.get(departmentId)}
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Status Filter */}
-        <div className="flex-1 min-w-[200px]">
-          <label
-            htmlFor="status-filter"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Status
           </label>
           <select
-            id="status-filter"
-            aria-label="Filter by status"
             value={filters.status}
             onChange={(e) => handleFilterChange('status', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
+            <option value="all">All Assignments</option>
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -67,19 +144,14 @@ const AssignmentFilters = ({
         </div>
 
         {/* Sort By */}
-        <div className="flex-1 min-w-[200px]">
-          <label
-            htmlFor="sort-by"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
             Sort By
           </label>
           <select
-            id="sort-by"
-            aria-label="Sort assignments"
             value={filters.sortBy}
             onChange={(e) => handleFilterChange('sortBy', e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -88,39 +160,100 @@ const AssignmentFilters = ({
             ))}
           </select>
         </div>
-
-        {/* Clear Filters Button */}
-        <div className="flex items-end">
-          <button
-            onClick={() =>
-              setFilters({
-                course: 'all',
-                department: 'all',
-                status: 'all',
-                sortBy: 'dueDate',
-              })
-            }
-            aria-label="Clear all filters"
-            className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200 flex items-center space-x-2"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            <span>Clear</span>
-          </button>
-        </div>
       </div>
+
+      {/* Quick Filter Buttons */}
+      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200">
+        <span className="text-sm font-medium text-gray-700 mr-2">Quick Filters:</span>
+        
+        {statusOptions.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => handleFilterChange('status', option.value)}
+            className={`px-3 py-1 text-xs font-medium rounded-full transition-colors ${
+              filters.status === option.value
+                ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            <span className="flex items-center space-x-1">
+              <div className={`w-2 h-2 ${option.value === 'pending' ? 'bg-blue-500' : option.value === 'submitted' ? 'bg-green-500' : option.value === 'overdue' ? 'bg-red-500' : 'bg-yellow-500'} rounded-full`}></div>
+              <span>{option.label}</span>
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Active Filters Display */}
+      {hasActiveFilters && (
+        <div className="mt-4 pt-4 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">Active Filters:</span>
+            <span className="text-xs text-gray-500">
+              {Object.values(filters).filter(value => value !== 'all' && value !== 'dueDate').length} active
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {filters.course !== 'all' && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200">
+                {getFilterDisplayName('course', filters.course)}
+                <button
+                  onClick={() => removeFilter('course')}
+                  className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-blue-200 focus:outline-none"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            )}
+            
+            {filters.department !== 'all' && (
+              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 border border-purple-200">
+                {getFilterDisplayName('department', filters.department)}
+                <button
+                  onClick={() => removeFilter('department')}
+                  className="ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-purple-200 focus:outline-none"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            )}
+            
+            {filters.status !== 'all' && (
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium border ${
+                filters.status === 'pending' 
+                  ? 'bg-blue-100 text-blue-800 border-blue-200'
+                  : filters.status === 'submitted'
+                  ? 'bg-green-100 text-green-800 border-green-200'
+                  : filters.status === 'overdue'
+                  ? 'bg-red-100 text-red-800 border-red-200'
+                  : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+              }`}>
+                {getFilterDisplayName('status', filters.status)}
+                <button
+                  onClick={() => removeFilter('status')}
+                  className={`ml-2 inline-flex items-center justify-center w-4 h-4 rounded-full focus:outline-none ${
+                    filters.status === 'pending' 
+                      ? 'hover:bg-blue-200'
+                      : filters.status === 'submitted'
+                      ? 'hover:bg-green-200'
+                      : filters.status === 'overdue'
+                      ? 'hover:bg-red-200'
+                      : 'hover:bg-yellow-200'
+                  }`}
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
+                  </svg>
+                </button>
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -141,6 +274,8 @@ AssignmentFilters.propTypes = {
     _id: PropTypes.string,
     name: PropTypes.string
   })),
+  courseNameMap: PropTypes.instanceOf(Map),
+  departmentNameMap: PropTypes.instanceOf(Map),
   isStudent: PropTypes.bool,
 };
 

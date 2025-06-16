@@ -5,6 +5,7 @@ import TeacherSideBar from '../../components/teacher/common/Sidebar';
 import CreateAssignmentModal from '../../components/teacher/assignments/CreateAssignmentModal';
 import AssignmentCard from '../../components/teacher/assignments/AssignmentCard';
 import AssignmentFilters from '../../components/teacher/assignments/AssignmentFilters';
+import Pagination from '../../components/common/Pagination';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 
@@ -21,6 +22,10 @@ const AssignmentsPage = () => {
     status: 'all',
     sortBy: 'dueDate'
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const teacherId = authState?.user?._id || authState?.user?.id;
   const accessToken = authState?.accessToken;
@@ -209,6 +214,18 @@ const AssignmentsPage = () => {
     }
   });
 
+  // Calculate pagination
+  const totalItems = filteredAssignments.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentAssignments = filteredAssignments.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   useEffect(() => {
     console.log('Filters:', filters);
   }, [filters]);
@@ -332,18 +349,32 @@ const AssignmentsPage = () => {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredAssignments.map((assignment) => (
-                  <AssignmentCard
-                    key={assignment._id}
-                    assignment={assignment}
-                    onUpdate={handleUpdateAssignment}
-                    onDelete={handleDeleteAssignment}
-                    courseNameMap={courseNameMap}
-                    departmentNameMap={departmentNameMap}
+              <>
+                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {currentAssignments.map((assignment) => (
+                    <AssignmentCard
+                      key={assignment._id}
+                      assignment={assignment}
+                      onUpdate={handleUpdateAssignment}
+                      onDelete={handleDeleteAssignment}
+                      courseNameMap={courseNameMap}
+                      departmentNameMap={departmentNameMap}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                <div className="mt-6">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                    itemsPerPage={itemsPerPage}
+                    totalItems={totalItems}
+                    onItemsPerPageChange={setItemsPerPage}
                   />
-                ))}
-              </div>
+                </div>
+              </>
             )}
           </div>
         </main>
