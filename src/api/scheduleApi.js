@@ -100,15 +100,7 @@ export const getCoursesByDepartment = async (departmentId) => {
   }
 };
 
-// // Get all rooms
-// export const getAllRooms = async () => {
-//   try {
-//     const response = await axiosInstance.get('/api/rooms');
-//     return response.data;
-//   } catch (error) {
-//     throw error;
-//   }
-// };
+
 
 // Get schedule by ID
 export const getScheduleById = async (scheduleId) => {
