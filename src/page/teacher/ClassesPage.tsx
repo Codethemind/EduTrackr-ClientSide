@@ -18,6 +18,7 @@ const ClassesPage = () => {
 
   useEffect(() => {
     console.log('Initial state:', { isVideoCallActive, currentChannel });
+    console.log('Student Counts updated:', studentCounts);
     setIsVideoCallActive(false);
     setCurrentChannel(null);
 
@@ -156,7 +157,7 @@ const ClassesPage = () => {
       <TeacherSideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 md:ml-64">
           <div className="container mx-auto px-6 py-6">
             <div className="mb-8">
               <div className="flex items-center justify-between">
@@ -262,12 +263,12 @@ const ClassesPage = () => {
                                     <span className="text-gray-600">Department: </span>
                                     <span className="font-semibold text-gray-800 ml-1">{schedule.departmentId?.name || 'Not Assigned'}</span>
                                   </div>
-                                  <div className="flex items-center text-sm">
+                                  {/* <div className="flex items-center text-sm">
                                     <svg className="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                                     </svg>
                                     <span className="font-bold text-purple-700">{studentCounts[schedule.departmentId?._id] || 0} Students</span>
-                                  </div>
+                                  </div> */}
                                 </div>
                                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                                   <div className="flex items-center space-x-2">
@@ -338,12 +339,12 @@ const ClassesPage = () => {
                     </div>
                     <div className="text-sm text-gray-600">Unique Courses</div>
                   </div>
-                  <div className="text-center">
+                  {/* <div className="text-center">
                     <div className="text-2xl font-bold text-purple-600">
                       {Object.values(studentCounts).reduce((total, count) => total + count, 0)}
                     </div>
                     <div className="text-sm text-gray-600">Total Students</div>
-                  </div>
+                  </div> */}
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
                       {new Set(teacherSchedules.map((s) => s.departmentId?.name)).size}

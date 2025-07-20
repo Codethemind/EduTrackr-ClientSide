@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import axios from "../../api/axiosInstance.tsx";
+import axios from "../../api/axiosInstance";
 import { toast } from 'react-hot-toast';
 import { useDispatch } from 'react-redux';
 import { loginSuccess } from '../../redux/slices/authSlice';

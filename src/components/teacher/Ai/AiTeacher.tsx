@@ -226,7 +226,7 @@ const AiTeacher = () => {
 
   return (
     <div className="w-full h-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 overflow-y-auto">
-      <div className="max-w-7xl mx-auto h-full flex flex-col">
+      <div className="max-w-7xl mx-auto h-full flex flex-col md:ml-64">
         {/* Header */}
         <div className="bg-white rounded-2xl shadow-lg p-4 mb-4 border border-gray-100 flex-shrink-0">
           <div className="flex items-center justify-between">

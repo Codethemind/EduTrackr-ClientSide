@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from "../../api/axiosInstance.tsx";
+import axios from "../../api/axiosInstance";
 import Header from '../../components/common/Header';
 import TeacherSideBar from '../../components/teacher/common/Sidebar';
 import StudentList from "../../components/teacher/Students/StudentList.tsx";
@@ -53,7 +53,7 @@ const StudentsPage = () => {
       <TeacherSideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-6 md:ml-64">
           <StudentList
             students={students}
             loading={loading}

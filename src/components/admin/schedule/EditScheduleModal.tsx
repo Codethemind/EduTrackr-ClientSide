@@ -5,9 +5,10 @@ import { useDispatch } from 'react-redux';
 import { updateExistingSchedule } from '../../../redux/slices/scheduleSlice';
 import axios from '../../../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { AppDispatch } from '../../../redux/store';
 
 const EditScheduleModal = ({ schedule, isOpen, onClose, onSuccess, departments }) => {
-  const dispatch = useDispatch();
+  const dispatch:AppDispatch = useDispatch();
   const [formData, setFormData] = useState({
     courseId: '',
     teacherId: '',

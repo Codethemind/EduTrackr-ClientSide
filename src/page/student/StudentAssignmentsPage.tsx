@@ -10,12 +10,52 @@ import Pagination from '../../components/common/Pagination';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 
+// Add interfaces at the top
+interface Attachment {
+  name: string;
+  url: string;
+}
+
+interface Submission {
+  _id: string;
+  studentId?: string;
+  submittedAt: string;
+  isLate?: boolean;
+  grade?: number;
+  feedback?: string;
+  attachments?: Attachment[];
+}
+
+interface Teacher {
+  _id: string;
+  name?: string;
+  username?: string;
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt?: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseName?: string;
+  departmentName?: string;
+  teacherId?: Teacher;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
+  [key: string]: any;
+}
+
 const StudentAssignmentsPage = () => {
   const dispatch = useDispatch();
   const authState = useSelector((state) => state.auth);
-  const [assignments, setAssignments] = useState([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [studentSchedules, setStudentSchedules] = useState([]);
-  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -193,13 +233,13 @@ const StudentAssignmentsPage = () => {
   };
 
   // Handle opening assignment detail
-  const handleViewAssignment = (assignment) => {
+  const handleViewAssignment = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsDetailModalOpen(true);
   };
 
   // Handle opening submission modal
-  const handleStartSubmission = (assignment) => {
+  const handleStartSubmission = (assignment: Assignment) => {
     setSelectedAssignment(assignment);
     setIsSubmissionModalOpen(true);
   };

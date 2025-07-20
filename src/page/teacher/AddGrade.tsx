@@ -33,7 +33,6 @@ const AddGrade = () => {
         const response = await axios.get(`/api/assignments/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-
         if (response.data.success) {
           setAssignments(response.data.data);
         } else {
@@ -68,11 +67,13 @@ const AddGrade = () => {
     const assignment = assignments.find((a) => a._id === assignmentId);
     setSelectedAssignment(assignment);
 
+    console.log('Selected assignment:', assignment);
     // Derive students from submissions
     const submittedStudents = assignment.submissions.map((submission) => ({
       _id: submission.studentId,
       studentName: submission.studentName || 'Unknown',
       studentId: submission.studentId,
+      studentsubmittedAt: submission.submittedAt || 'Unknown',
       submission: {
         content: submission.submissionContent?.text || '',
         files: submission.submissionContent?.files || [],

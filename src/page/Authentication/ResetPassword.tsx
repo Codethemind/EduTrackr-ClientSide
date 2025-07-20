@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import axios from "../../api/axiosInstance.tsx";
+import axios from "../../api/axiosInstance";
 
 
 const ResetPassword = () => {

@@ -1,15 +1,58 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
-const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
-  console.log(assignment)
+// Define TypeScript interfaces directly in AssignmentCard.tsx
+interface Submission {
+  _id: string;
+  studentName?: string;
+  submittedAt: string;
+  isLate: boolean;
+  grade?: number;
+  feedback?: string;
+  submissionContent?: {
+    text: string;
+    files: { name: string; url: string }[];
+  };
+  attachments?: { name: string; url: string }[]; // For backward compatibility
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseId: string;
+  departmentId: string;
+  allowLateSubmission: boolean;
+  lateSubmissionPenalty: number;
+  submissionFormat: string;
+  isGroupAssignment: boolean;
+  maxGroupSize: number;
+  attachments?: { name: string; url: string }[];
+  totalStudents?: number;
+  courseName: string;
+  departmentName: string;
+  teacherName?: string;
+}
+
+interface AssignmentCardProps {
+  assignment: Assignment;
+  onUpdate: (assignmentId: string, updatedData: Partial<Assignment> & { submissionId?: string; grade?: number; feedback?: string }) => void;
+  onDelete: (assignmentId: string) => void;
+}
+
+const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onUpdate, onDelete }) => {
   const [showDetails, setShowDetails] = useState(false);
-  const [showSubmissions, setShowSubmissions] = useState(false);
 
   // Calculate assignment status
   const getDaysUntilDue = () => {
     const now = new Date();
     const dueDate = new Date(assignment.dueDate);
-    const diffTime = dueDate - now;
+    const diffTime = dueDate.getTime() - now.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
@@ -21,33 +64,38 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
   // Get status badge
   const getStatusBadge = () => {
     if (isExpired) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">Expired</span>;
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+          Expired
+        </span>
+      );
     } else if (isNearDue) {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">Due Soon</span>;
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+          Due Soon
+        </span>
+      );
     } else {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Active</span>;
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Active
+        </span>
+      );
     }
   };
 
   // Format date
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
   // Handle quick actions
-  const handleToggleStatus = () => {
-    // Toggle between active and inactive (if needed)
-    onUpdate(assignment._id, { 
-      status: assignment.status === 'active' ? 'inactive' : 'active' 
-    });
-  };
-
   const handleExtendDeadline = () => {
     const newDueDate = new Date(assignment.dueDate);
     newDueDate.setDate(newDueDate.getDate() + 7); // Extend by 7 days
@@ -56,34 +104,28 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
 
   // Calculate submission statistics
   const totalSubmissions = assignment.submissions?.length || 0;
-  const submissionRate = assignment.totalStudents 
-    ? Math.round((totalSubmissions / assignment.totalStudents) * 100) 
+  const submissionRate = assignment.totalStudents
+    ? Math.round((totalSubmissions / assignment.totalStudents) * 100)
     : 0;
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 hover:shadow-md ${
-      isExpired ? 'border-red-200' : isNearDue ? 'border-yellow-200' : 'border-gray-200'
-    }`}>
+    <div
+      className={`bg-white rounded-xl shadow-sm border-2 transition-all duration-200 hover:shadow-md ${
+        isExpired ? 'border-red-200' : isNearDue ? 'border-yellow-200' : 'border-gray-200'
+      }`}
+    >
       {/* Card Header */}
       <div className="p-6 pb-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">
-              {assignment.title}
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{assignment.title}</h3>
             <div className="flex items-center space-x-3 text-sm text-gray-600">
-              <span className="font-medium text-blue-600">
-                {assignment.courseName} 
-              </span>
+              <span className="font-medium text-blue-600">{assignment.courseName}</span>
               <span>•</span>
               <span>{assignment.departmentName}</span>
             </div>
           </div>
-          <div className="ml-4 flex items-center space-x-2">
-            {getStatusBadge()}
-           
-            
-          </div>
+          <div className="ml-4 flex items-center space-x-2">{getStatusBadge()}</div>
         </div>
 
         {/* Assignment Info */}
@@ -103,9 +145,7 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
         </div>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 line-clamp-2 mb-4">
-          {assignment.description}
-        </p>
+        <p className="text-sm text-gray-600 line-clamp-2 mb-4">{assignment.description}</p>
 
         {/* Submission Stats */}
         <div className="bg-gray-50 rounded-lg p-3 mb-4">
@@ -114,8 +154,8 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
             <span className="text-sm font-bold text-blue-600">{totalSubmissions}</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+            <div
+              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${Math.max(submissionRate, 5)}%` }}
             ></div>
           </div>
@@ -130,7 +170,12 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
           {assignment.isGroupAssignment && (
             <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-purple-100 text-purple-800">
               <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                ></path>
               </svg>
               Group (Max {assignment.maxGroupSize})
             </span>
@@ -149,8 +194,8 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
       {/* Action Buttons */}
       <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <button
-            onClick={() => setShowSubmissions(!showSubmissions)}
+          <Link
+            to={`/teacher/assignments/${assignment._id}`}
             className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center space-x-1"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,12 +203,17 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
             </svg>
             <span>View Submissions</span>
-          </button>
+          </Link>
           <button
             onClick={() => setShowDetails(!showDetails)}
             className="text-sm text-gray-600 hover:text-gray-800 font-medium flex items-center space-x-1"
           >
-            <svg className={`w-4 h-4 transform transition-transform ${showDetails ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className={`w-4 h-4 transform transition-transform ${showDetails ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
             </svg>
             <span>Details</span>
@@ -198,7 +248,6 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
                 <p className="text-sm text-gray-600">{assignment.instructions}</p>
               </div>
             )}
-            
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div>
                 <span className="font-medium text-gray-700">Created:</span>
@@ -206,132 +255,34 @@ const AssignmentCard = ({ assignment, onUpdate, onDelete }) => {
               </div>
               <div>
                 <span className="font-medium text-gray-700">Time Left:</span>
-                <span className={`ml-2 font-medium ${
-                  isExpired ? 'text-red-600' : isNearDue ? 'text-yellow-600' : 'text-green-600'
-                }`}>
+                <span
+                  className={`ml-2 font-medium ${
+                    isExpired ? 'text-red-600' : isNearDue ? 'text-yellow-600' : 'text-green-600'
+                  }`}
+                >
                   {isExpired ? `${Math.abs(daysUntilDue)} days overdue` : `${daysUntilDue} days left`}
                 </span>
               </div>
             </div>
-
             {assignment.attachments && assignment.attachments.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 mb-1">Attachments:</h4>
                 <div className="flex flex-wrap gap-2">
                   {assignment.attachments.map((attachment, index) => (
-                    <span key={index} className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-800">
+                    <a
+                      key={index}
+                      href={attachment.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center px-2 py-1 rounded-md text-xs bg-blue-100 text-blue-800 hover:bg-blue-200"
+                    >
                       📎 {attachment.name || `Attachment ${index + 1}`}
-                    </span>
+                    </a>
                   ))}
                 </div>
               </div>
             )}
           </div>
-        </div>
-      )}
-
-      {/* Submissions Panel */}
-      {showSubmissions && (
-        <div className="px-6 py-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-gray-700 mb-3">Recent Submissions</h4>
-          {assignment.submissions && assignment.submissions.length > 0 ? (
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {assignment.submissions.slice(0, 5).map((submission, index) => (
-                <div key={index} className="bg-white rounded-lg border border-gray-200 p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium text-blue-700">
-                          {submission.studentName?.[0] || 'S'}
-                        </span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">
-                          {submission.studentName || 'Student'}
-                        </p>
-                        <p className="text-xs text-gray-500">
-                          {formatDate(submission.submittedAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {submission.isLate && (
-                        <span className="text-xs text-red-600 font-medium">Late</span>
-                      )}
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="number"
-                          min="0"
-                          max={assignment.maxMarks}
-                          value={submission.grade || ''}
-                          onChange={(e) => {
-                            const newGrade = parseInt(e.target.value);
-                            if (newGrade >= 0 && newGrade <= assignment.maxMarks) {
-                              onUpdate(assignment._id, {
-                                submissionId: submission._id,
-                                grade: newGrade
-                              });
-                            }
-                          }}
-                          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                          placeholder="Grade"
-                        />
-                        <span className="text-xs text-gray-500">/ {assignment.maxMarks}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Submission Attachments */}
-                  {submission.attachments?.length > 0 && (
-                    <div className="mt-3">
-                      <h5 className="text-xs font-medium text-gray-700 mb-2">Submitted Files:</h5>
-                      <div className="space-y-2">
-                        {submission.attachments.map((attachment, idx) => (
-                          <div key={idx} className="flex items-center p-2 bg-gray-50 rounded">
-                            <svg className="w-4 h-4 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-                            </svg>
-                            <span className="text-sm text-gray-700 flex-1">{attachment.name}</span>
-                            <a 
-                              href={attachment.url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-700 text-xs font-medium"
-                            >
-                              View
-                            </a>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Feedback */}
-                  <div className="mt-3">
-                    <textarea
-                      value={submission.feedback || ''}
-                      onChange={(e) => {
-                        onUpdate(assignment._id, {
-                          submissionId: submission._id,
-                          feedback: e.target.value
-                        });
-                      }}
-                      placeholder="Add feedback..."
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                      rows="2"
-                    />
-                  </div>
-                </div>
-              ))}
-              {assignment.submissions.length > 5 && (
-                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                  View all {assignment.submissions.length} submissions →
-                </button>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-4">No submissions yet</p>
-          )}
         </div>
       )}
     </div>

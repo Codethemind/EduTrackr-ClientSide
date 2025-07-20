@@ -18,7 +18,6 @@ const StudentDetailsPage = () => {
   useEffect(() => {
     const fetchStudentDetails = async () => {
       const accessToken = authState?.accessToken;
-      
       try {
         // Fetch student details
         const response = await axios.get(`/api/students/${id}`, {
@@ -189,7 +188,7 @@ const StudentDetailsPage = () => {
               </div>
 
               {/* Main Content Area */}
-              <div className="xl:col-span-3 space-y-6">
+              <div className="xl:col-span-3 space-y-6 md:ml-64 ">
                 {/* Enrolled Courses */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-6">

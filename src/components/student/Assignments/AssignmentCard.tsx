@@ -1,6 +1,51 @@
 import React from 'react';
 
-const AssignmentCard = ({ assignment, onView, onSubmit }) => {
+interface Attachment {
+  name: string;
+  url: string;
+}
+
+interface Submission {
+  _id: string;
+  studentId?: string;
+  submittedAt: string;
+  isLate?: boolean;
+  grade?: number;
+  feedback?: string;
+  attachments?: Attachment[];
+}
+
+interface Teacher {
+  _id: string;
+  name?: string;
+  username?: string;
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt?: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseName?: string;
+  departmentName?: string;
+  teacherId?: Teacher;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
+  [key: string]: any;
+}
+
+interface AssignmentCardProps {
+  assignment: Assignment;
+  onView: (assignment: Assignment) => void;
+  onSubmit: (assignment: Assignment) => void;
+}
+
+const AssignmentCard: React.FC<AssignmentCardProps> = ({ assignment, onView, onSubmit }) => {
   const dueDate = new Date(assignment.dueDate);
   const now = new Date();
   const isOverdue = dueDate < now && !assignment.submissions?.length;

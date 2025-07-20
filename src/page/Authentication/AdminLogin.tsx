@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from "../../api/axiosInstance.tsx";
+import axios from "../../api/axiosInstance";
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { useDispatch } from "react-redux";

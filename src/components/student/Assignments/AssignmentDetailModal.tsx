@@ -3,7 +3,53 @@ import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
 
-const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission }) => {
+interface Attachment {
+  name: string;
+  url: string;
+}
+
+interface Submission {
+  _id: string;
+  studentId?: string;
+  submittedAt: string;
+  isLate?: boolean;
+  grade?: number;
+  feedback?: string;
+  attachments?: Attachment[];
+}
+
+interface Teacher {
+  _id: string;
+  name?: string;
+  username?: string;
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt?: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseName?: string;
+  departmentName?: string;
+  teacherId?: Teacher;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
+  [key: string]: any; // fallback for any extra fields
+}
+
+interface AssignmentDetailModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  assignment: Assignment | null;
+  onStartSubmission: (assignment: Assignment) => Promise<void> | void;
+}
+
+const AssignmentDetailModal: React.FC<AssignmentDetailModalProps> = ({ isOpen, onClose, assignment, onStartSubmission }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!assignment) return null;
@@ -74,9 +120,9 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                     </h2>
                     <div className="flex items-center space-x-4">
                       <span className="text-sm text-gray-600">
-                        {assignment.courseName} • {assignment.departmentName}
+                        {assignment.courseName || ''} • {assignment.departmentName || ''}
                       </span>
-                      {assignment.submissions?.length > 0 ? (
+                      {assignment.submissions?.length && assignment.submissions.length > 0 ? (
                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                           Submitted
                         </span>
@@ -143,7 +189,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                         Teacher
                       </h3>
                       <p className="text-gray-600">
-                        {assignment.teacherId?.name || 'Unknown Teacher'}
+                        {assignment.teacherId?.name || assignment.teacherId?.username || 'Unknown Teacher'}
                       </p>
                     </div>
                     <div>
@@ -192,7 +238,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                   )}
 
                   {/* Submission Status */}
-                  {assignment.submissions?.length > 0 && (
+                  {assignment.submissions && assignment.submissions.length > 0 && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                       <h3 className="text-sm font-medium text-green-800 mb-2">
                         Submission Status
@@ -200,17 +246,17 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                       <div className="space-y-2">
                         <p className="text-sm text-green-700">
                           Submitted on:{' '}
-                          {new Date(
+                          {assignment.submissions[0]?.submittedAt ? new Date(
                             assignment.submissions[0].submittedAt
-                          ).toLocaleString()}
+                          ).toLocaleString() : 'N/A'}
                         </p>
-                        {assignment.submissions[0].grade !== undefined && (
+                        {assignment.submissions[0]?.grade !== undefined && (
                           <p className="text-sm text-green-700">
                             Grade: {assignment.submissions[0].grade}/
                             {assignment.maxMarks}
                           </p>
                         )}
-                        {assignment.submissions[0].feedback && (
+                        {assignment.submissions[0]?.feedback && (
                           <div>
                             <p className="text-sm font-medium text-green-800 mb-1">
                               Feedback:
@@ -234,7 +280,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                     Close
                   </button>
 
-                  {assignment.submissions?.length === 0 && !isOverdue && (
+                  {(!assignment.submissions || assignment.submissions.length === 0) && !isOverdue && (
                     <button
                       onClick={handleSubmit}
                       disabled={isSubmitting}
@@ -244,7 +290,7 @@ const AssignmentDetailModal = ({ isOpen, onClose, assignment, onStartSubmission 
                     </button>
                   )}
 
-                  {assignment.submissions?.length === 0 && isOverdue && assignment.allowLateSubmission && (
+                  {(!assignment.submissions || assignment.submissions.length === 0) && isOverdue && assignment.allowLateSubmission && (
                     <button
                       onClick={handleSubmit}
                       disabled={isSubmitting}

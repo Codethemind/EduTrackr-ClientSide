@@ -4,8 +4,48 @@ import axios from '../../../api/axiosInstance';
 import { toast } from 'react-hot-toast';
 import { MdAssignment } from 'react-icons/md';
 
+// Add interfaces at the top
+interface Attachment {
+  name: string;
+  url: string;
+}
+
+interface Submission {
+  _id: string;
+  studentId?: string;
+  submittedAt: string;
+  isLate?: boolean;
+  grade?: number;
+  feedback?: string;
+  attachments?: Attachment[];
+}
+
+interface Teacher {
+  _id: string;
+  name?: string;
+  username?: string;
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt?: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseName?: string;
+  departmentName?: string;
+  teacherId?: Teacher;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
+  [key: string]: any;
+}
+
 const UpcomingAssignments = ({ onView }) => {
-  const [assignments, setAssignments] = useState([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const authState = useSelector((state) => state.auth);

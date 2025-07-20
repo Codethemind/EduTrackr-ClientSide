@@ -1001,7 +1001,7 @@ const ChatStudent = () => {
             </div>
             <div>
               <h2 className="font-semibold text-gray-900">
-                {activeTeacher?.username || 'Select a teacher'}
+                {activeTeacher?.name || 'Select a teacher'}
               </h2>
               <p className="text-sm text-blue-600">
                 Teacher{' '}

@@ -333,7 +333,7 @@ const AssignmentsPage: React.FC = () => {
       <TeacherSideBar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 ml-64">
           <div className="container mx-auto px-6 py-6">
             <div className="mb-8">
               <div className="flex items-center justify-between">

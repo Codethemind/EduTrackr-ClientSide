@@ -1,6 +1,7 @@
 import React from 'react';
 
 const GradeEntryTable = ({ students, grades, onGradeChange }) => {
+  console.log('GradeEntryTable rendered with students:', students);
   return (
     <div className="overflow-x-auto">
       <table
@@ -19,7 +20,7 @@ const GradeEntryTable = ({ students, grades, onGradeChange }) => {
               scope="col"
               className="px-6 py-4 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider"
             >
-              Student ID
+              Date
             </th>
             <th
               scope="col"
@@ -47,7 +48,7 @@ const GradeEntryTable = ({ students, grades, onGradeChange }) => {
                 </div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <div className="text-base text-gray-600">{student.studentId}</div>
+                <div className="text-base text-gray-600">{new Date(student.studentsubmittedAt).toLocaleDateString()}</div>
               </td>
               <td className="px-6 py-4">
                 <div className="text-base text-gray-600">

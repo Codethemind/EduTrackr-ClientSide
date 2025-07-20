@@ -1,10 +1,12 @@
+
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 
 // Routes Protection
 import ProtectedRoute from './components/routes/ProtectedRoute';
-import AuthRoute from './components/routes/AuthRoute'
+import AuthRoute from './components/routes/AuthRoute';
+
 // Admin Components
 import AdminDashboard from './page/Admin/AdminDashboard';
 import AdminUsers from './page/Admin/AdminUsers';
@@ -12,26 +14,29 @@ import AdminDepartments from './page/Admin/AdminDepartments';
 import AdminCourses from './page/Admin/AdminCourses';
 import AdminProfile from './page/Admin/AdminProfile';
 import AdminSchedule from './page/Admin/AdminSchedule';
+import AdminConcernPage from './page/Admin/AdminConcernPage';
 
 // Teacher Components
 import TeacherDashboard from './page/teacher/TeacherDashboard';
 import TeacherProfile from './page/teacher/TeacherProfile';
 import AssignmentsPage from './page/teacher/AssignmentsPage';
+import AssignmentDetailsPage from './page/teacher/AssignmentDetailsPage';
 import ClassesPage from './page/teacher/ClassesPage';
 import StudentsPage from './page/teacher/StudentsPage';
-import AddGrade from './page/teacher/AddGrade'
+import AddGrade from './page/teacher/AddGrade';
 import TeacherChattingPage from './page/teacher/ChattingPage';
-import TeacherAiAssistent from './page/teacher/AiPage'
-
+import TeacherAiAssistent from './page/teacher/AiPage';
+import TeacherConcernPage from './page/teacher/TeacherConcernPage';
 
 // Student Components
 import StudentDashboard from './page/student/StudentDashboard';
 import StudentProfile from './page/student/Profile';
 import StudentAssignmentsPage from './page/student/StudentAssignmentsPage';
-import StudentClassesPage from './page/student/StudentClassesPage'
-import Grade from './page/student/Grade'
+import StudentClassesPage from './page/student/StudentClassesPage';
+import Grade from './page/student/Grade';
 import StudentChattingPage from './page/student/ChattingPage';
-import StudentAiAssistent from './page/student/AiPage'
+import StudentAiAssistent from './page/student/AiPage';
+import StudentConcernPage from './page/student/StudentConcernPage';
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -40,7 +45,7 @@ import StudentLogin from './page/Authentication/StudentLogin';
 import ForgotPassword from './page/Authentication/ForgotPassword';
 import ResetPassword from './page/Authentication/ResetPassword';
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <>
       <Toaster 
@@ -80,6 +85,7 @@ const App = () => {
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/profile" element={<AdminProfile />} />
           <Route path="/admin/schedule" element={<AdminSchedule />} />
+          <Route path="/admin/concerns" element={<AdminConcernPage />} />
         </Route>
 
         {/* Protected Teacher Routes */}
@@ -87,12 +93,14 @@ const App = () => {
           <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
           <Route path="/teacher/profile" element={<TeacherProfile />} />
           <Route path="/teacher/assignments" element={<AssignmentsPage />} />
+          <Route path="/teacher/assignments/:assignmentId" element={<AssignmentDetailsPage />} />
           <Route path="/teacher/my-classes" element={<ClassesPage />} />
           <Route path="/teacher/my-classes/:id/students" element={<StudentsPage />} />
           <Route path="/teacher/students" element={<StudentsPage />} />
           <Route path="/teacher/grades" element={<AddGrade />} />
           <Route path="/teacher/chat" element={<TeacherChattingPage />} />
           <Route path="/teacher/ai-assistant" element={<TeacherAiAssistent />} />
+          <Route path="/teacher/concerns" element={<TeacherConcernPage />} />
         </Route>
 
         {/* Protected Student Routes */}
@@ -104,6 +112,7 @@ const App = () => {
           <Route path="/student/grades" element={<Grade />} />
           <Route path="/student/chat" element={<StudentChattingPage />} />
           <Route path="/student/ai-assistant" element={<StudentAiAssistent />} />
+          <Route path="/student/concerns" element={<StudentConcernPage />} />
         </Route>
 
         {/* Catch All - Redirect */}

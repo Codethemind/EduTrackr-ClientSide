@@ -1,7 +1,8 @@
+
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { logout } from '../../../redux/slices/authSlice'; // Importing the logout action from your Redux slice
+import { logout } from '../../../redux/slices/authSlice';
 import {
   MdDashboard,
   MdClass,
@@ -18,14 +19,30 @@ import {
   MdSmartToy,
 } from 'react-icons/md';
 
-const TeacherSideBar = () => {
+interface TeacherSideBarProps {
+  activePage?: string;
+  onClose?: () => void;
+}
+
+const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  
-  const isActive = (path) => location.pathname === path;
 
-  // Menu Items
+  const isActive = (path: string) => {
+    if (activePage) {
+      return activePage === path.replace('/teacher/', '');
+    }
+    return location.pathname === path;
+  };
+
+  const handleLogout = () => {
+    dispatch(logout());
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/auth/teacher-login');
+  };
+
   const menuItems = {
     MAIN: [
       { icon: MdDashboard, label: 'Dashboard', path: '/teacher/dashboard' },
@@ -36,28 +53,16 @@ const TeacherSideBar = () => {
     ],
     COMMUNICATION: [
       { icon: MdChat, label: 'Student Chat', path: '/teacher/chat' },
-      { icon: MdSmartToy, label: 'Ai Assistent', path: '/teacher/ai-assistant' },
-      
-      // { icon: MdAnnouncement, label: 'Announcements', path: '/teacher/announcements' },
+      { icon: MdAnnouncement, label: 'Concerns', path: '/teacher/concerns' },
+      { icon: MdSmartToy, label: 'AI Assistant', path: '/teacher/ai-assistant' },
     ],
-    // CONTENT: [
-    //   { icon: MdDescription, label: 'Resources', path: '/teacher/resources' },
-    // ],
     ACCOUNT: [
       { icon: MdPerson, label: 'Profile', path: '/teacher/profile' },
-      { icon: MdExitToApp, label: 'Logout', path: '#' }, // No path for logout, will trigger function
+      { icon: MdExitToApp, label: 'Logout', path: '#' },
     ],
   };
 
-  // Logout Handler
-  const handleLogout = () => {
-    dispatch(logout()); // Clear Redux auth state
-    localStorage.removeItem('accessToken'); // Remove session tokens from localStorage
-    navigate('/auth/teacher-login'); // Redirect to the teacher login page
-  };
-
-  // Render Menu Section
-  const renderSection = (title, items) => (
+  const renderSection = (title: string, items: { icon: React.ElementType; label: string; path: string }[]) => (
     <div className="mb-8">
       <h3 className="px-4 mb-3 text-xs font-semibold text-gray-500">{title}</h3>
       <div className="space-y-1">
@@ -66,7 +71,7 @@ const TeacherSideBar = () => {
           return item.label === 'Logout' ? (
             <button
               key={item.path}
-              onClick={handleLogout} // Trigger logout function on button click
+              onClick={handleLogout}
               className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
             >
               <Icon className="w-5 h-5 mr-3" />
@@ -90,11 +95,19 @@ const TeacherSideBar = () => {
   );
 
   return (
-    <div className="w-64 h-full bg-white border-r border-gray-200 flex flex-col">
-      <div className="p-4">
+    <div className="fixed left-0 top-0 h-full w-64 bg-white border-r border-gray-200">
+      <div className="flex items-center justify-between px-6 py-4">
         <Link to="/teacher/dashboard" className="flex items-center">
           <span className="text-xl font-bold text-blue-600">EduPortal</span>
         </Link>
+        {onClose && (
+          <button 
+            onClick={onClose} 
+            className="lg:hidden text-gray-500 hover:text-gray-700"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       <div className="flex-1 px-3 py-4">

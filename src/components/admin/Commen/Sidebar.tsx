@@ -1,26 +1,31 @@
+
 import React from 'react';
 import { useDispatch } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
-import { useNavigate } from 'react-router-dom';
-import { Link, useLocation } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { 
   MdDashboard, 
   MdAssignment, 
   MdGrade,
- 
   MdPeople,
   MdCategory,
   MdClass,
+  MdAnnouncement,
   MdLogout,
   MdPerson 
 } from 'react-icons/md';
 
-const Sidebar = ({ activePage, onClose }) => {
+interface AdminSideBarProps {
+  activePage?: string;
+  onClose?: () => void;
+}
+
+const AdminSideBar: React.FC<AdminSideBarProps> = ({ activePage, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const isActive = (path) => {
+  const isActive = (path: string) => {
     if (activePage) {
       return activePage === path.replace('/admin/', '');
     }
@@ -28,27 +33,36 @@ const Sidebar = ({ activePage, onClose }) => {
   };
 
   const handleLogout = () => {
-    dispatch(logout()); // 1. Clear Redux auth state
-    localStorage.removeItem('accessToken'); // 2. Clear any session tokens from localStorage
-    localStorage.removeItem('refreshToken'); // Clear refresh token as well
-    navigate('/auth/admin-login'); // 3. Redirect to admin login page
+    dispatch(logout());
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    navigate('/auth/admin-login');
   };
 
   const menuItems = [
-    { section: 'MAIN', items: [
-      { name: 'Dashboard', icon: <MdDashboard className="w-5 h-5" />, path: '/admin/dashboard' },
-      { name: 'Users', icon: <MdPeople className="w-5 h-5" />, path: '/admin/users' },
-      { name: 'Departments', icon: <MdCategory className="w-5 h-5" />, path: '/admin/departments' },
-      { name: 'Courses', icon: <MdClass className="w-5 h-5" />, path: '/admin/courses' },
-    ]},
-    { section: 'MANAGEMENT', items: [
-      // { name: 'Announcements', icon: <MdAssignment className="w-5 h-5" />, path: '/admin/announcements' },
-      { name: 'Schedule', icon: <MdGrade className="w-5 h-5" />, path: '/admin/schedule' },
-    ]},
-    { section: 'ACCOUNT', items: [
-      { name: 'Profile', icon: <MdPerson className="w-5 h-5" />, path: '/admin/profile' },
-      { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' }, // No path for logout
-    ]},
+    {
+      section: 'MAIN',
+      items: [
+        { name: 'Dashboard', icon: <MdDashboard className="w-5 h-5" />, path: '/admin/dashboard' },
+        { name: 'Users', icon: <MdPeople className="w-5 h-5" />, path: '/admin/users' },
+        { name: 'Departments', icon: <MdCategory className="w-5 h-5" />, path: '/admin/departments' },
+        { name: 'Courses', icon: <MdClass className="w-5 h-5" />, path: '/admin/courses' },
+      ],
+    },
+    {
+      section: 'MANAGEMENT',
+      items: [
+        { name: 'Concerns', icon: <MdAnnouncement className="w-5 h-5" />, path: '/admin/concerns' },
+        { name: 'Schedule', icon: <MdGrade className="w-5 h-5" />, path: '/admin/schedule' },
+      ],
+    },
+    {
+      section: 'ACCOUNT',
+      items: [
+        { name: 'Profile', icon: <MdPerson className="w-5 h-5" />, path: '/admin/profile' },
+        { name: 'Logout', icon: <MdLogout className="w-5 h-5" />, path: '#' },
+      ],
+    },
   ];
 
   return (
@@ -60,7 +74,7 @@ const Sidebar = ({ activePage, onClose }) => {
             onClick={onClose} 
             className="lg:hidden text-gray-500 hover:text-gray-700"
           >
-            &times;
+            ×
           </button>
         )}
       </div>
@@ -85,7 +99,9 @@ const Sidebar = ({ activePage, onClose }) => {
                 <Link
                   key={itemIndex}
                   to={item.path}
-                  className={`flex items-center px-6 py-2.5 text-sm ${isActive(item.path) ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+                  className={`flex items-center px-6 py-2.5 text-sm ${
+                    isActive(item.path) ? 'text-blue-600 bg-blue-50 border-r-2 border-blue-600' : 'text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
                   <span className="mr-3">{item.icon}</span>
                   {item.name}
@@ -99,4 +115,4 @@ const Sidebar = ({ activePage, onClose }) => {
   );
 };
 
-export default Sidebar;
+export default AdminSideBar;

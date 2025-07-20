@@ -117,8 +117,8 @@ const Dashboard: React.FC = () => {
         setDashboardStats((prev) => ({
           ...prev,
           users: { count: counts.total, trend: 5 },
-          courses: { count: 20, trend: 3 },
-          assignments: { count: 50, trend: -2 },
+          courses: { count: 12, trend: 3 },
+          assignments: { count: 3, trend: -2 },
           resources: { count: 100, trend: 7 },
         }));
 
@@ -293,12 +293,12 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="text-xs sm:text-sm text-amber-600">Assignments</div>
                     </div>
-                    <div className="bg-green-50 p-3 sm:p-4 rounded-lg text-center">
+                    {/* <div className="bg-green-50 p-3 sm:p-4 rounded-lg text-center">
                       <div className="text-xl sm:text-2xl font-bold text-green-700">
                         {formatNumber(dashboardStats.resources.count)}
                       </div>
                       <div className="text-xs sm:text-sm text-green-600">Resources</div>
-                    </div>
+                    </div> */}
                     <div className="bg-pink-50 p-3 sm:p-4 rounded-lg text-center">
                       <div className="text-xl sm:text-2xl font-bold text-pink-700">
                         {formatNumber(dashboardStats.users.count)}

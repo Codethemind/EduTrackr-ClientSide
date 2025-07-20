@@ -1,15 +1,34 @@
-import axiosInstance from "./axiosInstance";
+import { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axiosInstance from './axiosInstance';
 import store from '../redux/store';
 
-export const refreshToken = async () => {
+interface RefreshTokenResponse {
+  data: {
+    accessToken: string;
+  };
+}
+
+interface ApiErrorResponse {
+  message: string;
+}
+
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
+
+export const refreshToken = async (): Promise<string | null> => {
   try {
-    const response = await axiosInstance.post("/auth/refresh-token", {}, { 
-      withCredentials: true 
-    });
+    const response: AxiosResponse<RefreshTokenResponse> = await axiosInstance.post(
+      "/auth/refresh-token", 
+      {}, 
+      { 
+        withCredentials: true 
+      }
+    );
     
     const newAccessToken = response.data.data.accessToken;
-    console.log(response.data.data)
-    console.log('new accesstoken',newAccessToken)
+    console.log(response.data.data);
+    console.log('new accesstoken', newAccessToken);
     
     // Update localStorage immediately
     localStorage.setItem('accessToken', newAccessToken);
@@ -24,11 +43,11 @@ export const refreshToken = async () => {
     
     return null;
   }
-}
+};
 
-export const setupInterceptor = (axiosInstance) => {
+export const setupInterceptor = (axiosInstance: AxiosInstance): void => {
   axiosInstance.interceptors.request.use(
-    (config) => {
+    (config: InternalAxiosRequestConfig) => {
       // Try to get token from Redux first, then localStorage
       let token = store.getState().auth.accessToken;
       if (!token) {
@@ -40,16 +59,16 @@ export const setupInterceptor = (axiosInstance) => {
       }
       return config;
     },
-    (error) => {
+    (error: AxiosError) => {
       console.error("Axios request interceptor error", error);
       return Promise.reject(error);
     }
   );
 
   axiosInstance.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
+    (response: AxiosResponse) => response,
+    async (error: AxiosError<ApiErrorResponse>) => {
+      const originalRequest = error.config as CustomAxiosRequestConfig;
 
       if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh-token') {
         originalRequest._retry = true;

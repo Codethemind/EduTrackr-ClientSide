@@ -74,6 +74,7 @@ const fetchAllUsers = async (): Promise<void> => {
 
     if (response.data.success) {
       setUsers(response.data.data || []);
+      console.log("Fetched users:", response.data.data);
       setError(null);
     } else {
       throw new Error(response.data.message || "Failed to fetch users");

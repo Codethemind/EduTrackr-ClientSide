@@ -769,7 +769,7 @@ const ChatTeacher = () => {
     return (
       <div
         key={messageKey}
-        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4`}
+        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 `}
       >
         <div
           className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
@@ -827,7 +827,7 @@ const ChatTeacher = () => {
                 </>
               )}
             </div>
-            <div className="flex items-center mt-1 space-x-2">
+            <div className="flex items-center mt-1 space-x-2 ">
               <p
                 className={`text-xs text-gray-500 ${
                   isSender ? 'text-right' : 'text-left'
@@ -876,14 +876,14 @@ const ChatTeacher = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen bg-gray-50 md:ml-64">
       {/* Sidebar */}
       <div
         className={`bg-white border-r border-gray-200 transition-all duration-300 ${
           sidebarOpen ? 'w-80' : 'w-0'
         } overflow-hidden`}
       >
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 ">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">Students</h1>
             <div className="flex items-center space-x-2">

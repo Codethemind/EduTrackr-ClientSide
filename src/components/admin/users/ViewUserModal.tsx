@@ -83,7 +83,7 @@ const ViewUserModal = ({ user, onClose }) => {
 
   const renderStudentDetails = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4 mt-4">
-      <DetailItem label="Department">{loading ? 'Loading...' : getDepartmentName(user.department)}</DetailItem>
+      <DetailItem label="Department">{loading ? 'Loading...' : getDepartmentName(user.courses[0].department)}</DetailItem>
       <DetailItem label="Class">{user.class}</DetailItem>
       <div className="md:col-span-2">
         <p className="text-sm text-gray-500 mb-1">Courses</p>

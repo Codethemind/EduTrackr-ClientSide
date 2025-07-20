@@ -1,6 +1,55 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+// Add interfaces at the top
+interface Attachment {
+  name: string;
+  url: string;
+}
+
+interface Submission {
+  _id: string;
+  studentId?: string;
+  submittedAt: string;
+  isLate?: boolean;
+  grade?: number;
+  feedback?: string;
+  attachments?: Attachment[];
+}
+
+interface Teacher {
+  _id: string;
+  name?: string;
+  username?: string;
+}
+
+interface Assignment {
+  _id: string;
+  title: string;
+  description: string;
+  instructions?: string;
+  dueDate: string;
+  createdAt?: string;
+  maxMarks: number;
+  submissions?: Submission[];
+  courseName?: string;
+  departmentName?: string;
+  teacherId?: Teacher;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
+  [key: string]: any;
+}
+
+interface AssignmentFiltersProps {
+  filters: any;
+  setFilters: (filters: any) => void;
+  courses: any[];
+  departments: any[];
+  courseNameMap: Map<string, string>;
+  departmentNameMap: Map<string, string>;
+}
+
 const AssignmentFilters = ({
   filters,
   setFilters,

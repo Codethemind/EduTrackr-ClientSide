@@ -39,20 +39,28 @@ const TodaySchedule = () => {
             );
 
             if (schedulesResponse.data.success) {
-              const formattedSchedule = schedulesResponse.data.data
-                .filter((item) => item.day === today)
-                .map((item) => ({
-                  _id: item._id,
-                  course: item.courseId?.name || 'Course Not Available',
-                  courseCode: item.courseId?.code,
-                  startTime: item.startTime,
-                  endTime: item.endTime,
-                  location: item.room || 'TBA',
-                  instructor: item.teacherId?.username || 'To Be Announced',
-                  credits: item.courseId?.credits,
-                  status: 'Upcoming',
-                }))
-                .sort((a, b) => a.startTime.localeCompare(b.startTime));
+             const now = new Date();
+
+const formattedSchedule = schedulesResponse.data.data
+  .filter((item) => {
+    const scheduleDay = item.day; // Ensure this matches the format of `today`
+    const endTime = new Date(item.endTime);
+
+    return scheduleDay === today && endTime > now;
+  })
+  .map((item) => ({
+    _id: item._id,
+    course: item.courseId?.name || 'Course Not Available',
+    courseCode: item.courseId?.code,
+    startTime: item.startTime,
+    endTime: item.endTime,
+    location: item.room || 'TBA',
+    instructor: item.teacherId?.username || 'To Be Announced',
+    credits: item.courseId?.credits,
+    status: 'Upcoming',
+  }))
+  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
               setSchedule(formattedSchedule);
             } else {
               throw new Error('Failed to load schedule');
