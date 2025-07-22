@@ -339,7 +339,6 @@ const StudentAssignmentsPage = () => {
         <Header role="student" />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
-            {/* Header Section */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
@@ -352,240 +351,62 @@ const StudentAssignmentsPage = () => {
                 </div>
               </div>
             </div>
-
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <svg
-                      className="w-6 h-6 text-blue-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">
-                      Total Assignments
-                    </p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {assignments.length}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-2 bg-yellow-100 rounded-lg">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {pendingAssignments}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <svg
-                      className="w-6 h-6 text-green-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font U-medium text-gray-600">Submitted</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {submittedAssignments}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <div className="flex items-center">
-                  <div className="p-2 bg-red-100 rounded-lg">
-                    <svg
-                      className="w-6 h-6 text-red-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
-                    </svg>
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Overdue</p>
-                    <p className="text-2xl font-bold text-gray-900">
-                      {overdueAssignments}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Upcoming Deadlines Alert */}
-            {upcomingDeadlines > 0 && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-yellow-600 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
-                    ></path>
-                  </svg>
-                  <span className="text-yellow-800 font-medium">
-                    You have {upcomingDeadlines} assignment
-                    {upcomingDeadlines > 1 ? 's' : ''} due within the next 3 days!
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* Filters */}
-            <AssignmentFilters
+            <AssignmentFilters 
               filters={filters}
               setFilters={setFilters}
-              courses={uniqueCourses}
-              departments={uniqueDepartments}
-              isStudent={true}
+              schedules={studentSchedules}
             />
-
-            {/* Assignments List */}
+            
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-                <p className="mt-4 text-lg text-gray-600">
-                  Loading assignments...
-                </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={index} className="bg-white p-6 rounded-lg shadow-md animate-pulse h-48"></div>
+                ))}
               </div>
-            ) : filteredAssignments.length === 0 ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray200 p-12 text-center">
-                <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                  <svg
-                    className="w-12 h-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    ></path>
-                  </svg>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  No Assignments Found
-                </h3>
-                <p className="text-gray-600">
-                  {assignments.length === 0
-                    ? "You don't have any assignments yet. Check back later or contact your teachers."
-                    : "No assignments match your current filters. Try adjusting your search criteria."
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+            ) : filteredAssignments.length > 0 ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                   {currentAssignments.map((assignment) => (
                     <AssignmentCard
                       key={assignment._id}
                       assignment={assignment}
-                      onView={handleViewAssignment}
-                      onSubmit={handleStartSubmission}
+                      onView={() => handleViewAssignment(assignment)}
+                      onStartSubmission={() => handleStartSubmission(assignment)}
                     />
                   ))}
                 </div>
-
-                {/* Pagination */}
-                <div className="mt-6 bg-white rounded-lg shadow-sm border border-gray-200">
-                  <Pagination
-                    currentPage={currentPage}
-                    totalPages={totalPages}
-                    onPageChange={setCurrentPage}
-                    itemsPerPage={itemsPerPage}
-                    totalItems={totalItems}
-                    onItemsPerPageChange={setItemsPerPage}
-                  />
-                </div>
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={setCurrentPage}
+                />
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <h2 className="text-xl font-semibold">No assignments found.</h2>
+                <p className="text-gray-500 mt-2">Try adjusting your filters or check back later.</p>
               </div>
             )}
           </div>
         </main>
+        {selectedAssignment && (
+          <AssignmentDetailModal
+            isOpen={isDetailModalOpen}
+            onClose={() => setIsDetailModalOpen(false)}
+            assignment={selectedAssignment}
+            onStartSubmission={() => handleStartSubmission(selectedAssignment)}
+          />
+        )}
+        
+        {selectedAssignment && (
+          <SubmissionModal
+            isOpen={isSubmissionModalOpen}
+            onClose={() => setIsSubmissionModalOpen(false)}
+            assignment={selectedAssignment}
+            onSubmit={handleSubmitAssignment}
+          />
+        )}
       </div>
-
-      {/* Assignment Detail Modal */}
-      {isDetailModalOpen && selectedAssignment && (
-        <AssignmentDetailModal
-          isOpen={isDetailModalOpen}
-          onClose={() => {
-            setIsDetailModalOpen(false);
-            setSelectedAssignment(null);
-          }}
-          assignment={selectedAssignment}
-          onStartSubmission={handleStartSubmission}
-        />
-      )}
-
-      {/* Submission Modal */}
-      {isSubmissionModalOpen && selectedAssignment && (
-        <SubmissionModal
-          isOpen={isSubmissionModalOpen}
-          onClose={() => {
-            setIsSubmissionModalOpen(false);
-            setSelectedAssignment(null);
-          }}
-          assignment={selectedAssignment}
-          onSubmit={handleSubmitAssignment}
-        />
-      )}
     </div>
   );
 };

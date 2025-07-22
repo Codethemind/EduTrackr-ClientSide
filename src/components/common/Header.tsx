@@ -13,12 +13,12 @@ import {
   MdMenu,
 } from 'react-icons/md';
 import { toast } from 'react-hot-toast';
+import { RootState } from '../../redux/store';
 
 // Define prop types
 interface HeaderProps {
   role: 'admin' | 'teacher' | 'student' | string;
-  onToggleSidebar?: () => void;
-  isSidebarOpen?: boolean;
+  onMenuClick?: () => void;
 }
 
 // Define Profile data shape
@@ -30,11 +30,12 @@ interface ProfileData {
   profileImage?: string;
 }
 
-const Header: React.FC<HeaderProps> = ({ role, onToggleSidebar, isSidebarOpen }) => {
+const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  const { user, accessToken } = useSelector((state: any) => state.auth); // Ideally replace `any` with your `RootState` type
+  const { user, accessToken } = useSelector((state: RootState) => state.auth);
+  const { unreadCount } = useSelector((state: RootState) => state.notification);
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -117,18 +118,32 @@ const Header: React.FC<HeaderProps> = ({ role, onToggleSidebar, isSidebarOpen })
   }
 
   return (
-    <header className="flex justify-between items-center px-6 bg-white shadow-sm h-16">
-      {/* Left Section */}
+    <header className="flex justify-between items-center px-6 bg-white shadow-sm h-16 z-10 relative">
+      {/* Left Section - Hamburger Menu for Mobile */}
       <div className="flex items-center">
-        {onToggleSidebar && (
-          <button onClick={onToggleSidebar} className="lg:hidden mr-4 text-gray-500 hover:text-gray-700">
-            <MdMenu size={24} />
-          </button>
-        )}
+        <button onClick={onMenuClick} className="lg:hidden mr-4 text-gray-500 hover:text-gray-700">
+          <MdMenu size={24} />
+        </button>
       </div>
 
       {/* Right Section */}
       <div className="flex items-center space-x-5">
+        {/* Notification Icon */}
+        <button 
+          className="relative text-gray-500 hover:text-gray-700"
+          onClick={() => navigate(`/${role}/notifications`)}
+        >
+          <MdNotifications size={24} />
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-4 w-4">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs justify-center items-center">
+                {unreadCount}
+              </span>
+            </span>
+          )}
+        </button>
+
         <div className="relative" ref={dropdownRef}>
           <div
             className="flex items-center space-x-3 cursor-pointer"

@@ -39,14 +39,19 @@ const TodaySchedule = () => {
             );
 
             if (schedulesResponse.data.success) {
-             const now = new Date();
+            const now = new Date();
+const today = now.toLocaleDateString('en-US', { weekday: 'long' });
 
 const formattedSchedule = schedulesResponse.data.data
   .filter((item) => {
-    const scheduleDay = item.day; // Ensure this matches the format of `today`
-    const endTime = new Date(item.endTime);
+    const scheduleDay = item.day;
+    
+    // Combine today's date with the schedule endTime (assumes endTime is 'HH:mm' format)
+    const [endHour, endMinute] = item.endTime.split(':').map(Number);
+    const scheduleEndDateTime = new Date(now);
+    scheduleEndDateTime.setHours(endHour, endMinute, 0, 0);
 
-    return scheduleDay === today && endTime > now;
+    return scheduleDay === today && scheduleEndDateTime > now;
   })
   .map((item) => ({
     _id: item._id,
@@ -59,9 +64,13 @@ const formattedSchedule = schedulesResponse.data.data
     credits: item.courseId?.credits,
     status: 'Upcoming',
   }))
-  .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+  .sort((a, b) => {
+    const [aH, aM] = a.startTime.split(':').map(Number);
+    const [bH, bM] = b.startTime.split(':').map(Number);
+    return aH * 60 + aM - (bH * 60 + bM);
+  });
 
-              setSchedule(formattedSchedule);
+setSchedule(formattedSchedule);
             } else {
               throw new Error('Failed to load schedule');
             }
@@ -84,19 +93,19 @@ const formattedSchedule = schedulesResponse.data.data
     fetchSchedule();
   }, [studentId, accessToken]);
 
-  const formatTime = (time) => {
-    try {
-      if (!time) return 'N/A';
-      return new Date(`1970-01-01T${time}Z`).toLocaleTimeString('en-US', {
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-      });
-    } catch (error) {
-      console.error('Error formatting time:', error);
-      return 'Invalid time';
-    }
-  };
+  // const formatTime = (time) => {
+  //   try {
+  //     if (!time) return 'N/A';
+  //     return new Date(`1970-01-01T${time}Z`).toLocaleTimeString('en-US', {
+  //       hour: 'numeric',
+  //       minute: '2-digit',
+  //       hour12: true,
+  //     });
+  //   } catch (error) {
+  //     console.error('Error formatting time:', error);
+  //     return 'Invalid time';
+  //   }
+  // };
 
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -156,8 +165,8 @@ const formattedSchedule = schedulesResponse.data.data
               className="flex items-start p-4 rounded-lg border border-gray-100 hover:border-blue-200 transition-colors"
             >
               <div className="flex-shrink-0 w-16 text-center">
-                <div className="text-sm font-medium text-gray-900">{formatTime(item.startTime)}</div>
-                <div className="text-xs text-gray-500">{formatTime(item.endTime)}</div>
+                <div className="text-sm font-medium text-gray-900">{item.startTime}</div>
+                <div className="text-xs text-gray-500">{item.endTime}</div>
               </div>
               <div className="ml-4 flex-1">
                 <h3 className="text-sm font-medium text-gray-900">{item.course}</h3>
