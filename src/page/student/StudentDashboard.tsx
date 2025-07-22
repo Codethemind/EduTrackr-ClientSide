@@ -136,52 +136,47 @@ const Dashboard = () => {
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-              <h1 className="text-2xl font-bold text-gray-900">Student Dashboard</h1>
-              <p className="text-gray-600">Welcome back! Here's an overview of your academic progress.</p>
+          <div className="container mx-auto px-4 py-8">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              {isLoading
+                ? Array(3)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div key={i} className="bg-white p-6 rounded-lg shadow-md animate-pulse h-32"></div>
+                    ))
+                : stats.map((stat, index) => <StatsCard key={index} {...stat} />)}
             </div>
 
-            {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
-                <p className="mt-4 text-lg text-gray-600">Loading dashboard...</p>
-              </div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {stats.map((stat, index) => (
-                    <StatsCard key={index} {...stat} />
-                  ))}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Upcoming Assignments */}
+              <div className="lg:col-span-2">
+                <UpcomingAssignments
+                  studentId={studentId}
+                  accessToken={accessToken}
+                  onView={handleViewAssignment}
+                  onStart={handleStartSubmission}
+                />
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  <div className="lg:col-span-2">
-                    <div className="grid grid-cols-1 gap-6">
-                      <UpcomingAssignments onView={handleViewAssignment} />
+              {/* Today's Schedule */}
+              <div>
+                <TodaySchedule studentId={studentId} accessToken={accessToken} />
                     </div>
                   </div>
-                  <div className="space-y-6">
-                    <TodaySchedule />
-                  </div>
-                </div>
-              </>
+
+            {/* Assignment Detail Modal */}
+            {selectedAssignment && (
+              <AssignmentDetailModal
+                isOpen={isDetailModalOpen}
+                onClose={() => setIsDetailModalOpen(false)}
+                assignment={selectedAssignment}
+                onStartSubmission={handleStartSubmission}
+              />
             )}
           </div>
         </div>
       </div>
-
-      {isDetailModalOpen && selectedAssignment && (
-        <AssignmentDetailModal
-          isOpen={isDetailModalOpen}
-          onClose={() => {
-            setIsDetailModalOpen(false);
-            setSelectedAssignment(null);
-          }}
-          assignment={selectedAssignment}
-          onStartSubmission={handleStartSubmission}
-        />
-      )}
     </div>
   );
 };

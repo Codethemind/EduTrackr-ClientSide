@@ -38,18 +38,14 @@ const StudentProfile = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error('Image size should be less than 5MB');
         return;
       }
-      
-      // Validate file type
       if (!file.type.startsWith('image/')) {
         toast.error('Please select a valid image file');
         return;
       }
-
       setImageFile(file);
       setEditProfileImage(URL.createObjectURL(file));
     }
@@ -58,32 +54,25 @@ const StudentProfile = () => {
   const handleUpdate = async () => {
     try {
       setUpdating(true);
-      
       if (!student?.id) {
         toast.error('Student ID not found');
         return;
       }
-
-      // Validate inputs
       if (!editFirstname.trim() || !editLastname.trim()) {
         toast.error('First name and last name are required');
         return;
       }
-
       if (!editEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editEmail)) {
         toast.error('Please enter a valid email address');
         return;
       }
-
       const formData = new FormData();
       formData.append('firstname', editFirstname.trim());
       formData.append('lastname', editLastname.trim());
       formData.append('email', editEmail.trim());
-      
       if (imageFile) {
         formData.append('profileImage', imageFile);
       }
-
       if (imageFile) {
         const imageResponse = await axios.put(
           `http://localhost:3000/api/students/${student.id}/profile-image`,
@@ -94,20 +83,17 @@ const StudentProfile = () => {
           setEditProfileImage(imageResponse.data.data.profileImage);
         }
       }
-
       const updateData = {
         firstname: editFirstname.trim(),
         lastname: editLastname.trim(),
         email: editEmail.trim(),
         profileImage: editProfileImage,
       };
-
       const response = await axios.put(
         `http://localhost:3000/api/students/${student.id}`,
         updateData,
         { headers: { 'Content-Type': 'application/json' } }
       );
-
       if (response.data) {
         toast.success('Profile updated successfully!');
         setIsEditing(false);
@@ -162,16 +148,12 @@ const StudentProfile = () => {
   return (
     <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Toaster position="top-right" />
-      
-      {/* Mobile Sidebar Overlay */}
       <div
         className={`fixed inset-0 z-30 bg-black bg-opacity-50 md:hidden transition-opacity ${
           isSidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsSidebarOpen(false)}
       />
-
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 bottom-0 z-40 bg-white w-64 transform ${
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
@@ -179,10 +161,7 @@ const StudentProfile = () => {
       >
         <Sidebar />
       </div>
-
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden ml-0 md:ml-64">
-        {/* Mobile Header */}
         <div className="flex items-center justify-between bg-white shadow-sm p-4 md:hidden border-b">
           <button 
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -191,18 +170,13 @@ const StudentProfile = () => {
             <MdMenu size={24} className="text-gray-700" />
           </button>
           <h1 className="text-lg font-semibold text-gray-800">My Profile</h1>
-          <div className="w-8"></div> {/* Spacer for centering */}
+          <div className="w-8"></div>
         </div>
-
-        {/* Desktop Header */}
         <div className="hidden md:block">
           <Header />
         </div>
-
-        {/* Profile Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="max-w-4xl mx-auto">
-            {/* Profile Header Card */}
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden mb-6">
               <div className="bg-gradient-to-r from-[rgba(53,130,140,0.8)] to-[rgba(53,130,140,1)] h-32 md:h-40 relative">
                 <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2">
@@ -226,14 +200,11 @@ const StudentProfile = () => {
                   </div>
                 </div>
               </div>
-              
               <div className="pt-20 pb-6 px-6 text-center">
                 <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
                   {editFirstname} {editLastname}
                 </h1>
                 <p className="text-gray-600 mb-4">{editEmail}</p>
-                
-                {/* Action Buttons */}
                 <div className="flex justify-center space-x-3">
                   {isEditing ? (
                     <>
@@ -266,23 +237,19 @@ const StudentProfile = () => {
                 </div>
               </div>
             </div>
-
-            {/* Profile Details Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Personal Information */}
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
                   <MdPerson className="mr-2 text-[rgba(53,130,140,0.9)]" />
                   Personal Information
                 </h2>
-                
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">First Name</label>
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <input 
+                          type="text" 
                           value={editFirstname}
                           onChange={(e) => setEditFirstname(e.target.value)}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgba(53,130,140,0.9)] focus:border-transparent transition-all"
@@ -292,12 +259,11 @@ const StudentProfile = () => {
                         <p className="p-3 bg-gray-50 rounded-lg text-gray-800">{editFirstname}</p>
                       )}
                     </div>
-
                     <div>
                       <label className="block text-sm font-medium text-gray-600 mb-2">Last Name</label>
                       {isEditing ? (
-                        <input
-                          type="text"
+                        <input 
+                          type="text" 
                           value={editLastname}
                           onChange={(e) => setEditLastname(e.target.value)}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgba(53,130,140,0.9)] focus:border-transparent transition-all"
@@ -308,15 +274,14 @@ const StudentProfile = () => {
                       )}
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-2 flex items-center">
                       <MdEmail className="mr-1" />
                       Email Address
                     </label>
                     {isEditing ? (
-                      <input
-                        type="email"
+                      <input 
+                        type="email" 
                         value={editEmail}
                         onChange={(e) => setEditEmail(e.target.value)}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[rgba(53,130,140,0.9)] focus:border-transparent transition-all"
@@ -328,20 +293,16 @@ const StudentProfile = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Academic Information */}
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center">
                   <MdSchool className="mr-2 text-[rgba(53,130,140,0.9)]" />
                   Academic Information
                 </h2>
-                
                 <div className="space-y-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-2">Department</label>
                     <p className="p-3 bg-gray-50 rounded-lg text-gray-800">{student.departmentName || 'Not assigned'}</p>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-2 flex items-center">
                       <MdClass className="mr-1" />
@@ -349,7 +310,6 @@ const StudentProfile = () => {
                     </label>
                     <p className="p-3 bg-gray-50 rounded-lg text-gray-800">{student.class || 'Not assigned'}</p>
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-600 mb-2 flex items-center">
                       <MdBook className="mr-1" />
