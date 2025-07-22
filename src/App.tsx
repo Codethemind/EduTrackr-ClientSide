@@ -2,6 +2,8 @@
 import React from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Routes Protection
 import ProtectedRoute from './components/routes/ProtectedRoute';
@@ -27,6 +29,7 @@ import AddGrade from './page/teacher/AddGrade';
 import TeacherChattingPage from './page/teacher/ChattingPage';
 import TeacherAiAssistent from './page/teacher/AiPage';
 import TeacherConcernPage from './page/teacher/TeacherConcernPage';
+import TeacherNotificationsPage from './page/teacher/NotificationsPage';
 
 // Student Components
 import StudentDashboard from './page/student/StudentDashboard';
@@ -37,6 +40,7 @@ import Grade from './page/student/Grade';
 import StudentChattingPage from './page/student/ChattingPage';
 import StudentAiAssistent from './page/student/AiPage';
 import StudentConcernPage from './page/student/StudentConcernPage';
+import StudentNotificationsPage from './page/student/NotificationsPage';
 
 // Auth Components
 import AdminLogin from './page/Authentication/AdminLogin';
@@ -68,6 +72,7 @@ const App: React.FC = () => {
           },
         }}
       />
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
       <Routes>
         {/* Public Auth Routes */}
         <Route path="/" element={<Navigate to="/auth/student-login" replace />} />
@@ -101,6 +106,7 @@ const App: React.FC = () => {
           <Route path="/teacher/chat" element={<TeacherChattingPage />} />
           <Route path="/teacher/ai-assistant" element={<TeacherAiAssistent />} />
           <Route path="/teacher/concerns" element={<TeacherConcernPage />} />
+          <Route path="/teacher/notifications" element={<TeacherNotificationsPage />} />
         </Route>
 
         {/* Protected Student Routes */}
@@ -113,6 +119,7 @@ const App: React.FC = () => {
           <Route path="/student/chat" element={<StudentChattingPage />} />
           <Route path="/student/ai-assistant" element={<StudentAiAssistent />} />
           <Route path="/student/concerns" element={<StudentConcernPage />} />
+          <Route path="/student/notifications" element={<StudentNotificationsPage />} />
         </Route>
 
         {/* Catch All - Redirect */}

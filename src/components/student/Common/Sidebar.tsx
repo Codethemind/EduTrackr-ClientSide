@@ -14,8 +14,11 @@ import {
   MdSmartToy,
   MdPerson,
   MdSettings,
-  MdLogout 
+  MdLogout,
+  MdNotifications 
 } from 'react-icons/md';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../../redux/store';
 
 interface StudentSideBarProps {
   activePage?: string;
@@ -26,6 +29,7 @@ const StudentSideBar: React.FC<StudentSideBarProps> = ({ activePage, onClose }) 
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
   const isActive = (path: string) => {
     if (activePage) {
@@ -49,6 +53,7 @@ const StudentSideBar: React.FC<StudentSideBarProps> = ({ activePage, onClose }) 
         { name: 'My Courses', icon: <MdBook className="w-5 h-5" />, path: '/student/classPage' },
         { name: 'Assignments', icon: <MdAssignment className="w-5 h-5" />, path: '/student/assignments' },
         // { name: 'Grades', icon: <MdGrade className="w-5 h-5" />, path: '/student/grades' },
+        { name: 'Notifications', icon: <div className="relative"><MdNotifications className="w-5 h-5" />{unreadCount > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1">{unreadCount}</span>}</div>, path: '/student/notifications' },
       ],
     },
     {

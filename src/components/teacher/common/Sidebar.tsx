@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { logout } from '../../../redux/slices/authSlice';
 import {
   MdDashboard,
@@ -17,7 +17,9 @@ import {
   MdSettings,
   MdExitToApp,
   MdSmartToy,
+  MdNotifications,
 } from 'react-icons/md';
+import { RootState } from '../../../redux/store';
 
 interface TeacherSideBarProps {
   activePage?: string;
@@ -28,6 +30,7 @@ const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) 
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const unreadCount = useSelector((state: RootState) => state.notification.unreadCount);
 
   const isActive = (path: string) => {
     if (activePage) {
@@ -50,6 +53,7 @@ const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) 
       { icon: MdPeople, label: 'Students', path: '/teacher/students' },
       { icon: MdAssignment, label: 'Assignments', path: '/teacher/assignments' },
       { icon: MdGrade, label: 'Grades', path: '/teacher/grades' },
+      { icon: MdNotifications, label: 'Notifications', path: '/teacher/notifications', badge: unreadCount },
     ],
     COMMUNICATION: [
       { icon: MdChat, label: 'Student Chat', path: '/teacher/chat' },
@@ -62,7 +66,7 @@ const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) 
     ],
   };
 
-  const renderSection = (title: string, items: { icon: React.ElementType; label: string; path: string }[]) => (
+  const renderSection = (title: string, items: { icon: React.ElementType; label: string; path: string; badge?: number }[]) => (
     <div className="mb-8">
       <h3 className="px-4 mb-3 text-xs font-semibold text-gray-500">{title}</h3>
       <div className="space-y-1">
@@ -85,7 +89,7 @@ const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) 
                 isActive(item.path) ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <Icon className="w-5 h-5 mr-3" />
+              <div className="relative"><Icon className="w-5 h-5 mr-3" />{item.badge > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{item.badge}</span>}</div>
               {item.label}
             </Link>
           );

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import Header from '../../components/common/Header';
 import StudentSideBar from '../../components/student/Common/Sidebar';
-// import GradeTable from '../../components/student/Grades/GradeTable';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 
@@ -14,19 +13,16 @@ const Grade = () => {
   const studentId = authState?.user?._id;
   const accessToken = authState?.accessToken;
 
-  // Fetch student's grades
   useEffect(() => {
     const fetchGrades = async () => {
       if (!studentId || !accessToken) {
         setIsLoading(false);
         return;
       }
-
       try {
         const response = await axios.get('/api/grades/student', {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
-
         if (response.data.success) {
           setGrades(response.data.data);
         } else {
@@ -39,7 +35,6 @@ const Grade = () => {
         setIsLoading(false);
       }
     };
-
     fetchGrades();
   }, [studentId, accessToken]);
 
@@ -50,7 +45,6 @@ const Grade = () => {
         <Header role="student" />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
-            {/* Header Section */}
             <div className="mb-8">
               <div className="flex items-center justify-between">
                 <div>
@@ -59,8 +53,6 @@ const Grade = () => {
                 </div>
               </div>
             </div>
-
-            {/* Grades Table */}
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
@@ -78,7 +70,36 @@ const Grade = () => {
               </div>
             ) : (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                <GradeTable grades={grades} />
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Assignment
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Grade
+                      </th>
+                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Feedback
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {grades.map((grade) => (
+                      <tr key={grade._id}>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {grade.assignmentId?.title || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {grade.grade} / {grade.assignmentId?.maxMarks || 100}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {grade.feedback || 'No feedback'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
