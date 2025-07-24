@@ -1,20 +1,7 @@
 import { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import axiosInstance from './axiosInstance';
 import store from '../redux/store';
-
-interface RefreshTokenResponse {
-  data: {
-    accessToken: string;
-  };
-}
-
-interface ApiErrorResponse {
-  message: string;
-}
-
-interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
-  _retry?: boolean;
-}
+import { RefreshTokenResponse, ApiErrorResponse, CustomAxiosRequestConfig } from '../types';
 
 export const refreshToken = async (): Promise<string | null> => {
   try {
@@ -68,7 +55,7 @@ export const setupInterceptor = (axiosInstance: AxiosInstance): void => {
   axiosInstance.interceptors.response.use(
     (response: AxiosResponse) => response,
     async (error: AxiosError<ApiErrorResponse>) => {
-      const originalRequest = error.config as CustomAxiosRequestConfig;
+      const originalRequest = error.config as CustomAxiosRequestConfig & InternalAxiosRequestConfig;
 
       if (error.response?.status === 401 && !originalRequest._retry && originalRequest.url !== '/auth/refresh-token') {
         originalRequest._retry = true;

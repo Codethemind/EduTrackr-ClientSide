@@ -1,53 +1,13 @@
 import axiosInstance from './axiosInstance';
-
-// Define interfaces for API responses and inputs
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-interface Schedule {
-  id?: string;
-  _id?: string;
-  departmentId: string;
-  courseId: string;
-  teacherId: string;
-  day: string;
-  startTime: string;
-  endTime: string;
-  semester: string;
-  link?: string;
-  isLive?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface Department {
-  _id: string;
-  name: string;
-}
-
-interface Course {
-  _id: string;
-  code: string;
-  name: string;
-  departmentId: string;
-  semester: string;
-}
-
-interface Teacher {
-  id: string;
-  firstname: string;
-  lastname: string;
-  username: string;
-  department: string;
-}
-
-interface WeeklyScheduleParams {
-  departmentId: string;
-  weekStart: string;
-}
+import { 
+  ApiResponse, 
+  Schedule, 
+  Department, 
+  Course, 
+  Teacher, 
+  WeeklyScheduleParams,
+  MONGODB_ID_REGEX 
+} from '../types';
 
 // Get all schedules
 export const getAllSchedules = async (): Promise<ApiResponse<Schedule[]>> => {
@@ -63,7 +23,7 @@ export const getAllSchedules = async (): Promise<ApiResponse<Schedule[]>> => {
 // Get schedules by department
 export const getSchedulesByDepartment = async (departmentId: string): Promise<ApiResponse<Schedule[]>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(departmentId)) {
+    if (!MONGODB_ID_REGEX.test(departmentId)) {
       throw new Error('Invalid department ID format');
     }
     const response = await axiosInstance.get(`/api/schedules/department/${departmentId}`);
@@ -92,7 +52,7 @@ export const createSchedule = async (scheduleData: Partial<Schedule>): Promise<A
 // Update a schedule
 export const updateSchedule = async (scheduleId: string, scheduleData: Partial<Schedule>): Promise<ApiResponse<Schedule>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(scheduleId)) {
+    if (!MONGODB_ID_REGEX.test(scheduleId)) {
       throw new Error('Invalid schedule ID format');
     }
     const response = await axiosInstance.put(`/api/schedules/${scheduleId}`, scheduleData);
@@ -106,7 +66,7 @@ export const updateSchedule = async (scheduleId: string, scheduleData: Partial<S
 // Delete a schedule
 export const deleteSchedule = async (scheduleId: string): Promise<ApiResponse<{ success: boolean }>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(scheduleId)) {
+    if (!MONGODB_ID_REGEX.test(scheduleId)) {
       throw new Error('Invalid schedule ID format');
     }
     const response = await axiosInstance.delete(`/api/schedules/${scheduleId}`);
@@ -131,7 +91,7 @@ export const getAllTeachers = async (): Promise<ApiResponse<Teacher[]>> => {
 // Get teachers by department
 export const getTeachersByDepartment = async (departmentId: string): Promise<ApiResponse<Teacher[]>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(departmentId)) {
+    if (!MONGODB_ID_REGEX.test(departmentId)) {
       throw new Error('Invalid department ID format');
     }
     const response = await axiosInstance.get(`/api/teachers/department/${departmentId}`);
@@ -174,7 +134,7 @@ export const getAllCourses = async (): Promise<ApiResponse<Course[]>> => {
 // Get courses by department
 export const getCoursesByDepartment = async (departmentId: string): Promise<ApiResponse<Course[]>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(departmentId)) {
+    if (!MONGODB_ID_REGEX.test(departmentId)) {
       throw new Error('Invalid department ID format');
     }
     const response = await axiosInstance.get(`/api/courses/department/${departmentId}`);
@@ -192,7 +152,7 @@ export const getCoursesByDepartment = async (departmentId: string): Promise<ApiR
 // Get schedule by ID
 export const getScheduleById = async (scheduleId: string): Promise<ApiResponse<Schedule>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(scheduleId)) {
+    if (!MONGODB_ID_REGEX.test(scheduleId)) {
       throw new Error('Invalid schedule ID format');
     }
     const response = await axiosInstance.get(`/api/schedules/${scheduleId}`);
@@ -206,7 +166,7 @@ export const getScheduleById = async (scheduleId: string): Promise<ApiResponse<S
 // Get weekly schedule
 export const getWeeklySchedule = async ({ departmentId, weekStart }: WeeklyScheduleParams): Promise<ApiResponse<Schedule[]>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(departmentId)) {
+    if (!MONGODB_ID_REGEX.test(departmentId)) {
       throw new Error('Invalid department ID format');
     }
     const response = await axiosInstance.get(`/api/schedules/weekly`, {

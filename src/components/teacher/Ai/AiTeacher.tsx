@@ -1,10 +1,16 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { 
-  Send, 
-  BookOpen, 
-  Users, 
-  FileText, 
-  PieChart, 
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  ChangeEvent,
+  KeyboardEvent,
+} from 'react';
+import {
+ Send,
+  BookOpen,
+  Users,
+  FileText,
+  PieChart,
   GraduationCap,
   Bot,
   User,
@@ -14,174 +20,227 @@ import {
   Copy,
   Check,
   ClipboardList,
-  Target,
   Award,
   AlertCircle,
-  Loader2
+  Loader2,
 } from 'lucide-react';
 
-const AiTeacher = () => {
-  const [messages, setMessages] = useState([
+// --- Types ---
+export interface AiMessage {
+  id: number;
+  type: 'user' | 'ai';
+  content: string;
+  timestamp: Date;
+  isError?: boolean;
+}
+
+export interface QuickAction {
+  text: string;
+  icon: React.ComponentType<any>;
+}
+
+// Response shape from your backend
+export interface AiChatResponse {
+  success: boolean;
+  response?: string;
+  error?: string;
+  timestamp?: string;
+}
+
+// --- Component ---
+const AiTeacher: React.FC = () => {
+  const [messages, setMessages] = useState<AiMessage[]>([
     {
       id: 1,
       type: 'ai',
-      content: "Hello! I'm your AI teaching assistant. I can help you create lesson plans, generate assessments, analyze student performance, and provide educational guidance. How can I assist you today?",
-      timestamp: new Date()
-    }
+      content:
+        "Hello! I'm your AI teaching assistant. I can help you create lesson plans, generate assessments, analyze student performance, and provide educational guidance. How can I assist you today?",
+      timestamp: new Date(),
+    },
   ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [copiedMessageId, setCopiedMessageId] = useState(null);
-  const [error, setError] = useState(null);
-  const [isConnected, setIsConnected] = useState(true);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+  const [inputMessage, setInputMessage] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState<boolean>(true);
 
-  // Configuration - Update this with your actual API base URL
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Update with your actual API base URL
   const API_BASE_URL = 'http://localhost:3000';
 
-  const teacherActions = [
-    { text: "Create a lesson plan for elementary math", icon: BookOpen },
-    { text: "Generate quiz questions for science chapter", icon: ClipboardList },
-    { text: "Analyze student performance data", icon: PieChart },
-    { text: "Create assessment rubric for writing assignment", icon: Award },
-    { text: "Suggest teaching strategies for visual learners", icon: Users },
-    { text: "Help with curriculum planning for next semester", icon: FileText },
+  const teacherActions: QuickAction[] = [
+    { text: 'Create a lesson plan for elementary math', icon: BookOpen },
+    { text: 'Generate quiz questions for science chapter', icon: ClipboardList },
+    { text: 'Analyze student performance data', icon: PieChart },
+    { text: 'Create assessment rubric for writing assignment', icon: Award },
+    { text: 'Suggest teaching strategies for visual learners', icon: Users },
+    { text: 'Help with curriculum planning for next semester', icon: FileText },
   ];
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  const sendMessageToAPI = async (message, context = null) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/ai/teacher/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          message: message,
-          context: context
-        })
-      });
+  const sendMessageToAPI = async (
+    message: string,
+    context: { type: 'user' | 'ai'; content: string }[] | null = null
+  ): Promise<string> => {
+    const payload = {
+      message,
+      context,
+    };
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    const response = await fetch(`${API_BASE_URL}/api/ai/teacher/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      const data = await response.json();
-      return data.response;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
+
+    const data: AiChatResponse = await response.json();
+    if (!data.success || !data.response) {
+      throw new Error(data.error || 'No response from AI');
+    }
+
+    return data.response;
   };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const userMessage = {
+    const userMsg: AiMessage = {
       id: Date.now(),
       type: 'user',
       content: inputMessage,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentMessage = inputMessage;
+    setMessages((prev) => [...prev, userMsg]);
+    const currentText = inputMessage;
     setInputMessage('');
     setIsTyping(true);
     setError(null);
 
     try {
-      // Create context from recent messages for better conversation flow
-      const context = messages.slice(-3).map(msg => ({
-        type: msg.type,
-        content: msg.content
-      }));
+      const context = messages
+        .slice(-3)
+        .map((msg) => ({ type: msg.type, content: msg.content }));
+      const aiText = await sendMessageToAPI(currentText, context);
 
-      const aiResponse = await sendMessageToAPI(currentMessage, context);
-      
-      const aiMessage = {
+      const aiMsg: AiMessage = {
         id: Date.now() + 1,
         type: 'ai',
-        content: aiResponse,
-        timestamp: new Date()
+        content: aiText,
+        timestamp: new Date(),
       };
-
-      setMessages(prev => [...prev, aiMessage]);
+      setMessages((prev) => [...prev, aiMsg]);
       setIsConnected(true);
-    } catch (error) {
+    } catch (err) {
       setError('Failed to get response from AI. Please try again.');
       setIsConnected(false);
-      
-      // Add error message to chat
-      const errorMessage = {
-        id: Date.now() + 1,
+      const errMsg: AiMessage = {
+        id: Date.now() + 2,
         type: 'ai',
-        content: "I apologize, but I'm having trouble connecting to the server right now. Please check your connection and try again.",
+        content:
+          "I apologize, but I'm having trouble connecting to the server right now. Please check your connection and try again.",
         timestamp: new Date(),
-        isError: true
+        isError: true,
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errMsg]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleQuickAction = (actionText) => {
+  const handleQuickAction = (actionText: string) => {
     setInputMessage(actionText);
     inputRef.current?.focus();
   };
 
-  const copyMessage = (messageId, content) => {
+  const copyMessage = (messageId: number, content: string) => {
     navigator.clipboard.writeText(content);
     setCopiedMessageId(messageId);
     setTimeout(() => setCopiedMessageId(null), 2000);
   };
 
   const clearHistory = () => {
-    setMessages([{
-      id: 1,
-      type: 'ai',
-      content: "Hello! I'm your AI teaching assistant. How can I help you with your educational tasks today?",
-      timestamp: new Date()
-    }]);
+    setMessages([
+      {
+        id: 1,
+        type: 'ai',
+        content:
+          "Hello! I'm your AI teaching assistant. How can I help you with your educational tasks today?",
+        timestamp: new Date(),
+      },
+    ]);
     setError(null);
   };
 
   const exportChat = () => {
-    const chatData = messages.map(msg => ({
+    const chatData = messages.map((msg) => ({
       type: msg.type,
       content: msg.content,
-      timestamp: msg.timestamp.toISOString()
+      timestamp: msg.timestamp.toISOString(),
     }));
-
-    const dataStr = JSON.stringify(chatData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    
+    const blob = new Blob([JSON.stringify(chatData, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ai-teacher-chat-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `ai-teacher-chat-${new Date()
+      .toISOString()
+      .split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
 
-  const renderMessage = (message) => (
-    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4 group`}>
-      <div className={`flex items-start max-w-xs lg:max-w-md xl:max-w-lg ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-        <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-2' : 'mr-2'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            message.type === 'user' ? 'bg-green-500' : message.isError ? 'bg-red-500' : 'bg-gradient-to-r from-blue-500 to-indigo-500'
-          }`}>
+  const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(e.target.value);
+  };
+
+  const onInputKeyPress = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !isTyping) {
+      handleSendMessage();
+    }
+  };
+
+  const renderMessage = (message: AiMessage) => (
+    <div
+      key={message.id}
+      className={`flex ${
+        message.type === 'user' ? 'justify-end' : 'justify-start'
+      } mb-4 group`}
+    >
+      <div
+        className={`flex items-start max-w-xs lg:max-w-md xl:max-w-lg ${
+          message.type === 'user' ? 'flex-row-reverse' : 'flex-row'
+        }`}
+      >
+        <div
+          className={`flex-shrink-0 ${
+            message.type === 'user' ? 'ml-2' : 'mr-2'
+          }`}
+        >
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              message.type === 'user'
+                ? 'bg-green-500'
+                : message.isError
+                ? 'bg-red-500'
+                : 'bg-gradient-to-r from-blue-500 to-indigo-500'
+            }`}
+          >
             {message.type === 'user' ? (
               <User size={16} className="text-white" />
             ) : message.isError ? (
@@ -191,20 +250,32 @@ const AiTeacher = () => {
             )}
           </div>
         </div>
-        <div className={`rounded-2xl px-4 py-3 shadow-md relative ${
-          message.type === 'user' 
-            ? 'bg-green-500 text-white' 
-            : message.isError
-            ? 'bg-red-50 text-red-800 border border-red-200'
-            : 'bg-white text-gray-800 border border-gray-200'
-        }`}>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        <div
+          className={`rounded-2xl px-4 py-3 shadow-md relative ${
+            message.type === 'user'
+              ? 'bg-green-500 text-white'
+              : message.isError
+              ? 'bg-red-50 text-red-800 border border-red-200'
+              : 'bg-white text-gray-800 border border-gray-200'
+          }`}
+        >
+          <p className="text-sm leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
           <div className="flex items-center justify-between mt-2">
-            <span className={`text-xs ${
-              message.type === 'user' ? 'text-green-100' : 
-              message.isError ? 'text-red-500' : 'text-gray-500'
-            }`}>
-              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <span
+              className={`text-xs ${
+                message.type === 'user'
+                  ? 'text-green-100'
+                  : message.isError
+                  ? 'text-red-500'
+                  : 'text-gray-500'
+              }`}
+            >
+              {message.timestamp.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
             </span>
             {message.type === 'ai' && !message.isError && (
               <button
@@ -235,7 +306,9 @@ const AiTeacher = () => {
                 <GraduationCap className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-gray-800">AI Teaching Assistant</h1>
+                <h1 className="text-2xl font-bold text-gray-800">
+                  AI Teaching Assistant
+                </h1>
                 <p className="text-gray-600">Your intelligent education companion</p>
               </div>
             </div>
@@ -247,7 +320,7 @@ const AiTeacher = () => {
                 <Trash2 size={16} />
                 <span className="hidden sm:inline">Clear</span>
               </button>
-              <button 
+              <button
                 onClick={exportChat}
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
               >
@@ -256,8 +329,7 @@ const AiTeacher = () => {
               </button>
             </div>
           </div>
-
-          {/* Connection Status & Error Display */}
+          {/* Connection Status & Error */}
           {error && (
             <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
               <AlertCircle size={16} className="text-red-500" />
@@ -266,16 +338,15 @@ const AiTeacher = () => {
           )}
         </div>
 
-        {/* Main Content */}
         <div className="flex-1 flex gap-4 min-h-0">
-          {/* Left Sidebar - Teacher Actions */}
+          {/* Sidebar */}
           <div className="w-72 flex-shrink-0">
             <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Teaching Tools</h3>
               <div className="space-y-2">
-                {teacherActions.map((action, index) => (
+                {teacherActions.map((action, idx) => (
                   <button
-                    key={index}
+                    key={idx}
                     onClick={() => handleQuickAction(action.text)}
                     className="w-full flex items-center space-x-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group text-left"
                   >
@@ -286,11 +357,14 @@ const AiTeacher = () => {
                   </button>
                 ))}
               </div>
-              
-              {/* API Status Indicator */}
+              {/* API Status */}
               <div className="mt-6 p-3 bg-gray-50 rounded-lg">
                 <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      isConnected ? 'bg-green-500' : 'bg-red-500'
+                    }`}
+                  ></div>
                   <span className="text-xs text-gray-600">
                     {isConnected ? 'Connected to AI Service' : 'Connection Issue'}
                   </span>
@@ -299,12 +373,16 @@ const AiTeacher = () => {
             </div>
           </div>
 
-          {/* Chat Interface */}
+          {/* Chat */}
           <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col min-h-0">
             {/* Chat Header */}
             <div className="p-4 border-b border-gray-200 flex items-center justify-between">
               <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+                <div
+                  className={`w-3 h-3 rounded-full ${
+                    isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                  }`}
+                ></div>
                 <span className="font-medium text-gray-800">
                   AI Teaching Assistant {isConnected ? 'Online' : 'Offline'}
                 </span>
@@ -330,7 +408,7 @@ const AiTeacher = () => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Area */}
+            {/* Input */}
             <div className="p-4 border-t border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className="flex-1 relative">
@@ -338,8 +416,8 @@ const AiTeacher = () => {
                     ref={inputRef}
                     type="text"
                     value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSendMessage()}
+                    onChange={onInputChange}
+                    onKeyPress={onInputKeyPress}
                     placeholder="Ask me about lesson planning, assessments, teaching strategies..."
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                     disabled={isTyping}
@@ -350,11 +428,7 @@ const AiTeacher = () => {
                   disabled={!inputMessage.trim() || isTyping}
                   className="p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-xl transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center"
                 >
-                  {isTyping ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <Send size={20} />
-                  )}
+                  {isTyping ? <Loader2 size={20} className="animate-spin" /> : <Send size={20} />}
                 </button>
               </div>
             </div>

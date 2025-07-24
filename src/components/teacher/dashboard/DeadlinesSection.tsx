@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+// DeadlinesSection.tsx
+import React, { useState, MouseEvent } from 'react';
 
-const DeadlinesSection = ({ deadlines = [] }) => {
-  const [filter, setFilter] = useState('all'); // 'all', 'upcoming', 'overdue'
+export type DeadlineStatus = 'all' | 'upcoming' | 'overdue' | 'completed';
 
-  const filteredDeadlines = deadlines.filter(deadline => {
+export interface Deadline {
+  title: string;
+  course: string;
+  dueDate: string;
+  status: Extract<DeadlineStatus, 'upcoming' | 'overdue' | 'completed'>;
+  description?: string;
+  link: string;
+}
+
+interface DeadlinesSectionProps {
+  deadlines?: Deadline[];
+}
+
+const DeadlinesSection: React.FC<DeadlinesSectionProps> = ({
+  deadlines = [],
+}) => {
+  const [filter, setFilter] = useState<Extract<DeadlineStatus, 'all' | 'upcoming' | 'overdue'>>('all');
+
+  const filteredDeadlines = deadlines.filter((d) => {
     if (filter === 'all') return true;
-    if (filter === 'upcoming') return deadline.status === 'upcoming';
-    if (filter === 'overdue') return deadline.status === 'overdue';
-    return true;
+    return d.status === filter;
   });
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (status: Deadline['status']): string => {
     switch (status) {
       case 'upcoming':
         return 'bg-green-100 text-green-800';
@@ -24,10 +39,10 @@ const DeadlinesSection = ({ deadlines = [] }) => {
     }
   };
 
-  const formatDate = (date) => {
+  const formatDate = (date: string): string => {
     const deadlineDate = new Date(date);
     const today = new Date();
-    const diffTime = deadlineDate - today;
+    const diffTime = deadlineDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return 'Today';
@@ -37,18 +52,25 @@ const DeadlinesSection = ({ deadlines = [] }) => {
     return `In ${diffDays} days`;
   };
 
-  const getTimeLeft = (date) => {
+  const getTimeLeft = (date: string): string => {
     const deadlineDate = new Date(date);
     const now = new Date();
-    const diffTime = deadlineDate - now;
+    const diffTime = deadlineDate.getTime() - now.getTime();
+    if (diffTime < 0) return 'Overdue';
+
     const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
     const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
 
-    if (diffTime < 0) return 'Overdue';
     if (diffHours < 24) {
       return `${diffHours}h ${diffMinutes}m left`;
     }
-    return `${Math.floor(diffHours / 24)}d ${diffHours % 24}h left`;
+    const days = Math.floor(diffHours / 24);
+    const hours = diffHours % 24;
+    return `${days}d ${hours}h left`;
+  };
+
+  const handleFilterClick = (e: MouseEvent<HTMLButtonElement>) => {
+    setFilter(e.currentTarget.dataset.filter as Extract<DeadlineStatus, 'all' | 'upcoming' | 'overdue'>);
   };
 
   return (
@@ -56,48 +78,30 @@ const DeadlinesSection = ({ deadlines = [] }) => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <h2 className="text-lg font-semibold text-gray-900">Upcoming Deadlines</h2>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'all'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            All
-          </button>
-          <button
-            onClick={() => setFilter('upcoming')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'upcoming'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Upcoming
-          </button>
-          <button
-            onClick={() => setFilter('overdue')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              filter === 'overdue'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Overdue
-          </button>
+          {(['all', 'upcoming', 'overdue'] as const).map((f) => (
+            <button
+              key={f}
+              data-filter={f}
+              onClick={handleFilterClick}
+              className={`px-3 py-1 rounded-md text-sm ${
+                filter === f
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {f.charAt(0).toUpperCase() + f.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="space-y-4">
         {filteredDeadlines.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">
-            No deadlines found
-          </div>
+          <div className="text-center py-8 text-gray-500">No deadlines found</div>
         ) : (
-          filteredDeadlines.map((deadline, index) => (
+          filteredDeadlines.map((deadline, idx) => (
             <div
-              key={index}
+              key={idx}
               className="flex items-start p-4 rounded-lg border border-gray-100 hover:border-blue-200 transition-colors"
             >
               <div className="flex-1">
@@ -105,7 +109,11 @@ const DeadlinesSection = ({ deadlines = [] }) => {
                   <h3 className="text-sm font-medium text-gray-900">
                     {deadline.title}
                   </h3>
-                  <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(deadline.status)}`}>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${getStatusColor(
+                      deadline.status
+                    )}`}
+                  >
                     {deadline.status}
                   </span>
                 </div>
@@ -121,12 +129,14 @@ const DeadlinesSection = ({ deadlines = [] }) => {
                 )}
               </div>
               <div className="ml-4 flex-shrink-0">
-                <button
+                <a
+                  href={deadline.link}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  onClick={() => window.location.href = deadline.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
                   View
-                </button>
+                </a>
               </div>
             </div>
           ))
@@ -136,17 +146,4 @@ const DeadlinesSection = ({ deadlines = [] }) => {
   );
 };
 
-DeadlinesSection.propTypes = {
-  deadlines: PropTypes.arrayOf(
-    PropTypes.shape({
-      title: PropTypes.string.isRequired,
-      course: PropTypes.string.isRequired,
-      dueDate: PropTypes.string.isRequired,
-      status: PropTypes.oneOf(['upcoming', 'overdue', 'completed']).isRequired,
-      description: PropTypes.string,
-      link: PropTypes.string.isRequired
-    })
-  )
-};
-
-export default DeadlinesSection; 
+export default DeadlinesSection;

@@ -1,3 +1,86 @@
+// import React, { useState, useEffect } from 'react';
+// import { useSelector } from 'react-redux';
+// import { ChatSidebar } from './ChatSidebar';
+// import { ChatWindow } from './ChatWindow';
+// import { useChatSocket } from '../../../hooks/useChatSocket';
+// import * as api from '../../../api/chat';
+// import toast from 'react-hot-toast';
+
+// export const ChatStudent: React.FC = () => {
+//   const auth = useSelector((s:any) => s.auth);
+//   const userId = auth.user.id!;
+//   const token = auth.accessToken!;
+//   const deptId = auth.user.departmentId!;
+//   console.log('ChatStudent mounted with userId:', userId, 'token:', token, 'deptId:', deptId);
+
+//   const { connected, emit, on } = useChatSocket(import.meta.env.VITE_SOCKET_URL!, token, userId);
+
+//   const [teachers, setTeachers] = useState<any[]>([]);
+//   const [chatList, setChatList] = useState<any[]>([]);
+//   const [activeChatId, setActiveChatId] = useState<string>();
+//   const [activeTeacher, setActiveTeacher] = useState<{ id:string; name:string }>();
+//   const [messages, setMessages] = useState<any[]>([]);
+//   const [typing, setTyping] = useState(false);
+//   const [unread, setUnread] = useState<Record<string,number>>({});
+//   const [message, setMessage] = useState('');
+//   const [file, setFile] = useState<File|null>(null);
+//   const [isUploading, setUploading] = useState(false);
+//   const [uploadProgress, setUploadProgress] = useState(0);
+
+//   // Load teachers & chats
+//   useEffect(() => { api.fetchTeachersByDept(deptId).then(res=>setTeachers(res.data)); }, [deptId]);
+//   useEffect(() => {
+//     api.fetchChatList(userId).then(res => {
+//       setChatList(res.data);
+//       setUnread(Object.fromEntries(res.data.map(c=>[c.chatId,c.unreadCount])));
+//     });
+//   }, [userId]);
+
+//   // Socket events
+//   useEffect(() => {
+//     on('receiveMessage', (m) => { /*...*/ });
+//     on('typing', (d) => setTyping(d.isTyping));
+//   }, [activeChatId]);
+
+//   const selectChat = (chatId: string, teacher: { id: string; name: string }) => {
+//     setActiveChatId(chatId);
+//     setActiveTeacher(teacher);
+//     api.fetchMessages(chatId, userId).then(res => { setMessages(res.data); setUnread(prev => ({ ...prev, [chatId]: 0 })); });
+//     emit('join', { chatId });
+//   };
+
+//   const handleSend = () => { /* send via socket or HTTP */ };
+
+//   return (
+//     <div className="flex h-screen bg-gray-50">
+//       <ChatSidebar
+//         chats={chatList}
+//         unreadCounts={unread}
+//         activeChatId={activeChatId}
+//         onSelect={selectChat} 
+//         loading={!teachers.length}
+//         error={undefined}
+//         teachers={teachers}
+//         initiateChat={(tid)=>{/*...*/}}
+//         switchToTeacher={selectChat}
+//         sidebarOpen={true}
+//         setSidebarOpen={()=>{}}
+//         socketConnected={connected}
+//       />
+//       <div className="flex-1 flex flex-col">
+//         <ChatWindow
+//           messages={messages}
+//           isTyping={typing}
+//           onSend={handleSend}
+//           onDelete={(id)=>emit('deleteMessage',{messageId:id})}
+//           onReact={(id,emo)=>emit('addReaction',{messageId:id,reaction:emo})}
+//         />
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default ChatStudent;
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Send, Paperclip, Smile, Search, Menu, MoreVertical, Trash2 } from 'lucide-react';

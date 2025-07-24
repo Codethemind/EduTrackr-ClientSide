@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../../../api/axiosInstance';
-import TeacherSideBar from '../sideBar/teacherSideBar';
+import TeacherSideBar from '../common/Sidebar';
 import Header from '../common/Header';
 import StatsCard from './StatsCard';
 import ScheduleSection from './ScheduleSection';
@@ -22,7 +22,7 @@ const TeacherDashboard = () => {
     performance: []
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {

@@ -5,46 +5,8 @@ import {
   markAllNotificationsAsRead,
   deleteNotification,
 } from '../../api/notificationApi';
-
-export interface Notification {
-  _id: string;
-  userId: string;
-  userModel: string;
-  type: string;
-  title: string;
-  message: string;
-  read: boolean;
-  sender: string;
-  senderModel: string;
-  role: string;
-  data: any;
-  timestamp: string;
-}
-
-interface User {
-  id: string;
-  username: string;
-  email?: string;
-  role?: string;
-}
-
-interface AuthState {
-  accessToken: string | null;
-  user: User | null;
-  isAuthenticated: boolean;
-}
-
-interface NotificationState {
-  notifications: Notification[];
-  unreadCount: number;
-  loading: boolean;
-  error: string | null;
-}
-
-interface RootState {
-  auth: AuthState;
-  // Other slices...
-}
+import { Notification, NotificationState } from '../../types';
+import { RootState } from '../store';
 
 const initialState: NotificationState = {
   notifications: [],
@@ -52,12 +14,6 @@ const initialState: NotificationState = {
   loading: false,
   error: null,
 };
-
-// Assuming you store userId and userModel in Redux state or localStorage
-interface UserState {
-  userId: string;
-  userModel: string;
-}
 
 export const fetchNotifications = createAsyncThunk(
   'notifications/fetchNotifications',
@@ -70,8 +26,8 @@ export const fetchNotifications = createAsyncThunk(
         throw new Error('User is not authenticated or user data is incomplete');
       }
 
-      const data = await getNotifications(); // No need to pass id and role
-      return data.data; // Adjust based on your API response structure
+      const data = await getNotifications();
+      return data.data;
     } catch (error: any) {
       console.error('fetchNotifications error:', error.message);
       return rejectWithValue(error.message || 'Failed to fetch notifications');
@@ -152,4 +108,4 @@ const notificationSlice = createSlice({
   },
 });
 
-export default notificationSlice.reducer; 
+export default notificationSlice.reducer;

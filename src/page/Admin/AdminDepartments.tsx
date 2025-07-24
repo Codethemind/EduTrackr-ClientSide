@@ -11,14 +11,7 @@ import Pagination from "../../components/admin/users/Pagination";
 import { toast } from 'react-hot-toast';
 
 // Interface definitions
-interface Department {
-  _id: string;
-  name: string;
-  code: string;
-  description?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+import type { Department } from "../../types/features/department-management";
 
 interface ApiResponse<T> {
   success: boolean;

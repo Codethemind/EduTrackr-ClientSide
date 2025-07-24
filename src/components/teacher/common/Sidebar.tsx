@@ -89,7 +89,7 @@ const TeacherSideBar: React.FC<TeacherSideBarProps> = ({ activePage, onClose }) 
                 isActive(item.path) ? 'text-blue-600 bg-blue-50 font-medium' : 'text-gray-700 hover:bg-gray-100'
               }`}
             >
-              <div className="relative"><Icon className="w-5 h-5 mr-3" />{item.badge > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{item.badge}</span>}</div>
+              <div className="relative"><Icon className="w-5 h-5 mr-3" />{typeof item.badge === 'number' && item.badge > 0 && <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs rounded-full px-1">{item.badge}</span>}</div>
               {item.label}
             </Link>
           );

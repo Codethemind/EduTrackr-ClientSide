@@ -142,7 +142,11 @@ const Dashboard: React.FC = () => {
 
   const formatNumber = (num: number): string =>
     num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-  const getTrendDirection = (value: number): string => (value >= 0 ? "up" : "down");
+  const getTrendDirection = (value: number): "up" | "down" | "neutral" => {
+    if (value > 0) return "up";
+    if (value < 0) return "down";
+    return "neutral";
+  };
   const formatTrendValue = (value: number): string => `${Math.abs(value)}% since last month`;
 
   const toggleSidebar = (): void => {

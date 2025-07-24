@@ -1,37 +1,5 @@
 import axiosInstance from './axiosInstance';
-
-// Define interfaces for API responses and inputs
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-interface Notification {
-  _id: string;
-  userId: string;
-  message: string;
-  type: string;
-  isRead: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
-
-interface Notification {
-  _id: string;
-  userId: string;
-  message: string;
-  type: string;
-  isRead: boolean;
-  createdAt: string;
-  updatedAt?: string;
-}
+import { ApiResponse, Notification, MONGODB_ID_REGEX } from '../types';
 
 export const getNotifications = async (): Promise<ApiResponse<Notification[]>> => {
   try {
@@ -56,7 +24,7 @@ export const getNotifications = async (): Promise<ApiResponse<Notification[]>> =
 // Mark a notification as read
 export const markNotificationAsRead = async (notificationId: string): Promise<ApiResponse<Notification>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(notificationId)) {
+    if (!MONGODB_ID_REGEX.test(notificationId)) {
       throw new Error('Invalid notification ID format');
     }
     const response = await axiosInstance.put(`/api/notifications/${notificationId}/read`);
@@ -95,7 +63,7 @@ export const markAllNotificationsAsRead = async (): Promise<ApiResponse<{ succes
 // Delete a notification
 export const deleteNotification = async (notificationId: string): Promise<ApiResponse<{ success: boolean }>> => {
   try {
-    if (!/^[0-9a-fA-F]{24}$/.test(notificationId)) {
+    if (!MONGODB_ID_REGEX.test(notificationId)) {
       throw new Error('Invalid notification ID format');
     }
     const response = await axiosInstance.delete(`/api/notifications/${notificationId}`);

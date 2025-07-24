@@ -1,53 +1,16 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as scheduleApi from '../../api/scheduleApi';
-
-// Define interfaces for type safety
-interface ISchedule {
-  id: string; // Maps to _id from API
-  _id?: string; // Optional, for API responses
-  startTime?: string; // Adjust based on your schedule data
-  endTime?: string;
-  departmentId?: string;
-  // Add other schedule properties as needed
-}
-
-// Response for endpoints returning multiple schedules
-interface ScheduleListResponse {
-  success: boolean;
-  data: ISchedule[];
-  message?: string;
-}
-
-// Response for endpoints returning a single schedule
-interface SingleScheduleResponse {
-  success: boolean;
-  data: ISchedule;
-  message?: string;
-}
-
-// Interface for thunk arguments
-interface UpdateScheduleArgs {
-  scheduleId: string;
-  scheduleData: any; // Replace with specific interface if known
-}
-
-interface WeeklyScheduleArgs {
-  departmentId: string;
-  weekStart: string; // Adjust type if weekStart is a Date or other format
-}
-
-// Interface for initial state
-interface IInitialState {
-  schedules: ISchedule[];
-  weeklySchedule: ISchedule[];
-  selectedDepartment: string | null;
-  loading: boolean;
-  error: string | null;
-  success: boolean;
-}
+import { 
+  Schedule, 
+  ScheduleState, 
+  ScheduleListResponse, 
+  SingleScheduleResponse,
+  UpdateScheduleArgs,
+  WeeklyScheduleArgs 
+} from '../../types';
 
 // Initial state
-const initialState: IInitialState = {
+const initialState: ScheduleState = {
   schedules: [],
   weeklySchedule: [],
   selectedDepartment: null,
@@ -91,7 +54,7 @@ export const fetchSchedulesByDepartment = createAsyncThunk<
 
 export const createNewSchedule = createAsyncThunk<
   SingleScheduleResponse,
-  any, // Replace with specific ScheduleData interface if known
+  Partial<Schedule>,
   { rejectValue: string }
 >(
   'schedule/createNewSchedule',
@@ -183,7 +146,7 @@ const scheduleSlice = createSlice({
         if (action.payload.success) {
           state.schedules = action.payload.data.map((schedule) => ({
             ...schedule,
-            id: schedule._id || schedule.id, // Normalize _id to id
+            id: schedule._id || schedule.id,
           }));
         } else {
           state.schedules = [];

@@ -1,73 +1,61 @@
+import React, { useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { jwtDecode } from "jwt-decode";
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
 import { refreshTokenSuccess } from '../../redux/slices/authSlice';
-
-interface DecodedToken {
-  exp: number;
-  role: 'Admin' | 'Teacher' | 'Student';
-}
-
-interface RootState {
-  auth: {
-    accessToken: string | null;
-  };
-}
-
-interface AuthRouteProps {
-  element: JSX.Element;
-}
+import { RootState } from '../../redux/store';
+import { AuthRouteProps } from '../../types/components/routes';
+import { useTokenValidation } from '../../hooks/useTokenValidation';
+import { useAuthRedirect } from '../../hooks/useAuthRedirect';
 
 const AuthRoute: React.FC<AuthRouteProps> = ({ element }) => {
   const { accessToken } = useSelector((state: RootState) => state.auth);
   const dispatch = useDispatch();
+  
+  const { validateToken } = useTokenValidation();
+  const { getRedirectPath } = useAuthRedirect();
 
   useEffect(() => {
+    // Sync token from localStorage to Redux if missing
     if (!accessToken) {
-      const storedToken = localStorage.getItem('accessToken');
-      if (storedToken) {
-        try {
-          const decoded = jwtDecode<DecodedToken>(storedToken);
-          const currentTime = Date.now() / 1000;
-
-          if (decoded.exp > currentTime) {
-            dispatch(refreshTokenSuccess(storedToken));
-          }
-        } catch (error) {
-          console.error('Token validation failed:', error);
-          localStorage.removeItem('accessToken');
-        }
+      const validation = validateToken(localStorage.getItem('accessToken'));
+      
+      if (validation.isValid && validation.decoded) {
+        dispatch(refreshTokenSuccess(localStorage.getItem('accessToken')!));
+      } else if (validation.error) {
+        console.error('Stored token validation failed:', validation.error);
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('user');
       }
     }
-  }, [accessToken, dispatch]);
+  }, [accessToken, dispatch, validateToken]);
 
+  // Check current authentication status
   const currentToken = accessToken || localStorage.getItem('accessToken');
-
+  
   if (currentToken) {
-    try {
-      const decoded = jwtDecode<DecodedToken>(currentToken);
-      const currentTime = Date.now() / 1000;
-
-      if (decoded.exp < currentTime) {
-        localStorage.removeItem('accessToken');
-        return element;
-      }
-
-      switch (decoded.role) {
-        case 'Admin':
-          return <Navigate to="/admin/dashboard" replace />;
-        case 'Teacher':
-          return <Navigate to="/teacher/dashboard" replace />;
-        case 'Student':
-          return <Navigate to="/student/dashboard" replace />;
-      }
-    } catch (error) {
-      console.error('Token decoding failed:', error);
+    const validation = validateToken(currentToken);
+    
+    if (validation.isExpired) {
+      // Clean up expired token
       localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
+      return element; // Show login page
+    }
+    
+    if (validation.isValid && validation.decoded) {
+      // User is authenticated, redirect to appropriate dashboard
+      const redirectPath = getRedirectPath(validation.decoded.role);
+      return <Navigate to={redirectPath} replace />;
+    }
+    
+    if (validation.error) {
+      console.error('Token validation error:', validation.error);
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('user');
     }
   }
 
+  // No valid token, show the login element
   return element;
 };
 

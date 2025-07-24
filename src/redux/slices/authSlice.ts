@@ -1,20 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-
-// Define the User interface (adjust based on your actual user data structure)
-interface User {
-  id: string;
-  username: string;
-  email?: string;
-  role?: string;
-  // Add other user properties as needed
-}
-
-// Define the AuthState interface
-interface AuthState {
-  accessToken: string | null;
-  user: User | null;
-  isAuthenticated: boolean;
-}
+import { User, AuthState, LoginSuccessPayload } from '../../types';
 
 // Helper function to safely parse user from localStorage
 const getStoredUser = (): User | null => {
@@ -36,12 +21,6 @@ const initialState: AuthState = {
   user: getStoredUser(),
   isAuthenticated: !!localStorage.getItem('accessToken'),
 };
-
-// Define payload types for actions
-interface LoginSuccessPayload {
-  accessToken: string;
-  user: User;
-}
 
 // Create the auth slice
 const authSlice = createSlice({

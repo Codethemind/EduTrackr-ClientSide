@@ -1,37 +1,42 @@
-import React, { useState } from 'react';
-import PropTypes from 'prop-types';
+// ScheduleSection.tsx
+import React, { useState, MouseEvent } from 'react';
 
-const ScheduleSection = ({ schedule = [] }) => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [viewMode, setViewMode] = useState('day'); // 'day' or 'week'
+export type ViewMode = 'day' | 'week';
+export type ScheduleStatus ='upcoming' | 'ongoing' | 'completed';
 
-  const formatTime = (time) => {
-    return new Date(time).toLocaleTimeString('en-US', {
+export interface ScheduleItem {
+  title: string;
+  startTime: string;
+  endTime: string;
+  location: string;
+  status: ScheduleStatus;
+  students?: number;
+}
+
+interface ScheduleSectionProps {
+  schedule?: ScheduleItem[];
+}
+
+const ScheduleSection: React.FC<ScheduleSectionProps> = ({ schedule = [] }) => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [viewMode, setViewMode] = useState<ViewMode>('day');
+
+  const formatTime = (time: string): string =>
+    new Date(time).toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
-  };
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
-
-  const getDaySchedule = () => {
-    return schedule.filter(item => {
+  const getDaySchedule = (): ScheduleItem[] =>
+    schedule.filter(item => {
       const itemDate = new Date(item.startTime);
       return itemDate.toDateString() === selectedDate.toDateString();
     });
-  };
 
-  const getWeekSchedule = () => {
+  const getWeekSchedule = (): ScheduleItem[] => {
     const weekStart = new Date(selectedDate);
     weekStart.setDate(selectedDate.getDate() - selectedDate.getDay());
-    
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekStart.getDate() + 6);
 
@@ -43,31 +48,28 @@ const ScheduleSection = ({ schedule = [] }) => {
 
   const currentSchedule = viewMode === 'day' ? getDaySchedule() : getWeekSchedule();
 
+  const handleViewModeClick = (mode: ViewMode) => () => {
+    setViewMode(mode);
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-sm p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
         <h2 className="text-lg font-semibold text-gray-900">Schedule</h2>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('day')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              viewMode === 'day'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Day
-          </button>
-          <button
-            onClick={() => setViewMode('week')}
-            className={`px-3 py-1 rounded-md text-sm ${
-              viewMode === 'week'
-                ? 'bg-blue-100 text-blue-700'
-                : 'text-gray-600 hover:bg-gray-100'
-            }`}
-          >
-            Week
-          </button>
+          {(['day', 'week'] as ViewMode[]).map(mode => (
+            <button
+              key={mode}
+              onClick={handleViewModeClick(mode)}
+              className={`px-3 py-1 rounded-md text-sm ${
+                viewMode === mode
+                  ? 'bg-blue-100 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+              }`}
+            >
+              {mode.charAt(0).toUpperCase() + mode.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -77,9 +79,9 @@ const ScheduleSection = ({ schedule = [] }) => {
             No classes scheduled for {viewMode === 'day' ? 'today' : 'this week'}
           </div>
         ) : (
-          currentSchedule.map((item, index) => (
+          currentSchedule.map((item, idx) => (
             <div
-              key={index}
+              key={idx}
               className="flex items-start p-4 rounded-lg border border-gray-100 hover:border-blue-200 transition-colors"
             >
               <div className="flex-shrink-0 w-16 text-center">
@@ -93,20 +95,22 @@ const ScheduleSection = ({ schedule = [] }) => {
               <div className="ml-4 flex-1">
                 <h3 className="text-sm font-medium text-gray-900">{item.title}</h3>
                 <p className="text-sm text-gray-500 mt-1">{item.location}</p>
-                {item.students && (
+                {item.students !== undefined && (
                   <p className="text-xs text-gray-500 mt-1">
                     {item.students} students enrolled
                   </p>
                 )}
               </div>
               <div className="ml-4">
-                <span className={`px-2 py-1 text-xs rounded-full ${
-                  item.status === 'upcoming'
-                    ? 'bg-green-100 text-green-800'
-                    : item.status === 'ongoing'
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
+                <span
+                  className={`px-2 py-1 text-xs rounded-full ${
+                    item.status === 'upcoming'
+                      ? 'bg-green-100 text-green-800'
+                      : item.status === 'ongoing'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
                   {item.status}
                 </span>
               </div>
@@ -118,17 +122,4 @@ const ScheduleSection = ({ schedule = [] }) => {
   );
 };
 
-ScheduleSection.propTypes = {
-  schedule: PropTypes.arrayOf(
-    PropTypes.shape({
-      title: PropTypes.string.isRequired,
-      startTime: PropTypes.string.isRequired,
-      endTime: PropTypes.string.isRequired,
-      location: PropTypes.string.isRequired,
-      status: PropTypes.oneOf(['upcoming', 'ongoing', 'completed']).isRequired,
-      students: PropTypes.number
-    })
-  )
-};
-
-export default ScheduleSection; 
+export default ScheduleSection;

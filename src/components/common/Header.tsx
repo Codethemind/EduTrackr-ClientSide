@@ -3,32 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../redux/slices/authSlice';
 import axios from '../../api/axiosInstance';
-import {
-  MdNotifications,
-  MdSearch,
-  MdPerson,
-  MdSettings,
-  MdLogout,
-  MdDashboard,
-  MdMenu,
-} from 'react-icons/md';
-import { toast } from 'react-hot-toast';
+import { MdMenu } from 'react-icons/md';
 import { RootState } from '../../redux/store';
-
-// Define prop types
-interface HeaderProps {
-  role: 'admin' | 'teacher' | 'student' | string;
-  onMenuClick?: () => void;
-}
-
-// Define Profile data shape
-interface ProfileData {
-  name?: string;
-  role?: string;
-  avatar?: string;
-  email?: string;
-  profileImage?: string;
-}
+import { HeaderProps, ProfileData } from '../../types/components/common';
+import NotificationBell from './NotificationBell';
+import ProfileDropdown from './ProfileDropdown';
 
 const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
   const navigate = useNavigate();
@@ -74,7 +53,6 @@ const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
         };
 
         const endpoint = endpointMap[role] || `/api/admins/${user?.id}`;
-
         const response = await axios.get(endpoint, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
@@ -110,8 +88,8 @@ const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
     return (
       <header className="flex justify-between items-center px-6 bg-white shadow-sm h-16">
         <div className="animate-pulse flex space-x-4 w-full">
-          <div className="h-10 w-72 bg-gray-200 rounded-full"></div>
-          <div className="h-10 w-10 bg-gray-200 rounded-full ml-auto"></div>
+          <div className="h-10 w-72 bg-gray-200 rounded-full" />
+          <div className="h-10 w-10 bg-gray-200 rounded-full ml-auto" />
         </div>
       </header>
     );
@@ -119,7 +97,7 @@ const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
 
   return (
     <header className="flex justify-between items-center px-6 bg-white shadow-sm h-16 z-10 relative">
-      {/* Left Section - Hamburger Menu for Mobile */}
+      {/* Left Section */}
       <div className="flex items-center">
         <button onClick={onMenuClick} className="lg:hidden mr-4 text-gray-500 hover:text-gray-700">
           <MdMenu size={24} />
@@ -128,21 +106,11 @@ const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
 
       {/* Right Section */}
       <div className="flex items-center space-x-5">
-        {/* Notification Icon */}
-        <button 
-          className="relative text-gray-500 hover:text-gray-700"
-          onClick={() => navigate(`/${role}/notifications`)}
-        >
-          <MdNotifications size={24} />
-          {unreadCount > 0 && (
-            <span className="absolute -top-1 -right-1 flex h-4 w-4">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-xs justify-center items-center">
-                {unreadCount}
-              </span>
-            </span>
-          )}
-        </button>
+        <NotificationBell
+          unreadCount={unreadCount}
+          role={role}
+          onNavigate={navigate}
+        />
 
         <div className="relative" ref={dropdownRef}>
           <div
@@ -165,46 +133,16 @@ const Header: React.FC<HeaderProps> = ({ role, onMenuClick }) => {
             </div>
           </div>
 
-          {/* Dropdown */}
-          {showDropdown && (
-            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 border border-gray-100 z-20">
-              <div className="px-4 py-3 border-b border-gray-100">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-200 mr-3 shrink-0">
-                    <img
-                      src={profileData?.avatar || fallbackAvatar}
-                      alt="Profile"
-                      className="w-full h-full object-cover object-center"
-                    />
-                  </div>
-                  <div className="truncate">
-                    <div className="font-medium text-sm text-gray-800 truncate">{userName}</div>
-                    <div className="text-xs text-gray-500 truncate">{profileData?.email}</div>
-                  </div>
-                </div>
-              </div>
-              <div className="py-1">
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                  onClick={() => navigate(`/${role}/profile`)}
-                >
-                  <MdPerson className="mr-2" /> Profile
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center"
-                  onClick={() => navigate(`/${role}/dashboard`)}
-                >
-                  <MdDashboard className="mr-2" /> Dashboard
-                </button>
-                <button
-                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-50 flex items-center"
-                  onClick={handleLogout}
-                >
-                  <MdLogout className="mr-2" /> Logout
-                </button>
-              </div>
-            </div>
-          )}
+          <ProfileDropdown
+            isOpen={showDropdown}
+            onClose={() => setShowDropdown(false)}
+            profileData={profileData}
+            userName={userName}
+            displayRole={displayRole}
+            role={role}
+            onNavigate={navigate}
+            onLogout={handleLogout}
+          />
         </div>
       </div>
     </header>

@@ -8,7 +8,6 @@ const store = configureStore({
     auth: authReducer,
     schedule: scheduleReducer,
     notification: notificationReducer,
-    // Add other reducers here as needed
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

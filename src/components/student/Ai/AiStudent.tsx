@@ -1,363 +1,424 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
+  Bot, 
+  User as UserIcon, 
   Send, 
-  Brain, 
-  Lightbulb, 
-  FileText, 
-  Calculator, 
-  Sparkles,
-  Bot,
-  User,
-  History,
-  Trash2,
-  Download,
-  Copy,
-  Check,
-  AlertCircle,
-  Loader2,
+  Copy, 
+  Check, 
+  Trash2, 
+  RefreshCw,
+  Calculator,
   BookOpen,
-  Target
+  HelpCircle,
+  Lightbulb,
+  FileText,
+  Brain
 } from 'lucide-react';
+import { AiMessage, QuickAction, AiChatRequest, AiChatResponse } from '../../../types/features/ai-assistant';
+import { cn } from '../../../utils/cn';
+import toast from 'react-hot-toast';
 
-const AiStudent = () => {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'ai',
-      content: "Hello! I'm your AI study assistant. I'm here to help you with your studies, answer questions, explain concepts, and provide learning support. How can I assist you today?",
-      timestamp: new Date()
-    }
-  ]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [copiedMessageId, setCopiedMessageId] = useState(null);
-  const [error, setError] = useState(null);
-  const [isConnected, setIsConnected] = useState(true);
-  const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
+const API_BASE_URL = import.meta.env.VITE_APP_BASE_URL;
 
-  // Configuration - Update this with your actual API base URL
-  const API_BASE_URL = 'http://localhost:3000';
+const initialBotGreeting: AiMessage = {
+  id: 1,
+  type: 'ai',
+  content:
+    "Hello! I'm your AI study assistant. I'm here to help you with your studies, answer questions, explain concepts, and provide learning support. How can I assist you today?",
+  timestamp: new Date(),
+};
 
-  const quickActions = [
-    { text: "Explain this math concept step by step", icon: Calculator },
-    { text: "Help me understand this science topic", icon: Brain },
-    { text: "Create a study plan for my exam", icon: FileText },
-    { text: "Quiz me on this subject", icon: Lightbulb },
-    { text: "Summarize this chapter for me", icon: BookOpen },
-    { text: "Help me solve this problem", icon: Target },
-  ];
+const quickActions: QuickAction[] = [
+  { 
+    text: 'Explain this math concept step by step', 
+    icon: Calculator,
+    category: 'math'
+  },
+  { 
+    text: 'Help me understand this topic', 
+    icon: Lightbulb,
+    category: 'general'
+  },
+  { 
+    text: 'Create a study plan for my exam', 
+    icon: BookOpen,
+    category: 'study'
+  },
+  { 
+    text: 'Summarize key points from this text', 
+    icon: FileText,
+    category: 'summary'
+  },
+  { 
+    text: 'Ask me practice questions', 
+    icon: HelpCircle,
+    category: 'practice'
+  },
+  { 
+    text: 'Explain like I\'m 5 years old', 
+    icon: Brain,
+    category: 'explain'
+  },
+];
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+const AiStudent: React.FC = () => {
+  // State management with proper typing
+  const [messages, setMessages] = useState<AiMessage[]>([initialBotGreeting]);
+  const [input, setInput] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [connected, setConnected] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Refs for DOM manipulation
+  const endRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    scrollToBottom();
+    endRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const sendMessageToAPI = async (message, context = null) => {
+  // Focus input on component mount
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  // Generate unique message ID
+  const generateMessageId = (): number => {
+    return Date.now() + Math.random();
+  };
+
+  // Send message to AI API
+  const sendMessage = async (messageContent: string): Promise<void> => {
+    if (!messageContent.trim() || isLoading) return;
+
+    const userMessage: AiMessage = {
+      id: generateMessageId(),
+      type: 'user',
+      content: messageContent.trim(),
+      timestamp: new Date(),
+    };
+
+    // Add user message immediately
+    setMessages(prev => [...prev, userMessage]);
+    setInput('');
+    setIsLoading(true);
+    setIsTyping(true);
+    setError(null);
+
     try {
-      const response = await fetch(`${API_BASE_URL}/api/ai/student/chat`, {
+      const requestData: AiChatRequest = {
+        message: messageContent.trim(),
+        conversationHistory: messages.map(msg => ({
+          role: msg.type === 'user' ? 'user' : 'assistant',
+          content: msg.content
+        })),
+        timestamp: new Date().toISOString()
+      };
+
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
-        body: JSON.stringify({
-          message: message,
-          context: context
-        })
+        body: JSON.stringify(requestData),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      return data.response;
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
-  };
+      const data: AiChatResponse = await response.json();
 
-  const handleSendMessage = async () => {
-    if (!inputMessage.trim()) return;
+      if (data.success && data.response) {
+        const aiMessage: AiMessage = {
+          id: generateMessageId(),
+          type: 'ai',
+          content: data.response,
+          timestamp: new Date(),
+        };
 
-    const userMessage = {
-      id: Date.now(),
-      type: 'user',
-      content: inputMessage,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    const currentMessage = inputMessage;
-    setInputMessage('');
-    setIsTyping(true);
-    setError(null);
-
-    try {
-      // Create context from recent messages for better conversation flow
-      const context = messages.slice(-3).map(msg => ({
-        type: msg.type,
-        content: msg.content
-      }));
-
-      const aiResponse = await sendMessageToAPI(currentMessage, context);
-      
-      const aiMessage = {
-        id: Date.now() + 1,
-        type: 'ai',
-        content: aiResponse,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsConnected(true);
-    } catch (error) {
-      setError('Failed to get response from AI. Please try again.');
-      setIsConnected(false);
+        setMessages(prev => [...prev, aiMessage]);
+      } else {
+        throw new Error(data.error || 'Failed to get AI response');
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send message';
+      setError(errorMessage);
+      toast.error(errorMessage);
       
       // Add error message to chat
-      const errorMessage = {
-        id: Date.now() + 1,
+      const errorAiMessage: AiMessage = {
+        id: generateMessageId(),
         type: 'ai',
-        content: "I apologize, but I'm having trouble connecting to the server right now. Please check your connection and try again.",
+        content: "I'm sorry, I'm having trouble connecting right now. Please try again in a moment.",
         timestamp: new Date(),
         isError: true
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorAiMessage]);
     } finally {
+      setIsLoading(false);
       setIsTyping(false);
     }
   };
 
-  const handleQuickAction = (actionText) => {
-    setInputMessage(actionText);
+  // Handle form submission
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>): void => {
+    e.preventDefault();
+    sendMessage(input);
+  };
+
+  // Handle quick action click
+  const handleQuickAction = (action: QuickAction): void => {
+    setInput(action.text);
     inputRef.current?.focus();
   };
 
-  const copyMessage = (messageId, content) => {
-    navigator.clipboard.writeText(content);
-    setCopiedMessageId(messageId);
-    setTimeout(() => setCopiedMessageId(null), 2000);
+  // Copy message content to clipboard
+  const copyToClipboard = async (messageId: number, content: string): Promise<void> => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopiedId(messageId);
+      toast.success('Message copied to clipboard');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      toast.error('Failed to copy message');
+    }
   };
 
-  const clearHistory = () => {
-    setMessages([{
-      id: 1,
-      type: 'ai',
-      content: "Hello! I'm your AI study assistant. How can I help you with your studies today?",
-      timestamp: new Date()
-    }]);
+  // Clear conversation
+  const clearConversation = (): void => {
+    setMessages([initialBotGreeting]);
     setError(null);
+    toast.success('Conversation cleared');
   };
 
-  const exportChat = () => {
-    const chatData = messages.map(msg => ({
-      type: msg.type,
-      content: msg.content,
-      timestamp: msg.timestamp.toISOString()
-    }));
-
-    const dataStr = JSON.stringify(chatData, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
+  // Retry last message
+  const retryLastMessage = (): void => {
+    const lastUserMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.type === 'user');
     
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `ai-student-chat-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (lastUserMessage) {
+      sendMessage(lastUserMessage.content);
+    }
   };
 
-  const renderMessage = (message) => (
-    <div key={message.id} className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'} mb-4 group`}>
-      <div className={`flex items-start max-w-xs lg:max-w-md xl:max-w-lg ${message.type === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-        <div className={`flex-shrink-0 ${message.type === 'user' ? 'ml-2' : 'mr-2'}`}>
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-            message.type === 'user' ? 'bg-blue-500' : message.isError ? 'bg-red-500' : 'bg-gradient-to-r from-purple-500 to-pink-500'
-          }`}>
-            {message.type === 'user' ? (
-              <User size={16} className="text-white" />
-            ) : message.isError ? (
-              <AlertCircle size={16} className="text-white" />
-            ) : (
-              <Bot size={16} className="text-white" />
-            )}
+  // Format timestamp
+  const formatTimestamp = (timestamp: Date): string => {
+    return timestamp.toLocaleTimeString([], { 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    });
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-full">
+              <Bot className="w-6 h-6 text-blue-600" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">AI Study Assistant</h1>
+              <div className="flex items-center space-x-2">
+                <div className={cn(
+                  "w-2 h-2 rounded-full",
+                  connected ? "bg-green-500" : "bg-red-500"
+                )} />
+                <span className="text-sm text-gray-500">
+                  {connected ? 'Online' : 'Offline'}
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
-        <div className={`rounded-2xl px-4 py-3 shadow-md relative ${
-          message.type === 'user' 
-            ? 'bg-blue-500 text-white' 
-            : message.isError
-            ? 'bg-red-50 text-red-800 border border-red-200'
-            : 'bg-white text-gray-800 border border-gray-200'
-        }`}>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
-          <div className="flex items-center justify-between mt-2">
-            <span className={`text-xs ${
-              message.type === 'user' ? 'text-blue-100' : 
-              message.isError ? 'text-red-500' : 'text-gray-500'
-            }`}>
-              {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </span>
-            {message.type === 'ai' && !message.isError && (
-              <button
-                onClick={() => copyMessage(message.id, message.content)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded"
-              >
-                {copiedMessageId === message.id ? (
-                  <Check size={12} className="text-green-500" />
-                ) : (
-                  <Copy size={12} className="text-gray-500" />
-                )}
-              </button>
-            )}
+          
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={retryLastMessage}
+              disabled={isLoading || messages.length <= 1}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Retry last message"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+            <button
+              onClick={clearConversation}
+              disabled={isLoading}
+              className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Clear conversation"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
-    </div>
-  );
 
-  return (
-    <div className="w-full h-full bg-gradient-to-br from-indigo-50 via-white to-purple-50 p-4 overflow-y-auto">
-      <div className="max-w-7xl mx-auto h-full flex flex-col">
-        {/* Header */}
-        <div className="bg-white rounded-2xl shadow-lg p-4 mb-4 border border-gray-100 flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded-xl">
-                <Sparkles className="text-white" size={24} />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">AI Study Assistant</h1>
-                <p className="text-gray-600">Your personal learning companion</p>
-              </div>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={clearHistory}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200"
-              >
-                <Trash2 size={16} />
-                <span className="hidden sm:inline">Clear</span>
-              </button>
-              <button 
-                onClick={exportChat}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
-              >
-                <Download size={16} />
-                <span className="hidden sm:inline">Export</span>
-              </button>
-            </div>
+      {/* Quick Actions */}
+      {messages.length === 1 && (
+        <div className="px-6 py-4 bg-white border-b border-gray-200">
+          <h3 className="text-sm font-medium text-gray-700 mb-3">Quick Actions</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {quickActions.map((action, index) => {
+              const IconComponent = action.icon;
+              return (
+                <button
+                  key={index}
+                  onClick={() => handleQuickAction(action)}
+                  disabled={isLoading}
+                  className="flex items-center space-x-2 p-3 text-left text-sm bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <IconComponent className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                  <span className="text-gray-700 truncate">{action.text}</span>
+                </button>
+              );
+            })}
           </div>
-
-          {/* Connection Status & Error Display */}
-          {error && (
-            <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-              <AlertCircle size={16} className="text-red-500" />
-              <span className="text-red-700 text-sm">{error}</span>
-            </div>
-          )}
         </div>
+      )}
 
-        {/* Main Content */}
-        <div className="flex-1 flex gap-4 min-h-0">
-          {/* Left Sidebar - Quick Actions */}
-          <div className="w-72 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100 h-full">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Study Tools</h3>
-              <div className="space-y-2">
-                {quickActions.map((action, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickAction(action.text)}
-                    className="w-full flex items-center space-x-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-blue-600 transition-all duration-200 group text-left"
-                  >
-                    <div className="bg-purple-100 p-2 rounded-lg group-hover:bg-purple-200 transition-colors duration-200">
-                      <action.icon size={14} className="text-purple-600 group-hover:text-purple-700" />
-                    </div>
-                    <span className="text-sm font-medium">{action.text}</span>
-                  </button>
-                ))}
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={cn(
+              "flex space-x-3",
+              message.type === 'user' ? 'justify-end' : 'justify-start'
+            )}
+          >
+            {message.type === 'ai' && (
+              <div className="flex-shrink-0">
+                <div className={cn(
+                  "flex items-center justify-center w-8 h-8 rounded-full",
+                  message.isError ? "bg-red-100" : "bg-blue-100"
+                )}>
+                  <Bot className={cn(
+                    "w-5 h-5",
+                    message.isError ? "text-red-600" : "text-blue-600"
+                  )} />
+                </div>
+              </div>
+            )}
+            
+            <div className={cn(
+              "flex flex-col space-y-1 max-w-xs lg:max-w-md xl:max-w-lg",
+              message.type === 'user' ? 'items-end' : 'items-start'
+            )}>
+              <div className={cn(
+                "px-4 py-2 rounded-lg shadow-sm",
+                message.type === 'user'
+                  ? "bg-blue-600 text-white"
+                  : message.isError
+                  ? "bg-red-50 text-red-900 border border-red-200"
+                  : "bg-white text-gray-900 border border-gray-200"
+              )}>
+                <div className="whitespace-pre-wrap">{message.content}</div>
               </div>
               
-              {/* API Status Indicator */}
-              <div className="mt-6 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span className="text-xs text-gray-600">
-                    {isConnected ? 'Connected to AI Service' : 'Connection Issue'}
-                  </span>
+              <div className="flex items-center space-x-2 text-xs text-gray-500">
+                <span>{formatTimestamp(message.timestamp)}</span>
+                {message.type === 'ai' && !message.isError && (
+                  <button
+                    onClick={() => copyToClipboard(message.id, message.content)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Copy message"
+                  >
+                    {copiedId === message.id ? (
+                      <Check className="w-3 h-3 text-green-600" />
+                    ) : (
+                      <Copy className="w-3 h-3" />
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {message.type === 'user' && (
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center w-8 h-8 bg-gray-200 rounded-full">
+                  <UserIcon className="w-5 h-5 text-gray-600" />
                 </div>
+              </div>
+            )}
+          </div>
+        ))}
+
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex space-x-3">
+            <div className="flex-shrink-0">
+              <div className="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-full">
+                <Bot className="w-5 h-5 text-blue-600" />
+              </div>
+            </div>
+            <div className="bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm">
+              <div className="flex space-x-1">
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
               </div>
             </div>
           </div>
+        )}
 
-          {/* Chat Interface */}
-          <div className="flex-1 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col min-h-0">
-            {/* Chat Header */}
-            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
-                <span className="font-medium text-gray-800">
-                  AI Study Assistant {isConnected ? 'Online' : 'Offline'}
-                </span>
+        <div ref={endRef} />
+      </div>
+
+      {/* Error Display */}
+      {error && (
+        <div className="px-6 py-2">
+          <div className="bg-red-50 border border-red-200 rounded-md p-3">
+            <div className="flex">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
               </div>
-              <div className="flex space-x-2">
-                <button className="p-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors duration-200">
-                  <History size={18} className="text-gray-600" />
-                </button>
-              </div>
-            </div>
-
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {messages.map(renderMessage)}
-              {isTyping && (
-                <div className="flex justify-start mb-4">
-                  <div className="flex items-center space-x-2 bg-gray-100 rounded-2xl px-4 py-3">
-                    <Loader2 size={16} className="text-purple-500 animate-spin" />
-                    <span className="text-sm text-gray-500">AI is thinking...</span>
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input Area */}
-            <div className="p-4 border-t border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="flex-1 relative">
-                  <input
-                    ref={inputRef}
-                    type="text"
-                    value={inputMessage}
-                    onChange={(e) => setInputMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && !isTyping && handleSendMessage()}
-                    placeholder="Ask me anything about your studies..."
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
-                    disabled={isTyping}
-                  />
-                </div>
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!inputMessage.trim() || isTyping}
-                  className="p-3 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 text-white rounded-xl transition-all duration-200 disabled:cursor-not-allowed flex items-center justify-center"
-                >
-                  {isTyping ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : (
-                    <Send size={20} />
-                  )}
-                </button>
+              <div className="ml-3">
+                <p className="text-sm text-red-800">{error}</p>
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Input Form */}
+      <div className="bg-white border-t border-gray-200 px-6 py-4">
+        <form onSubmit={handleSubmit} className="flex space-x-3">
+          <div className="flex-1">
+            <input
+              ref={inputRef}
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask me anything about your studies..."
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {isLoading ? (
+              <RefreshCw className="w-5 h-5 animate-spin" />
+            ) : (
+              <Send className="w-5 h-5" />
+            )}
+          </button>
+        </form>
+        
+        <div className="mt-2 text-xs text-gray-500 text-center">
+          AI responses may contain errors. Always verify important information.
         </div>
       </div>
     </div>
