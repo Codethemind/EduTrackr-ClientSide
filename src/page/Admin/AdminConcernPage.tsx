@@ -23,17 +23,19 @@ interface AuthState {
   accessToken: string | null;
 }
 
-interface Concern {
-  _id: string;
-  title: string;
-  description: string;
-  type: 'Academic' | 'Administrative';
-  raisedBy: User;
-  role: 'student' | 'teacher';
-  status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected';
-  feedback?: string;
-  createdAt: string;
-}
+// interface Concern {
+//   _id: string;
+//   title: string;
+//   description: string;
+//   type: 'Academic' | 'Administrative';
+//   raisedBy: User;
+//   role: 'student' | 'teacher';
+//   status: 'Pending' | 'In Progress' | 'Solved' | 'Rejected';
+//   feedback?: string;
+//   createdAt: string;
+// }
+
+type Concern = any;
 
 interface ApiResponse<T> {
   success: boolean;
@@ -194,7 +196,8 @@ const AdminConcernPage: React.FC = () => {
         <AdminSideBar activePage="concerns" onClose={closeSidebar} />
       </div>
       <div className="flex-1 flex flex-col">
-        <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} role="admin" />
+        {/* <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} role="admin" /> */}
+        <Header   role="admin" />
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           <div className="flex justify-between items-center mb-6">
             <div>
@@ -265,7 +268,7 @@ const AdminConcernPage: React.FC = () => {
             </>
           )}
           {modalType === 'add' && (
-            <AddConcernModal onClose={handleCloseModal} onSave={handleSaveConcern} />
+            <AddConcernModal isOpen={!!selectedConcern} onClose={handleCloseModal} onSubmit={handleSaveConcern} />
           )}
           {modalType === 'edit' && selectedConcern && (
             <EditConcernModal

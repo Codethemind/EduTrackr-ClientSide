@@ -1,4 +1,4 @@
-import { User, Schedule, Notification } from './common';
+import { User } from './common';
 import { Schedule as APISchedule, Notification as APINotification } from './api';
 
 // Redux State Types
@@ -44,3 +44,4 @@ export interface WeeklyScheduleArgs {
 export interface CustomAxiosRequestConfig {
   _retry?: boolean;
 }
+

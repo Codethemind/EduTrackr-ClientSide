@@ -1,47 +1,52 @@
-import React, { useState, useEffect } from 'react';
+// src/components/teacher/Chat/ChatTeacher.tsx
+import React, { useState, useEffect, FC } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Send, Paperclip, Smile, Search, Menu, MoreVertical, Trash2 } from 'lucide-react';
 import axios from '../../../api/axiosInstance';
-import io from 'socket.io-client';
+import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
+
+import { Message, UnreadCounts, ChatList, Student, Chat, Reaction } from '../../../types/chat.ts';
+import { RootState } from '../../../redux/store.ts';
 
 // Backend configuration
 const API_URL = 'http://localhost:3000/api';
 const SOCKET_URL = 'http://localhost:3000';
 
 // Module-level socket instance
-let socket = null;
+let socket: Socket | null = null;
 
-const ChatTeacher = () => {
+const ChatTeacher: FC = () => {
   const navigate = useNavigate();
-  const authState = useSelector((state) => state.auth);
-  const userId = authState?.user?._id || authState?.user?.id;
-  const teacherDepartmentId = authState?.user?.departmentId;
+  const authState = useSelector((state: RootState) => state.auth);
+  const userId = authState?.user?.id || authState?.user?.id;
+  const user= authState?.user as any;
+  const teacherDepartmentId = user.departmentId as unknown as string;
   const accessToken = authState?.accessToken;
   const userModel = 'Teacher';
 
-  const [message, setMessage] = useState('');
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [activeStudent, setActiveStudent] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatList, setChatList] = useState({ chats: [] });
-  const [students, setStudents] = useState([]);
-  const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [socketConnected, setSocketConnected] = useState(false);
-  const [file, setFile] = useState(null);
-  const [replyTo, setReplyTo] = useState(null);
-  const [showReactionPicker, setShowReactionPicker] = useState(null);
-  const [typingStatus, setTypingStatus] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [isUploading, setIsUploading] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
+  const [message, setMessage] = useState<string>('');
+  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const [activeStudent, setActiveStudent] = useState<{ id: string; name: string } | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [chatList, setChatList] = useState<ChatList>({ chats: [] });
+  const [students, setStudents] = useState<Student[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
+  const [socketConnected, setSocketConnected] = useState<boolean>(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [replyTo, setReplyTo] = useState<Message | null>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
+  const [typingStatus, setTypingStatus] = useState<boolean>(false);
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [unreadCounts, setUnreadCounts] = useState<UnreadCounts>({});
 
-  const reactionEmojis = ['❤️', '😂', '😢', '💯', '👍', '👎'];
-  let typingTimeout = null;
+  const reactionEmojis: string[] = ['❤️', '😂', '😢', '💯', '👍', '👎'];
+  let typingTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Validate auth data
   useEffect(() => {
@@ -93,10 +98,10 @@ const ChatTeacher = () => {
       console.log('✅ Socket connected successfully');
       setSocketConnected(true);
       setError('');
-      socket.emit('join', { userId, userModel });
+      socket?.emit('join', { userId, userModel });
     });
 
-    socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason: string) => {
       console.log('❌ Socket disconnected:', reason);
       setSocketConnected(false);
       if (reason !== 'io client disconnect') {
@@ -106,14 +111,14 @@ const ChatTeacher = () => {
       }
     });
 
-    socket.on('connect_error', (err) => {
+    socket.on('connect_error', (err: Error) => {
       console.error('❌ Socket connection error:', err.message);
       setSocketConnected(false);
       setError('Failed to connect to real-time messaging');
       toast.error(`Connection failed: ${err.message}`);
     });
 
-    socket.on('receiveMessage', (newMessage) => {
+    socket.on('receiveMessage', (newMessage: Message) => {
       console.log('📨 Received message:', newMessage);
       if (!newMessage._id && !newMessage.id) {
         console.error('Received message without ID:', newMessage);
@@ -121,13 +126,17 @@ const ChatTeacher = () => {
       }
 
       const messageId = newMessage._id || newMessage.id;
-      const normalizedMessage = { ...newMessage, _id: messageId, sender: String(newMessage.sender) };
+      const normalizedMessage: Message = {
+        ...newMessage,
+        _id: messageId,
+        sender: String(newMessage.sender),
+      };
 
       // Update unread counts
       if (normalizedMessage.chatId !== activeChatId) {
-        setUnreadCounts(prev => ({
+        setUnreadCounts((prev) => ({
           ...prev,
-          [normalizedMessage.chatId]: (prev[normalizedMessage.chatId] || 0) + 1
+          [normalizedMessage.chatId]: (prev[normalizedMessage.chatId] || 0) + 1,
         }));
       }
 
@@ -154,12 +163,12 @@ const ChatTeacher = () => {
       }
     });
 
-    socket.on('messageReaction', (updatedMessage) => {
+    socket.on('messageReaction', (updatedMessage: Message) => {
       console.log('👍 Message reaction:', updatedMessage);
       if (updatedMessage.chatId === activeChatId) {
         setMessages((prev) =>
           prev.map((msg) =>
-            (msg._id === updatedMessage._id || msg.id === updatedMessage.id)
+            msg._id === updatedMessage._id || msg.id === updatedMessage.id
               ? { ...msg, reactions: updatedMessage.reactions }
               : msg
           )
@@ -167,7 +176,7 @@ const ChatTeacher = () => {
       }
     });
 
-    socket.on('messageDeleted', (deletedMessage) => {
+    socket.on('messageDeleted', (deletedMessage: Message) => {
       console.log('🗑️ Message deleted:', deletedMessage);
       if (deletedMessage.chatId === activeChatId) {
         const messageId = deletedMessage._id || deletedMessage.id;
@@ -178,25 +187,31 @@ const ChatTeacher = () => {
       fetchChatList();
     });
 
-    socket.on('newChat', ({ chatId, contact, contactModel }) => {
-      console.log('💬 New chat:', { chatId, contact, contactModel });
-      fetchChatList();
-      if (contactModel === 'Student') {
-        setActiveChatId(chatId);
-        setActiveStudent({
-          id: contact,
-          name: students.find((s) => s._id === contact)?.name || 'Student',
-        });
+    socket.on(
+      'newChat',
+      ({ chatId, contact, contactModel }: { chatId: string; contact: string; contactModel: string }) => {
+        console.log('💬 New chat:', { chatId, contact, contactModel });
+        fetchChatList();
+        if (contactModel === 'Student') {
+          setActiveChatId(chatId);
+          setActiveStudent({
+            id: contact,
+            name: students.find((s) => s._id === contact)?.name || 'Student',
+          });
+        }
       }
-    });
+    );
 
-    socket.on('typing', ({ userId: typingUserId, isTyping: isUserTyping, chatId }) => {
-      if (String(typingUserId) !== userId && chatId === activeChatId) {
-        setTypingStatus(isUserTyping);
+    socket.on(
+      'typing',
+      ({ userId: typingUserId, isTyping: isUserTyping, chatId }: { userId: string; isTyping: boolean; chatId: string }) => {
+        if (String(typingUserId) !== userId && chatId === activeChatId) {
+          setTypingStatus(isUserTyping);
+        }
       }
-    });
+    );
 
-    socket.on('error', (err) => {
+    socket.on('error', (err: { message: string }) => {
       console.error('❌ Socket error:', err);
       setError('Real-time messaging error');
       toast.error(err.message || 'Socket error');
@@ -213,7 +228,7 @@ const ChatTeacher = () => {
   }, [userId, accessToken, activeChatId, students]);
 
   // Update chat list
-  const updateChatList = (message) => {
+  const updateChatList = (message: Message) => {
     setChatList((prev) => {
       if (!prev) return prev;
       console.log('Updating chatList with message:', message);
@@ -240,12 +255,12 @@ const ChatTeacher = () => {
       const response = await axios.get(`${API_URL}/students`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const departmentStudents = (response.data.data || response.data || []).filter(
-        (student) => student.departmentId === teacherDepartmentId
+      const departmentStudents: Student[] = (response.data.data || response.data || []).filter(
+        (student: Student) => student.departmentId === teacherDepartmentId
       );
       setStudents(departmentStudents);
       setError('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Fetch students error:', err);
       setError('Failed to fetch students');
       toast.error(err.response?.data?.message || 'Failed to fetch students');
@@ -263,21 +278,21 @@ const ChatTeacher = () => {
         params: { userId },
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const chats = response.data.data;
+      const chats: ChatList = response.data.data;
       console.log('Valid chats:', chats);
       setChatList(chats);
-      
+
       // Initialize unread counts from server data
-      const initialUnreadCounts = {};
+      const initialUnreadCounts: UnreadCounts = {};
       if (chats?.chats) {
-        chats.chats.forEach(chat => {
+        chats.chats.forEach((chat) => {
           initialUnreadCounts[chat.chatId] = chat.unreadCount || 0;
         });
       }
       setUnreadCounts(initialUnreadCounts);
-      
+
       setError('');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Fetch chat list error:', err);
       setError('Failed to fetch chat list');
       toast.error(err.response?.data?.message || 'Failed to fetch chat list');
@@ -285,19 +300,19 @@ const ChatTeacher = () => {
   };
 
   // Mark messages as read
-  const markMessagesAsRead = (chatId) => {
+  const markMessagesAsRead = (chatId: string) => {
     if (!chatId) return;
-    
-    setUnreadCounts(prev => ({
+
+    setUnreadCounts((prev) => ({
       ...prev,
-      [chatId]: 0
+      [chatId]: 0,
     }));
-    
+
     console.log(`Marked messages as read for chat: ${chatId}`);
   };
 
   // Fetch messages
-  const fetchMessages = async (chatId) => {
+  const fetchMessages = async (chatId: string) => {
     if (!chatId || !accessToken) return;
 
     setLoading(true);
@@ -306,9 +321,9 @@ const ChatTeacher = () => {
         params: { userId },
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      const normalizedMessages = (response.data.data || []).map((msg) => {
-        const senderId = typeof msg.sender === 'object' && msg.sender?._id 
-          ? msg.sender._id 
+      const normalizedMessages: Message[] = (response.data.data || []).map((msg: any) => {
+        const senderId = typeof msg.sender === 'object' && msg.sender?._id
+          ? msg.sender._id
           : msg.senderId || msg.sender;
         console.log(`Message sender: ${senderId}, userId: ${userId}`);
         return {
@@ -320,10 +335,10 @@ const ChatTeacher = () => {
       setMessages(normalizedMessages);
       setError('');
       setTimeout(scrollToBottom, 100);
-      
+
       // Mark messages as read
       markMessagesAsRead(chatId);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Fetch messages error:', err);
       setError('Failed to fetch messages');
       toast.error(err.response?.data?.message || 'Failed to fetch messages');
@@ -351,7 +366,7 @@ const ChatTeacher = () => {
   }, [activeChatId]);
 
   // Handle file change
-  const handleFileChange = (e) => {
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (!selectedFile) return;
 
@@ -379,21 +394,21 @@ const ChatTeacher = () => {
 
   // Trigger file input
   const triggerFileInput = () => {
-    const fileInput = document.getElementById('file-input');
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
     if (fileInput) {
       fileInput.click();
     }
   };
 
   // Emit notification
-  const emitNotification = async (type, userId, message) => {
+  const emitNotification = async (type: string, userId: string | undefined, message: any) => {
     try {
       await axios.post(
         `${API_URL}/notifications/create`,
         { type, message, role: 'student', userId },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to send notification:', error);
     }
   };
@@ -418,7 +433,7 @@ const ChatTeacher = () => {
   };
 
   // Handle add reaction
-  const handleAddReaction = async (messageId, reaction) => {
+  const handleAddReaction = async (messageId: string, reaction: string) => {
     if (!messageId || !reaction) {
       toast.error('Missing required fields for reaction');
       return;
@@ -429,7 +444,7 @@ const ChatTeacher = () => {
         socket.emit(
           'addReaction',
           { messageId, reaction, userId, senderModel: 'Teacher' },
-          (response) => {
+          (response: any) => {
             if (response?.error) {
               toast.error(response.error);
             } else {
@@ -443,13 +458,13 @@ const ChatTeacher = () => {
       } else {
         const response = await axios.post(
           `${API_URL}/messages/reaction`,
-          { messageId: messageId, sender: userId, reaction, senderModel: 'Teacher' },
+          { messageId, sender: userId, reaction, senderModel: 'Teacher' },
           { headers: { Authorization: `Bearer ${accessToken}` } }
         );
         if (response.data.success) {
           setMessages((prev) =>
             prev.map((msg) =>
-              (msg._id === messageId || msg.id === messageId)
+              msg._id === messageId || msg.id === messageId
                 ? { ...msg, reactions: [...(msg.reactions || []), { reaction, userId }] }
                 : msg
             )
@@ -460,7 +475,7 @@ const ChatTeacher = () => {
           });
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Reaction error:', err);
       toast.error(err.response?.data?.message || 'Failed to add reaction');
     } finally {
@@ -479,7 +494,7 @@ const ChatTeacher = () => {
     setMessage('');
     setFile(null);
     setReplyTo(null);
-    const fileInput = document.getElementById('file-input');
+    const fileInput = document.getElementById('file-input') as HTMLInputElement;
     if (fileInput) fileInput.value = '';
 
     try {
@@ -497,10 +512,10 @@ const ChatTeacher = () => {
                 Authorization: `Bearer ${accessToken}`,
                 'Content-Type': 'multipart/form-data',
               },
-              onUploadProgress: (progressEvent) => {
-                const percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
-                );
+              onUploadProgress: (progressEvent: import('axios').AxiosProgressEvent) => {
+                const percentCompleted = progressEvent.total
+                  ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+                  : 0;
                 setUploadProgress(percentCompleted);
               },
             });
@@ -525,7 +540,7 @@ const ChatTeacher = () => {
                 mediaType,
                 replyTo: replyTo?._id,
               },
-              (response) => {
+              (response: any) => {
                 if (response?.error) {
                   console.error('Socket sendMedia error:', response.error);
                   toast.error(response.error);
@@ -536,7 +551,7 @@ const ChatTeacher = () => {
                 }
               }
             );
-          } catch (err) {
+          } catch (err: any) {
             console.error('Upload error:', err);
             toast.error(err.response?.data?.message || 'Failed to upload media');
             setMessage(messageText);
@@ -556,7 +571,7 @@ const ChatTeacher = () => {
               message: messageText,
               replyTo: replyTo?._id,
             },
-            (response) => {
+            (response: any) => {
               if (response?.error) {
                 console.error('Socket sendMessage error:', response.error);
                 toast.error(response.error);
@@ -574,12 +589,12 @@ const ChatTeacher = () => {
         console.log('📤 Sending message via HTTP (socket not connected)');
         const formData = new FormData();
         formData.append('chatId', activeChatId);
-        formData.append('sender', userId);
+        formData.append('sender', userId || '');
         formData.append('senderModel', 'Teacher');
         formData.append('receiver', activeStudent.id);
         formData.append('receiverModel', 'Student');
         if (messageText) formData.append('message', messageText);
-        if (replyTo) formData.append('replyTo', replyTo._id);
+        if (replyTo) formData.append('replyTo', replyTo._id || '');
         if (file) {
           formData.append('media', file);
           formData.append('mediaType', file.type.startsWith('image/') ? 'image' : 'document');
@@ -592,19 +607,22 @@ const ChatTeacher = () => {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'multipart/form-data',
           },
-          onUploadProgress: (progressEvent) => {
-            const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
-            );
+          onUploadProgress: (progressEvent: import('axios').AxiosProgressEvent) => {
+            const percentCompleted = progressEvent.total
+              ? Math.round((progressEvent.loaded * 100) / progressEvent.total)
+              : 0;
             setUploadProgress(percentCompleted);
           },
         });
 
         if (response.data.success) {
-          const newMessage = {
+          const newMessage: Message = {
             ...response.data.data,
             _id: response.data.data._id || response.data.data.id,
             sender: String(response.data.data.sender || userId),
+            reactions: [],
+            timestamp: response.data.data.timestamp || new Date().toISOString(),
+            chatId: activeChatId,
           };
           setMessages((prev) => [...prev, newMessage]);
           updateChatList(newMessage);
@@ -617,7 +635,7 @@ const ChatTeacher = () => {
           throw new Error(response.data.message || 'Failed to send message');
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Send message error:', err);
       setError('Failed to send message');
       toast.error(err.response?.data?.message || 'Failed to send message');
@@ -629,7 +647,7 @@ const ChatTeacher = () => {
   };
 
   // Handle key press
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
@@ -637,10 +655,10 @@ const ChatTeacher = () => {
   };
 
   // Handle delete message
-  const handleDeleteMessage = async (messageId) => {
+  const handleDeleteMessage = async (messageId: string) => {
     try {
       if (socketConnected && socket) {
-        socket.emit('deleteMessage', { messageId }, (response) => {
+        socket.emit('deleteMessage', { messageId }, (response: any) => {
           if (response?.error) {
             console.error('Socket deleteMessage error:', response.error);
             toast.error(response.error);
@@ -657,17 +675,17 @@ const ChatTeacher = () => {
         );
         fetchChatList();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Delete message error:', err);
       toast.error(err.response?.data?.message || 'Failed to delete message');
     }
   };
 
   // Validate MongoDB ObjectId
-  const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+  const isValidObjectId = (id: string): boolean => /^[0-9a-fA-F]{24}$/.test(id);
 
   // Initiate chat
-  const initiateChat = async (studentId) => {
+  const initiateChat = async (studentId: string) => {
     if (!userId || !accessToken) {
       setError('Authentication required');
       toast.error('Please log in to start a chat');
@@ -695,7 +713,7 @@ const ChatTeacher = () => {
       });
       markMessagesAsRead(chatId);
       toast.success('Chat initiated successfully');
-    } catch (err) {
+    } catch (err: any) {
       console.error('Initiate chat error:', err);
       const errorMessage = err.response?.data?.message || 'Failed to initiate chat';
       setError(errorMessage);
@@ -704,14 +722,14 @@ const ChatTeacher = () => {
   };
 
   // Switch to student
-  const switchToStudent = (chatId, student) => {
+  const switchToStudent = (chatId: string, student: { id: string; name: string }) => {
     setActiveChatId(chatId);
     setActiveStudent(student);
     markMessagesAsRead(chatId);
   };
 
   // Message actions component
-  const MessageActions = ({ message }) => (
+  const MessageActions: FC<{ message: Message }> = ({ message }) => (
     <div className="flex items-center space-x-2 mt-1">
       <div className="relative">
         <button
@@ -719,7 +737,7 @@ const ChatTeacher = () => {
             setShowReactionPicker(
               showReactionPicker === (message._id || message.id)
                 ? null
-                : message._id || message.id
+                : message._id || message.id || ''
             )
           }
           className="text-gray-500 hover:text-gray-700 text-sm"
@@ -727,12 +745,12 @@ const ChatTeacher = () => {
           React
         </button>
         {showReactionPicker === (message._id || message.id) && (
-          <div className="absolute bottom-full left-0 mb-3 w-64 bg-white rounded-xl shadow-lg p-1 border border-gray-300 z-50">
-            <div className="grid grid-cols-6 gap-3 justify-items-center">
+          <div className="absolute bottom-full left-0 mb-2 w-64 bg-white rounded-xl shadow-lg p-1 border border-gray-300 z-50">
+            <div className="grid grid-cols-6 gap-2 justify-items-center">
               {reactionEmojis.map((emoji) => (
                 <button
                   key={emoji}
-                  onClick={() => handleAddReaction(message._id || message.id, emoji)}
+                  onClick={() => handleAddReaction(message._id || message.id || '', emoji)}
                   className="text-xl p-1 hover:bg-gray-100 rounded-full transition duration-200"
                 >
                   {emoji}
@@ -750,7 +768,7 @@ const ChatTeacher = () => {
       </button>
       {String(message.sender) === userId && (
         <button
-          onClick={() => handleDeleteMessage(message._id || message.id)}
+          onClick={() => handleDeleteMessage(message._id || message.id || '')}
           className="text-red-500 hover:text-red-700"
         >
           <Trash2 className="w-4 h-4" />
@@ -760,17 +778,18 @@ const ChatTeacher = () => {
   );
 
   // Render message
-  const renderMessage = (msg) => {
+  const renderMessage = (msg: Message) => {
     const messageId = msg._id || msg.id;
     const messageKey = `message-${messageId}-${msg.timestamp}`;
-    console.log(`Rendering message ${messageId}: sender=${msg.sender}, userId=${userId}, isSender=${String(msg.sender) === userId}`);
+    console.log(
+      `Rendering message ${messageId}: sender=${msg.sender}, userId=${userId}, isSender=${String(
+        msg.sender
+      ) === userId}`
+    );
     const isSender = String(msg.sender) === userId;
 
     return (
-      <div
-        key={messageKey}
-        className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4 `}
-      >
+      <div key={messageKey} className={`flex ${isSender ? 'justify-end' : 'justify-start'} mb-4`}>
         <div
           className={`flex items-end space-x-2 max-w-xs lg:max-w-md ${
             isSender ? 'flex-row-reverse space-x-reverse' : ''
@@ -827,12 +846,8 @@ const ChatTeacher = () => {
                 </>
               )}
             </div>
-            <div className="flex items-center mt-1 space-x-2 ">
-              <p
-                className={`text-xs text-gray-500 ${
-                  isSender ? 'text-right' : 'text-left'
-                }`}
-              >
+            <div className="flex items-center mt-1 space-x-2">
+              <p className={`text-xs text-gray-500 ${isSender ? 'text-right' : 'text-left'}`}>
                 {new Date(msg.timestamp).toLocaleTimeString([], {
                   hour: '2-digit',
                   minute: '2-digit',
@@ -842,7 +857,7 @@ const ChatTeacher = () => {
                 <>
                   {msg.reactions && msg.reactions.length > 0 && (
                     <div className="flex space-x-1 bg-gray-100 px-2 py-1 rounded-full">
-                      {msg.reactions.map((r, i) => (
+                      {msg.reactions.map((r: Reaction, i: number) => (
                         <span key={`reaction-${i}`} className="text-sm">
                           {r.reaction}
                         </span>
@@ -883,7 +898,7 @@ const ChatTeacher = () => {
           sidebarOpen ? 'w-80' : 'w-0'
         } overflow-hidden`}
       >
-        <div className="p-4 border-b border-gray-200 ">
+        <div className="p-4 border-b border-gray-200">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-xl font-semibold text-gray-900">Students</h1>
             <div className="flex items-center space-x-2">
@@ -919,7 +934,7 @@ const ChatTeacher = () => {
               {students.map((student) => (
                 <div
                   key={student._id || student.id}
-                  onClick={() => initiateChat(student._id || student.id)}
+                  onClick={() => initiateChat(student._id || student.id || '')}
                   className="p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
@@ -927,7 +942,9 @@ const ChatTeacher = () => {
                       👨‍🎓
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">{student.name || student.username || 'Unknown Student'}</p>
+                      <p className="font-medium text-gray-900 truncate">
+                        {student.name || student.username || 'Unknown Student'}
+                      </p>
                       <p className="text-xs text-blue-600 truncate">Student</p>
                     </div>
                   </div>
@@ -941,7 +958,7 @@ const ChatTeacher = () => {
           {!loading && chatList?.chats?.length > 0 && (
             <div>
               <h2 className="p-4 font-semibold text-gray-900">Recent Chats</h2>
-              {chatList.chats.map((chat) => (
+              {chatList.chats.map((chat: Chat) => (
                 <div
                   key={chat.chatId}
                   onClick={() =>
@@ -1013,14 +1030,16 @@ const ChatTeacher = () => {
               👨‍🎓
             </div>
             <div>
-              <h2 className="font-semibold text-gray-900">{activeStudent?.name || 'Select a student'}</h2>
+              <h2 className="font-semibold text-gray-900">
+                {activeStudent?.name || 'Select a student'}
+              </h2>
               <p className="text-sm text-blue-600">
                 Student{' '}
                 {socketConnected && typingStatus
                   ? ' • Typing...'
                   : socketConnected
-                  ? ' • Online'
-                  : ' • Offline'}
+                    ? ' • Online'
+                    : ' • Offline'}
               </p>
             </div>
           </div>
@@ -1063,9 +1082,7 @@ const ChatTeacher = () => {
         <div className="bg-white border-t border-gray-200 px-6 py-4">
           {replyTo && (
             <div className="flex items-center justify-between bg-gray-100 p-2 rounded-md mb-2">
-              <span className="text-sm text-gray-600">
-                Replying to: {replyTo.message || 'Media'}
-              </span>
+              <span className="text-sm text-gray-600">Replying to: {replyTo.message || 'Media'}</span>
               <button
                 onClick={() => setReplyTo(null)}
                 className="text-red-500 hover:text-red-700"
@@ -1092,14 +1109,14 @@ const ChatTeacher = () => {
             <div className="flex-1 relative">
               <textarea
                 value={message}
-                onChange={(e) => {
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   setMessage(e.target.value);
                   handleTyping();
                 }}
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${activeStudent?.name || 'student'}...`}
                 className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
-                rows="1"
+                rows={1}
                 style={{ minHeight: '48px' }}
                 disabled={!activeChatId || isUploading}
               />

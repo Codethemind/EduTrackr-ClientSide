@@ -14,7 +14,7 @@ const StudentsPage = () => {
     const fetchTeacherAndStudents = async () => {
       try {
         // 1. Get teacher details
-        const teacher = JSON.parse(localStorage.getItem('user'));
+        const teacher = JSON.parse(localStorage.getItem('user')!);
         
         const department = teacher?.departmentName;
 
