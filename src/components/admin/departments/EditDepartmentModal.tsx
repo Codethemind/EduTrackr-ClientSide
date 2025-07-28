@@ -1,8 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { Toaster, toast } from 'react-hot-toast';
-import axios from 'axios';
+import axios from '../../../api/axiosInstance'; // Adjust the import path as necessary
 
-const EditDepartmentModal = ({ department, onClose, onSave }) => {
+// Define interfaces
+interface Department {
+  _id: string;
+  name?: string;
+  code?: string;
+  establishedDate?: string;
+  headOfDepartment?: string;
+  departmentEmail?: string;
+  departmentPhone?: string;
+  active?: boolean;
+}
+
+interface Errors {
+  name?: string;
+  code?: string;
+  establishedDate?: string;
+  headOfDepartment?: string;
+  departmentEmail?: string;
+  departmentPhone?: string;
+}
+
+interface EditDepartmentModalProps {
+  department: Department;
+  onClose: () => void;
+  onSave: (updatedDepartment: Department) => void;
+}
+
+const EditDepartmentModal: React.FC<EditDepartmentModalProps> = ({ department, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: '',
     code: '',
@@ -10,10 +37,10 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
     headOfDepartment: '',
     departmentEmail: '',
     departmentPhone: '',
-    active: true
+    active: true,
   });
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Errors>({});
   const [uploading, setUploading] = useState(false);
   const [serverError, setServerError] = useState('');
 
@@ -22,17 +49,19 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
       setFormData({
         name: department.name || '',
         code: department.code || '',
-        establishedDate: department.establishedDate ? new Date(department.establishedDate).toISOString().split('T')[0] : '',
+        establishedDate: department.establishedDate
+          ? new Date(department.establishedDate).toISOString().split('T')[0]
+          : '',
         headOfDepartment: department.headOfDepartment || '',
         departmentEmail: department.departmentEmail || '',
         departmentPhone: department.departmentPhone || '',
-        active: department.active ?? true
+        active: department.active ?? true,
       });
     }
   }, [department]);
 
   const validateForm = () => {
-    const validationErrors = {};
+    const validationErrors: Errors = {};
     setServerError('');
 
     if (!formData.name.trim()) {
@@ -60,9 +89,9 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
     return Object.keys(validationErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       toast.error('Please fix the errors in the form');
       return;
@@ -70,15 +99,18 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
 
     try {
       setUploading(true);
-      
+
       const response = await axios.put(
-        `http://localhost:3000/api/departments/${department._id}`,
-        formData
+        `/api/departments/${department._id}`, // Use relative path to match axiosInstance baseURL
+        formData,
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` }, // Use token from localStorage
+        }
       );
-      
+
       setUploading(false);
-      
-      if (response.data && response.data.success) {
+
+      if (response.data?.success) {
         toast.success('Department updated successfully!');
         onSave(response.data.data);
         onClose();
@@ -86,20 +118,20 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
         setServerError(response.data?.message || 'Failed to update department');
         toast.error(response.data?.message || 'Failed to update department');
       }
-    } catch (error) {
+    } catch (error: any) {
       setUploading(false);
-      console.error('Error updating department:', error);
-      
+      console.error('Error updating department:', error.message || error);
+
       if (error.response) {
         const status = error.response.status;
         const errorMessage = error.response.data?.message || 'An error occurred';
-        
+
         if (status === 409 || errorMessage.includes('already exists')) {
           if (errorMessage.includes('name')) {
-            setErrors(prev => ({ ...prev, name: 'This department name already exists' }));
+            setErrors((prev) => ({ ...prev, name: 'This department name already exists' }));
             toast.error('This department name already exists');
           } else if (errorMessage.includes('code')) {
-            setErrors(prev => ({ ...prev, code: 'This department code already exists' }));
+            setErrors((prev) => ({ ...prev, code: 'This department code already exists' }));
             toast.error('This department code already exists');
           } else {
             setServerError(errorMessage);
@@ -119,13 +151,13 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
-    if (errors[name]) {
-      setErrors(prev => {
+
+    if (errors[name as keyof Errors]) {
+      setErrors((prev) => {
         const updated = { ...prev };
-        delete updated[name];
+        delete updated[name as keyof Errors];
         return updated;
       });
     }
@@ -134,9 +166,9 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
       setServerError('');
     }
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -147,10 +179,7 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
         <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-2xl relative">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold">Edit Department</h2>
-            <button 
-              onClick={onClose} 
-              className="text-gray-500 hover:text-black"
-            >
+            <button onClick={onClose} className="text-gray-500 hover:text-black">
               ✖
             </button>
           </div>
@@ -258,4 +287,4 @@ const EditDepartmentModal = ({ department, onClose, onSave }) => {
   );
 };
 
-export default EditDepartmentModal; 
+export default EditDepartmentModal;

@@ -9,6 +9,7 @@ export interface AssignmentCardProps {
   className?: string;
   showActions?: boolean;
   compact?: boolean;
+  onStartSubmission?:any
 }
 
 // Assignment List Component Props

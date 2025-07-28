@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import PropTypes from 'prop-types';
 
 // Add interfaces at the top
@@ -46,11 +46,12 @@ interface AssignmentFiltersProps {
   setFilters: (filters: any) => void;
   courses: any[];
   departments: any[];
-  courseNameMap: Map<string, string>;
-  departmentNameMap: Map<string, string>;
+  courseNameMap?: Map<string, string>;
+  departmentNameMap?: Map<string, string>;
+  isStudent?: boolean;
 }
 
-const AssignmentFilters = ({
+const AssignmentFilters :FC<AssignmentFiltersProps>= ({
   filters,
   setFilters,
   courses = [],
@@ -307,25 +308,25 @@ const AssignmentFilters = ({
   );
 };
 
-AssignmentFilters.propTypes = {
-  filters: PropTypes.shape({
-    course: PropTypes.string,
-    department: PropTypes.string,
-    status: PropTypes.string,
-    sortBy: PropTypes.string,
-  }).isRequired,
-  setFilters: PropTypes.func.isRequired,
-  courses: PropTypes.arrayOf(PropTypes.shape({
-    _id: PropTypes.string,
-    name: PropTypes.string
-  })),
-  departments: PropTypes.arrayOf(PropTypes.shape({
-    _id: PropTypes.string,
-    name: PropTypes.string
-  })),
-  courseNameMap: PropTypes.instanceOf(Map),
-  departmentNameMap: PropTypes.instanceOf(Map),
-  isStudent: PropTypes.bool,
-};
+// AssignmentFilters.propTypes = {
+//   filters: PropTypes.shape({
+//     course: PropTypes.string,
+//     department: PropTypes.string,
+//     status: PropTypes.string,
+//     sortBy: PropTypes.string,
+//   }).isRequired,
+//   setFilters: PropTypes.func.isRequired,
+//   courses: PropTypes.arrayOf(PropTypes.shape({
+//     _id: PropTypes.string,
+//     name: PropTypes.string
+//   })),
+//   departments: PropTypes.arrayOf(PropTypes.shape({
+//     _id: PropTypes.string,
+//     name: PropTypes.string
+//   })),
+//   courseNameMap: PropTypes.instanceOf(Map),
+//   departmentNameMap: PropTypes.instanceOf(Map),
+//   isStudent: PropTypes.bool,
+// };
 
 export default AssignmentFilters;

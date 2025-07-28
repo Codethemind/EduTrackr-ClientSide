@@ -70,7 +70,7 @@ const handleSubmit = async (e) => {
       navigate('/admin/dashboard', { replace: true });
     }, 1500); 
 
- } catch (err) {
+ } catch (err:any) {
   console.log("Caught error:", err);
   setLoading(false);
 

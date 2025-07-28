@@ -9,7 +9,7 @@ import { MdMenu, MdEdit, MdSave, MdCancel, MdCameraAlt, MdPerson, MdEmail, MdSch
 
 const StudentProfile = () => {
   const navigate = useNavigate();
-  const { user: student } = useSelector(state => state.auth);
+  const { user: student } = useSelector((state:any) => state.auth);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState(null);
@@ -99,7 +99,7 @@ const StudentProfile = () => {
         setIsEditing(false);
         setImageFile(null);
       }
-    } catch (err) {
+    } catch (err:any) {
       console.error('Failed to update profile:', err);
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {

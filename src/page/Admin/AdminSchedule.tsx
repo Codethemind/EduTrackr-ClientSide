@@ -12,8 +12,8 @@ const AdminSchedule = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [viewMode, setViewMode] = useState('table');
   const [selectedDepartment, setSelectedDepartment] = useState('');
-  const [schedules, setSchedules] = useState([]);
-  const [departments, setDepartments] = useState([]);
+  const [schedules, setSchedules] = useState<any>([]);
+  const [departments, setDepartments] = useState<any>([]);
 
   
 
@@ -90,7 +90,13 @@ const AdminSchedule = () => {
           
           {/* Different View Modes */}
           {viewMode === 'table' && (
-            <ScheduleTable />
+            <ScheduleTable 
+            departments={departments}
+            schedules={schedules}
+            selectedDepartment={selectedDepartment}
+            onEdit={(schedule) => console.log('Edit schedule:', schedule)}
+            onDelete={(scheduleId) => console.log('Delete schedule:', scheduleId)}  
+             />
           )}
           
           {viewMode === 'weekly' && (

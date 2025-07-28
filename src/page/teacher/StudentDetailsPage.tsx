@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import axios from "../../api/axiosInstance.tsx";
+import axios from "../../api/axiosInstance";
 import Header from '../../components/common/Header';
 import TeacherSideBar from '../../components/teacher/common/Sidebar';
+import { RootState } from '../../redux/store';
 
 const StudentDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const authState = useSelector((state) => state.auth);
-  const [student, setStudent] = useState(null);
+  const authState = useSelector((state:RootState) => state.auth);
+  const [student, setStudent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState([]);
-  const [courses, setCourses] = useState([]);
-  const [studentSchedules, setStudentSchedules] = useState([]);
+  const [assignments, setAssignments] = useState<any>([]);
+  const [courses, setCourses] = useState<any>([]);
+  const [studentSchedules, setStudentSchedules] = useState<any>([]);
 
   useEffect(() => {
     const fetchStudentDetails = async () => {
@@ -56,7 +57,7 @@ const StudentDetailsPage = () => {
               setStudentSchedules(schedules);
               
               // Extract unique courses from schedules
-              const uniqueCourses = [];
+              const uniqueCourses:any[] = [];
               const courseIds = new Set();
               
               schedules.forEach(schedule => {
@@ -322,7 +323,7 @@ const StudentDetailsPage = () => {
                           ))
                         ) : (
                           <tr>
-                            <td colSpan="5" className="px-6 py-12 text-center">
+                            <td colSpan={5} className="px-6 py-12 text-center">
                               <svg className="mx-auto h-12 w-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                               </svg>

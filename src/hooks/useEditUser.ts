@@ -13,7 +13,7 @@ interface EditUserFormData {
   department: string;
   class: string;
   courses: string[];
-  isBlock: boolean;         // ✅ Using isBlock instead of status
+  isBlock?: boolean;         // ✅ Using isBlock instead of status
   profileImage: string;
 }
 
@@ -41,7 +41,7 @@ interface User {
   department?: string;
   class?: string;
   courses?: string[];
-  isBlock: boolean;
+  isBlock?: boolean;
   profileImage?: string;
 }
 

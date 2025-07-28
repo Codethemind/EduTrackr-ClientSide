@@ -6,18 +6,19 @@ import AssignmentSelector from '../../components/teacher/Grades/AssignmentSelect
 import GradeEntryTable from '../../components/teacher/Grades/GradeEntryTable';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { RootState } from '../../redux/store';
 
-const AddGrade = () => {
-  const authState = useSelector((state) => state.auth);
-  const [assignments, setAssignments] = useState([]);
-  const [selectedAssignment, setSelectedAssignment] = useState(null);
-  const [students, setStudents] = useState([]);
-  const [grades, setGrades] = useState({});
+const AddGrade: React.FC = () => {
+  const authState = useSelector((state: RootState) => state.auth);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
+  const [students, setStudents] = useState<any[]>([]);
+  const [grades, setGrades] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
 
-  const teacherId = authState?.user?._id || authState?.user?.id;
+  const teacherId = authState?.user?.id || authState?.user?.id;
   const accessToken = authState?.accessToken;
 
   // Fetch teacher's assignments
@@ -38,7 +39,7 @@ const AddGrade = () => {
         } else {
           toast.error(response.data.message || 'Failed to load assignments.');
         }
-      } catch (error) {
+      } catch (error: any) {
         const message =
           error.response?.data?.message ||
           'Unable to load assignments due to a server error.';
@@ -55,7 +56,7 @@ const AddGrade = () => {
   }, [teacherId, accessToken]);
 
   // Handle assignment selection
-  const handleAssignmentSelect = (assignmentId) => {
+  const handleAssignmentSelect = (assignmentId: string) => {
     if (!assignmentId) {
       setSelectedAssignment(null);
       setStudents([]);
@@ -69,7 +70,7 @@ const AddGrade = () => {
 
     console.log('Selected assignment:', assignment);
     // Derive students from submissions
-    const submittedStudents = assignment.submissions.map((submission) => ({
+    const submittedStudents = assignment?.submissions?.map((submission: any) => ({
       _id: submission.studentId,
       studentName: submission.studentName || 'Unknown',
       studentId: submission.studentId,
@@ -79,15 +80,15 @@ const AddGrade = () => {
         files: submission.submissionContent?.files || [],
         submittedAt: submission.submittedAt || null,
       },
-    }));
+    })) || [];
 
     setStudents(submittedStudents);
 
     // Initialize grades from submissions
-    const initialGrades = {};
-    submittedStudents.forEach((student) => {
-      const submission = assignment.submissions.find(
-        (sub) => sub.studentId === student._id
+    const initialGrades: any = {};
+    submittedStudents.forEach((student: any) => {
+      const submission = assignment?.submissions?.find(
+        (sub: any) => sub.studentId === student._id
       );
       initialGrades[student._id] = submission?.grade?.toString() || '';
     });
@@ -97,16 +98,16 @@ const AddGrade = () => {
   };
 
   // Handle grade change
-  const handleGradeChange = (studentId, grade) => {
+  const handleGradeChange = (studentId: string, grade: string) => {
     const value = grade === '' ? '' : Math.max(0, Math.min(100, parseInt(grade) || 0));
-    setGrades((prev) => ({
+    setGrades((prev: any) => ({
       ...prev,
       [studentId]: value,
     }));
   };
 
   // Extract the actual submission logic into a separate function
-  const submitGrades = async (gradesToSubmit) => {
+  const submitGrades = async (gradesToSubmit: any[]) => {
     setIsSubmitting(true);
     try {
       const response = await axios.post(
@@ -128,7 +129,7 @@ const AddGrade = () => {
       } else {
         toast.error(response.data.message || 'Failed to submit grades.');
       }
-    } catch (error) {
+    } catch (error: any) {
       const message =
         error.response?.data?.message ||
         'Failed to submit grades due to a server error.';
@@ -161,7 +162,7 @@ const AddGrade = () => {
       .filter(([_, grade]) => grade !== '')
       .map(([studentId, grade]) => ({
         studentId,
-        grade: parseInt(grade),
+        grade: parseInt(grade as string),
       }));
 
     if (gradesToSubmit.length === 0) {
@@ -170,67 +171,70 @@ const AddGrade = () => {
     }
 
     // Replace window.confirm with styled toast confirmation
-    toast((t) => (
-      <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 max-w-md mx-auto">
-        <div className="flex items-start space-x-4">
-          {/* Warning Icon */}
-          <div className="flex-shrink-0">
-            <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-              <svg
-                className="w-6 h-6 text-amber-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+    toast(
+      (t) => (
+        <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 max-w-md mx-auto">
+          <div className="flex items-start space-x-4">
+            {/* Warning Icon */}
+            <div className="flex-shrink-0">
+              <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                <svg
+                  className="w-6 h-6 text-amber-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"
+                  />
+                </svg>
+              </div>
             </div>
-          </div>
-          
-          {/* Content */}
-          <div className="flex-1 min-w-0">
-            <div className="text-lg font-semibold text-gray-900 mb-2">
-              Confirm Grade Submission
-            </div>
-            <div className="text-sm text-gray-600 mb-4 leading-relaxed">
-              Are you sure you want to submit these grades? This action cannot be undone and will be visible to students immediately.
-            </div>
-            
-            {/* Action Buttons */}
-            <div className="flex space-x-3 justify-end">
-              <button
-                onClick={() => toast.dismiss(t.id)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  toast.dismiss(t.id);
-                  submitGrades(gradesToSubmit);
-                }}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
-              >
-                Submit Grades
-              </button>
+
+            {/* Content */}
+            <div className="flex-1 min-w-0">
+              <div className="text-lg font-semibold text-gray-900 mb-2">
+                Confirm Grade Submission
+              </div>
+              <div className="text-sm text-gray-600 mb-4 leading-relaxed">
+                Are you sure you want to submit these grades? This action cannot be undone and will be visible to students immediately.
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex space-x-3 justify-end">
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    toast.dismiss(t.id);
+                    submitGrades(gradesToSubmit);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 shadow-sm hover:shadow-md"
+                >
+                  Submit Grades
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    ), {
-      duration: 0, // Don't auto-dismiss
-      position: 'top-center',
-      style: {
-        background: 'transparent',
-        boxShadow: 'none',
-        padding: '0',
-      },
-    });
+      ),
+      {
+        duration: 0, // Don't auto-dismiss
+        position: 'top-center',
+        style: {
+          background: 'transparent',
+          boxShadow: 'none',
+          padding: '0',
+        },
+      }
+    );
   };
 
   return (
@@ -296,7 +300,8 @@ const AddGrade = () => {
                     Course: {selectedAssignment.courseName}
                   </p>
                   <p className="text-gray-600 text-lg">
-                    Submissions: {selectedAssignment.submissions?.length || 0} / {selectedAssignment.totalStudents || 0}
+                    Submissions: {selectedAssignment.submissions?.length || 0} /{' '}
+                    {selectedAssignment.totalStudents || 0}
                   </p>
                 </div>
 

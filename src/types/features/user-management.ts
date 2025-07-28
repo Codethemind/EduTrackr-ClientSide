@@ -8,7 +8,7 @@ export interface DashboardUser extends BaseEntity {
   lastName?: string;
   username: string;
   email: string;
-  role: 'admin' | 'teacher' | 'student';
+  role: 'Admin' | 'Teacher' | 'Student';
   status: 'active' | 'pending' | 'inactive' | 'blocked';
   department?: string;
   lastLogin?: string;

@@ -13,11 +13,11 @@ export interface EditUserModalProps {
     email: string;
     firstname?: string;
     lastname?: string;
-    role: 'Student' | 'Teacher' | 'Admin';
+    role: 'student' | 'teacher' | 'admin';
     department?: string;
     class?: string;
     courses?: string[];
-    isBlock: boolean;
+    isBlock?: boolean;
     profileImage?: string;
   } | null;
   onClose: () => void;

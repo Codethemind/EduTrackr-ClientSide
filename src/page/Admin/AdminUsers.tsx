@@ -18,12 +18,16 @@ interface User {
   id?: string;
   username: string;
   email: string;
-  role: 'Admin' | 'Teacher' | 'Student';
+ role: 'Student' | 'Teacher' | 'Admin'; 
   firstName?: string;
   lastName?: string;
   password?: string;
   isActive?: boolean;
   courses?: string[];
+  isBlock?: boolean;
+  profileImage?: string;
+  
+  
 }
 
 interface ApiResponse<T> {
@@ -48,7 +52,7 @@ const AdminUserManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('All');
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [modalType, setModalType] = useState<ModalType>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -261,7 +265,9 @@ const fetchAllUsers = async (): Promise<void> => {
                 selectedRole={selectedRole}
                 setSelectedRole={setSelectedRole}
                 roleOptions={roleOptions}
+                classOptions={['All', 'Admin', 'Teacher', 'Student']}
                 className="w-full sm:w-auto"
+                
               />
 
               <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -369,7 +375,7 @@ const fetchAllUsers = async (): Promise<void> => {
           />
         )}
         {modalType === 'add' && (
-          <AddUserModal onClose={handleCloseModal} onSave={handleSaveUser} />
+          <AddUserModal onClose={handleCloseModal} onSave={handleSaveUser}  />
         )}
       </div>
     </>

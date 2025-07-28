@@ -50,7 +50,7 @@ const ResetPassword = () => {
       } else {
         setError(data.message || 'Password reset failed');
       }
-    } catch (err) {
+    } catch (err:any) {
       setError(
         err.response?.data?.message ||
         'Server error. Please try again later.'

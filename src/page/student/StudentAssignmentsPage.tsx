@@ -9,6 +9,9 @@ import SubmissionModal from '../../components/student/assignments/SubmissionModa
 import Pagination from '../../components/common/Pagination';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { RootState } from '../../redux/store';
+import { Course } from '../../types';
+import { Assignment } from '../../types/features/assignment-management';
 
 // Add interfaces at the top
 interface Attachment {
@@ -32,30 +35,35 @@ interface Teacher {
   username?: string;
 }
 
-interface Assignment {
-  _id: string;
-  title: string;
-  description: string;
-  instructions?: string;
-  dueDate: string;
-  createdAt?: string;
-  maxMarks: number;
-  submissions?: Submission[];
-  courseName?: string;
-  departmentName?: string;
-  teacherId?: Teacher;
-  submissionFormat?: string;
-  attachments?: Attachment[];
-  allowLateSubmission?: boolean;
-  [key: string]: any;
-}
+// interface Assignment {
+//   _id: string;
+//   id?: string; // Added for AssignmentCard
+//   title: string;
+//   description: string;
+//   instructions?: string;
+//   dueDate: string;
+//   createdAt?: string;
+//   maxMarks: number;
+//   submissions?: Submission[];
+//   courseName?: string;
+//   departmentName?: string;
+//   teacherId?: Teacher;
+//   submissionFormat?: string;
+//   attachments?: Attachment[];
+//   allowLateSubmission?: boolean;
+//   isActive: boolean; // Added for AssignmentCard
+//   hasSubmitted?: boolean;
+//   courseId?: { _id: string; name?: string };
+//   departmentId?: { _id: string };
+//   [key: string]: any;
+// }
 
-const StudentAssignmentsPage = () => {
+const StudentAssignmentsPage: React.FC = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [studentSchedules, setStudentSchedules] = useState([]);
-  const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
+  const authState = useSelector((state: RootState) => state.auth);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [studentSchedules, setStudentSchedules] = useState<any[]>([]);
+  const [selectedAssignment, setSelectedAssignment] = useState<any | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isSubmissionModalOpen, setIsSubmissionModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,7 +78,7 @@ const StudentAssignmentsPage = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  const studentId = authState?.user?._id || authState?.user?.id;
+  const studentId = authState?.user?.id || authState?.user?.id;
   const accessToken = authState?.accessToken;
 
   // Fetch student's schedules for course/department options
@@ -98,7 +106,7 @@ const StudentAssignmentsPage = () => {
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching student schedules:', error);
       }
     };
@@ -132,10 +140,11 @@ const StudentAssignmentsPage = () => {
             );
 
             if (assignmentsResponse.data.success) {
-              // Map assignments to include hasSubmitted based on current student's submissions
+              // Map assignments to include hasSubmitted and isActive
               const updatedAssignments = assignmentsResponse.data.data.map(
-                (assignment) => ({
+                (assignment: Assignment) => ({
                   ...assignment,
+                  id: assignment._id, // Map _id to id for AssignmentCard
                   hasSubmitted:
                     assignment.submissions?.some(
                       (submission) => submission.studentId === studentId
@@ -144,6 +153,7 @@ const StudentAssignmentsPage = () => {
                     assignment.submissions?.filter(
                       (submission) => submission.studentId === studentId
                     ) || [],
+                  isActive: assignment.dueDate ? new Date(assignment.dueDate) >= new Date() : false,
                 })
               );
               setAssignments(updatedAssignments);
@@ -152,9 +162,9 @@ const StudentAssignmentsPage = () => {
             }
           }
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching assignments:', error);
-        toast.error('Failed to load assignments');
+        toast.error(error.response?.data?.message || 'Failed to load assignments');
       } finally {
         setIsLoading(false);
       }
@@ -164,13 +174,13 @@ const StudentAssignmentsPage = () => {
   }, [studentId, accessToken]);
 
   // Handle assignment submission
-  const handleSubmitAssignment = async (assignmentId, submissionData) => {
+  const handleSubmitAssignment = async (assignmentId: string, submissionData: any) => {
     try {
       const formData = new FormData();
-      formData.append('studentId', studentId);
+      formData.append('studentId', studentId || '');
       formData.append(
         'studentName',
-        `${authState.user.firstname} ${authState.user.lastname}`.trim()
+        `${authState.user?.firstname || ''} ${authState.user?.lastname || ''}`.trim() || 'Unknown'
       );
       formData.append(
         'hasSubmissionText',
@@ -185,9 +195,9 @@ const StudentAssignmentsPage = () => {
       if (submissionData.files?.length > 0) {
         formData.append(
           'fileNames',
-          JSON.stringify(submissionData.files.map((f) => f.name))
+          JSON.stringify(submissionData.files.map((f: any) => f.name))
         );
-        submissionData.files.forEach((file) => {
+        submissionData.files.forEach((file: any) => {
           formData.append('files', file);
         });
       }
@@ -224,11 +234,9 @@ const StudentAssignmentsPage = () => {
       } else {
         toast.error(response.data.message || 'Failed to submit assignment');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error submitting assignment:', error);
-      toast.error(
-        error.response?.data?.message || 'Failed to submit assignment'
-      );
+      toast.error(error.response?.data?.message || 'Failed to submit assignment');
     }
   };
 
@@ -256,17 +264,29 @@ const StudentAssignmentsPage = () => {
         return false;
       if (filters.status !== 'all') {
         const now = new Date();
-        const dueDate = new Date(assignment.dueDate);
+        const dueDate = assignment.dueDate ? new Date(assignment.dueDate) : null;
 
         switch (filters.status) {
           case 'pending':
-            return !assignment.submissions?.length && dueDate >= now;
+            return (
+              (!assignment.submissions || assignment.submissions.length === 0) &&
+              dueDate &&
+              dueDate >= now
+            );
           case 'submitted':
-            return assignment.submissions?.length > 0;
+            return assignment.submissions && assignment.submissions.length > 0;
           case 'overdue':
-            return !assignment.submissions?.length && dueDate < now;
+            return (
+              (!assignment.submissions || assignment.submissions.length === 0) &&
+              dueDate &&
+              dueDate < now
+            );
           case 'upcoming':
-            return !assignment.submissions?.length && dueDate >= now;
+            return (
+              (!assignment.submissions || assignment.submissions.length === 0) &&
+              dueDate &&
+              dueDate >= now
+            );
           default:
             return true;
         }
@@ -276,9 +296,13 @@ const StudentAssignmentsPage = () => {
     .sort((a, b) => {
       switch (filters.sortBy) {
         case 'dueDate':
-          return new Date(a.dueDate) - new Date(b.dueDate);
+          return a.dueDate && b.dueDate
+            ? new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+            : 0;
         case 'createdAt':
-          return new Date(b.createdAt) - new Date(a.createdAt);
+          return a.createdAt && b.createdAt
+            ? new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            : 0;
         case 'title':
           return a.title.localeCompare(b.title);
         default:
@@ -307,28 +331,45 @@ const StudentAssignmentsPage = () => {
 
   // Get unique courses and departments from schedules
   const uniqueCourses = [
-    ...new Set(studentSchedules.map((s) => s.courseId).filter(Boolean)),
+    ...new Set(
+      studentSchedules
+        .map((s: any) => s.courseId)
+        .filter((courseId): courseId is { _id: string; name?: string } => !!courseId)
+    ),
   ];
   const uniqueDepartments = [
-    ...new Set(studentSchedules.map((s) => s.departmentId).filter(Boolean)),
+    ...new Set(
+      studentSchedules
+        .map((s: any) => s.departmentId)
+        .filter((departmentId): departmentId is { _id: string } => !!departmentId)
+    ),
   ];
 
   // Calculate statistics
   const pendingAssignments = assignments.filter(
-    (a) => !a.submissions?.length && new Date(a.dueDate) >= new Date()
+    (a) =>
+      (!a.submissions || a.submissions.length === 0) &&
+      a.dueDate &&
+      new Date(a.dueDate) >= new Date()
   ).length;
   const submittedAssignments = assignments.filter(
-    (a) => a.submissions?.length > 0
+    (a) => a.submissions && a.submissions.length > 0
   ).length;
   const overdueAssignments = assignments.filter(
-    (a) => !a.submissions?.length && new Date(a.dueDate) < new Date()
+    (a) =>
+      (!a.submissions || a.submissions.length === 0) &&
+      a.dueDate &&
+      new Date(a.dueDate) < new Date()
   ).length;
   const upcomingDeadlines = assignments.filter((a) => {
+    if (!a.dueDate) return false;
     const dueDate = new Date(a.dueDate);
     const threeDaysFromNow = new Date();
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
     return (
-      !a.submissions?.length && dueDate <= threeDaysFromNow && dueDate >= new Date()
+      (!a.submissions || a.submissions.length === 0) &&
+      dueDate <= threeDaysFromNow &&
+      dueDate >= new Date()
     );
   }).length;
 
@@ -351,12 +392,15 @@ const StudentAssignmentsPage = () => {
                 </div>
               </div>
             </div>
-            <AssignmentFilters 
+            <AssignmentFilters
               filters={filters}
               setFilters={setFilters}
-              schedules={studentSchedules}
+              courses={uniqueCourses}
+              departments={uniqueDepartments}
+              isStudent={true}
+              
             />
-            
+
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
                 {Array.from({ length: 6 }).map((_, index) => (
@@ -372,10 +416,16 @@ const StudentAssignmentsPage = () => {
                       assignment={assignment}
                       onView={() => handleViewAssignment(assignment)}
                       onStartSubmission={() => handleStartSubmission(assignment)}
+                      className="bg-white shadow-sm hover:shadow-md transition-shadow duration-200"
+                      showActions={true}  
+                      compact={false} onSubmit={ (assignment) => handleStartSubmission(assignment) }
                     />
                   ))}
                 </div>
                 <Pagination
+                totalItems={totalItems}
+                  itemsPerPage={itemsPerPage}
+                  onItemsPerPageChange={setItemsPerPage}
                   currentPage={currentPage}
                   totalPages={totalPages}
                   onPageChange={setCurrentPage}
@@ -397,7 +447,7 @@ const StudentAssignmentsPage = () => {
             onStartSubmission={() => handleStartSubmission(selectedAssignment)}
           />
         )}
-        
+
         {selectedAssignment && (
           <SubmissionModal
             isOpen={isSubmissionModalOpen}

@@ -113,12 +113,13 @@ export const getTeacherDisplayName = (teacher?: string | { name?: string; userna
 export const canSubmitAssignment = (assignment: Assignment): boolean => {
   const hasSubmissions = assignment.submissions && assignment.submissions.length > 0;
   if (hasSubmissions) return false;
-  
+
   const timeInfo = calculateTimeRemaining(assignment.dueDate);
-  
+
   // Can submit if not overdue, or if overdue but late submission is allowed
-  return !timeInfo.isOverdue || assignment.allowLateSubmission;
+  return !timeInfo.isOverdue || !!assignment.allowLateSubmission;
 };
+
 
 // Get submission button text and variant
 export const getSubmissionButtonConfig = (assignment: Assignment): {

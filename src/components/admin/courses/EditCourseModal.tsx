@@ -4,7 +4,7 @@ import axios from 'axios';
 import Modal from '../../common/Modal';
 
 const EditCourseModal = ({ course, departments, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<any>({
     code: '',
     name: '',
     departmentId: '',

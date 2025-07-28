@@ -1,4 +1,3 @@
-""// components/teacher/assignments/AssignmentDetailsPage.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
@@ -29,6 +28,7 @@ interface Submission {
 
 interface Assignment {
   _id: string;
+  id?: string;
   title: string;
   description: string;
   instructions?: string;
@@ -49,6 +49,7 @@ interface Assignment {
   courseName: string;
   departmentName: string;
   teacherName?: string;
+  [key: string]: any;
 }
 
 interface AuthState {
@@ -68,6 +69,13 @@ const AssignmentDetailsPage: React.FC = () => {
 
   const teacherId = authState?.user?._id || authState?.user?.id;
   const accessToken = authState?.accessToken;
+
+  // Define handleFileClick
+  const handleFileClick = (url: string, name: string) => {
+    console.log(`File clicked: ${name} at ${url}`);
+    // Optional: Add analytics tracking or open the file
+    // window.open(url, '_blank');
+  };
 
   useEffect(() => {
     const fetchAssignment = async () => {
@@ -92,8 +100,8 @@ const AssignmentDetailsPage: React.FC = () => {
         } else {
           toast.error('Failed to load assignment details');
         }
-      } catch (error) {
-        toast.error('Failed to load assignment details');
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || 'Failed to load assignment details');
       } finally {
         setIsLoading(false);
       }
@@ -135,7 +143,23 @@ const AssignmentDetailsPage: React.FC = () => {
         { grades: gradesToSubmit },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
-    } catch (error) {
+      if (response.data.success) {
+        toast.success('Grades submitted successfully');
+        setAssignment((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            submissions: prev.submissions?.map((sub) => {
+              const gradeEntry = gradesToSubmit.find((g) => g.studentId === (sub.studentId || sub._id));
+              return gradeEntry ? { ...sub, grade: gradeEntry.grade } : sub;
+            }),
+          };
+        });
+      } else {
+        toast.error(response.data.message || 'Failed to submit grades');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to submit grades');
     } finally {
       setIsSubmitting(false);
       setGradingSubmissionId(null);
@@ -171,7 +195,8 @@ const AssignmentDetailsPage: React.FC = () => {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header role="teacher" />
         <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 md:ml-64">
-          <button
+          <div className="container mx-auto px-6 py-6">
+            <button
               onClick={() => navigate('/teacher/assignments')}
               className="mb-4 text-blue-600 hover:text-blue-700 flex items-center"
             >
@@ -180,7 +205,6 @@ const AssignmentDetailsPage: React.FC = () => {
               </svg>
               Back to Assignments
             </button>
-          <div className="container mx-auto px-6 py-6">
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">{assignment.title}</h1>
               <p className="text-sm text-gray-600">{assignment.description}</p>
@@ -236,8 +260,9 @@ const AssignmentDetailsPage: React.FC = () => {
                               />
                               <div className="flex space-x-2">
                                 <button
-                                  onClick={() => handleSubmitGrade(submission._id, grades[studentId])}
-                                  className="bg-green-500 text-white px-3 py-1 rounded"
+                                  onClick={() => handleSubmitGrade(submission._id, grades[studentId] || '')}
+                                  disabled={isSubmitting}
+                                  className={`bg-green-500 text-white px-3 py-1 rounded ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
                                   Submit
                                 </button>

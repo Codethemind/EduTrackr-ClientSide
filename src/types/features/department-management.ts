@@ -5,13 +5,13 @@ export interface Department extends BaseEntity {
   _id: string;
   name: string;
   code: string;
-  establishedDate: string;
-  headOfDepartment: string;
-  departmentEmail: string;
-  departmentPhone: string;
+  establishedDate?: string;
+  headOfDepartment?: string;
+  departmentEmail?: string;
+  departmentPhone?: string;
   active: boolean;
-  createdAt: string;
-  updatedAt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Form Data Types

@@ -200,6 +200,7 @@ const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
           courses={courses}
           teachers={teachers}
           onClose={handleCloseModal}
+          isOpen={isModalOpen}
         />
       )}
     </>

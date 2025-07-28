@@ -30,7 +30,7 @@ const ForgotPassword = () => {
       } else {
         setError(data.message || 'Something went wrong');
       }
-    } catch (err) {
+    } catch (err:any) {
       setError(
         err.response?.data?.message ||
         'Server error. Please try again later.'

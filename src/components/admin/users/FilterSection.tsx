@@ -1,6 +1,18 @@
 import React from 'react';
 
-const Filter = ({
+interface FilterProps {
+  searchTerm: string;
+  setSearchTerm: (term: string) => void;
+  selectedClass?: string;
+  setSelectedClass?: (cls: string) => void;
+  selectedRole: string;
+  setSelectedRole: (role: string) => void;
+  classOptions?: string[];
+  roleOptions?: string[];
+  className?: string; // ✅ add this
+}
+
+const Filter: React.FC<FilterProps> = ({
   searchTerm,
   setSearchTerm,
   selectedClass,
@@ -9,10 +21,11 @@ const Filter = ({
   setSelectedRole,
   classOptions = ['All'],
   roleOptions = ['All'],
+  className = '', // ✅ default to empty string
 }) => {
   return (
-    <div className="flex gap-4 items-center bg-white p-4 rounded-lg shadow-md w-full max-w-lg">
-      {/* Search by name */}
+    <div className={`flex gap-4 items-center bg-white p-4 rounded-lg shadow-md w-full max-w-lg ${className}`}>
+      {/* Search Input */}
       <input
         type="text"
         placeholder="Search by name or email"
@@ -21,7 +34,7 @@ const Filter = ({
         className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
-      {/* Filter by class (only shown if selectedClass and setSelectedClass are provided) */}
+      {/* Class Filter */}
       {selectedClass !== undefined && setSelectedClass && (
         <select
           value={selectedClass}
@@ -37,7 +50,7 @@ const Filter = ({
         </select>
       )}
 
-      {/* Filter by role */}
+      {/* Role Filter */}
       {selectedRole !== undefined && setSelectedRole && (
         <select
           value={selectedRole}

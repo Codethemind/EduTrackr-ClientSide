@@ -5,16 +5,17 @@ import TeacherSideBar from '../../components/teacher/common/Sidebar';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import VideoCall from '../../components/common/VideoCall';
+import { RootState } from '../../redux/store';
 
 const ClassesPage = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth);
-  const [teacherSchedules, setTeacherSchedules] = useState([]);
-  const [studentCounts, setStudentCounts] = useState({});
-  const [teacherInfo, setTeacherInfo] = useState(null);
+  const authState = useSelector((state: RootState) => state.auth);
+  const [teacherSchedules, setTeacherSchedules] = useState<any[]>([]);
+  const [studentCounts, setStudentCounts] = useState<any>({});
+  const [teacherInfo, setTeacherInfo] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
-  const [currentChannel, setCurrentChannel] = useState(null);
+  const [currentChannel, setCurrentChannel] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Initial state:', { isVideoCallActive, currentChannel });
@@ -23,7 +24,7 @@ const ClassesPage = () => {
     setCurrentChannel(null);
 
     const fetchTeacherData = async () => {
-      const teacherId = authState?.user?._id || authState?.user?.id;
+      const teacherId = authState?.user?.id || authState?.user?.id;
       const accessToken = authState?.accessToken;
 
       console.log('Auth State:', authState);
@@ -53,7 +54,7 @@ const ClassesPage = () => {
           console.log('Teacher Schedules:', schedulesResponse.data.data);
           setTeacherSchedules(schedulesResponse.data.data);
 
-          const counts = {};
+          const counts: any = {};
           for (const schedule of schedulesResponse.data.data) {
             if (schedule.departmentId?._id && !counts[schedule.departmentId._id]) {
               try {
@@ -63,8 +64,8 @@ const ClassesPage = () => {
                 if (studentsResponse.data.success) {
                   counts[schedule.departmentId._id] = studentsResponse.data.data.length;
                 }
-              } catch (error) {
-                console.error('Error fetching student count:', error);
+              } catch (error: any) {
+                console.error('Error fetching student count:', error.message || error);
                 counts[schedule.departmentId._id] = 0;
               }
             }
@@ -73,8 +74,8 @@ const ClassesPage = () => {
         } else {
           toast.error('Failed to load schedule data');
         }
-      } catch (error) {
-        console.error('Error fetching teacher data:', error);
+      } catch (error: any) {
+        console.error('Error fetching teacher data:', error.message || error);
         toast.error(`Failed to load schedule: ${error.response?.data?.message || error.message}`);
       } finally {
         setIsLoading(false);
@@ -84,7 +85,7 @@ const ClassesPage = () => {
     fetchTeacherData();
   }, [authState]);
 
-  const handleJoinClass = (schedule) => {
+  const handleJoinClass = (schedule: any) => {
     console.log('Joining class:', schedule);
     if (!schedule._id) {
       toast.error('Invalid class ID');
@@ -94,7 +95,7 @@ const ClassesPage = () => {
     setIsVideoCallActive(true);
   };
 
-  const handleStartLiveClass = async (scheduleId) => {
+  const handleStartLiveClass = async (scheduleId: string) => {
     try {
       const response = await axios.post(
         `/api/schedules/${scheduleId}/start`,
@@ -109,8 +110,8 @@ const ClassesPage = () => {
       } else {
         toast.error('Failed to start live class');
       }
-    } catch (error) {
-      console.error('Error starting live class:', error);
+    } catch (error: any) {
+      console.error('Error starting live class:', error.message || error);
       toast.error(`Failed to start: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -120,7 +121,7 @@ const ClassesPage = () => {
     setCurrentChannel(null);
   };
 
-  const schedulesByDay = teacherSchedules.reduce((acc, schedule) => {
+  const schedulesByDay = teacherSchedules.reduce((acc: any, schedule: any) => {
     if (!acc[schedule.day]) {
       acc[schedule.day] = [];
     }
@@ -129,12 +130,12 @@ const ClassesPage = () => {
   }, {});
 
   Object.keys(schedulesByDay).forEach((day) => {
-    schedulesByDay[day].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    schedulesByDay[day].sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
   });
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const formatTime = (time) => {
+  const formatTime = (time: string) => {
     if (!time) return 'N/A';
     try {
       const [hours, minutes] = time.split(':');
@@ -147,9 +148,9 @@ const ClassesPage = () => {
     }
   };
 
-  const isClassActive = (schedule) => {
+  const isClassActive = (schedule: any) => {
     console.log('Checking class activity:', { schedule });
-    return schedule.isLive || false; // Use isLive to determine if class is active
+    return schedule.isLive || false;
   };
 
   return (
@@ -218,7 +219,7 @@ const ClassesPage = () => {
                     <div className="p-6">
                       {schedulesByDay[day]?.length > 0 ? (
                         <div className="space-y-4">
-                          {schedulesByDay[day].map((schedule, index) => {
+                          {schedulesByDay[day].map((schedule: any, index: number) => {
                             const isActive = isClassActive(schedule);
                             return (
                               <div
@@ -339,12 +340,6 @@ const ClassesPage = () => {
                     </div>
                     <div className="text-sm text-gray-600">Unique Courses</div>
                   </div>
-                  {/* <div className="text-center">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {Object.values(studentCounts).reduce((total, count) => total + count, 0)}
-                    </div>
-                    <div className="text-sm text-gray-600">Total Students</div>
-                  </div> */}
                   <div className="text-center">
                     <div className="text-2xl font-bold text-orange-600">
                       {new Set(teacherSchedules.map((s) => s.departmentId?.name)).size}

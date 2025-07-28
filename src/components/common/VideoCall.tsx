@@ -4,7 +4,9 @@ import AgoraRTC, {
   ICameraVideoTrack,
   IMicrophoneAudioTrack
 } from 'agora-rtc-sdk-ng';
-import type { UID, IRemoteUser } from 'agora-rtc-sdk-ng';
+import type { UID, IAgoraRTCRemoteUser } from 'agora-rtc-sdk-ng';
+
+// import type { UID, IRemoteUser } from 'agora-rtc-sdk-ng';
 import { useSelector } from 'react-redux';
 import toast from 'react-hot-toast';
 import axios from '../../api/axiosInstance';
@@ -16,15 +18,9 @@ type Tracks = {
   audioTrack: IMicrophoneAudioTrack | null;
 };
 
-type RemoteUsersMap = { [uid: string]: Partial<IRemoteUser> & { uid: UID } };
+type RemoteUsersMap = { [uid: string]: Partial<IAgoraRTCRemoteUser> & { uid: UID } };
 
-declare global {
-  interface ImportMeta {
-    env: {
-      VITE_APP_ID: string;
-    };
-  }
-}
+
 
 const VideoCall = ({ channelName, onLeave }: { channelName: string; onLeave: () => void }) => {
   const authState = useSelector((state: { auth: any }) => state.auth);
@@ -108,7 +104,7 @@ const VideoCall = ({ channelName, onLeave }: { channelName: string; onLeave: () 
     };
 
     const setupEventHandlers = () => {
-      client.on('user-published', async (user: IRemoteUser, mediaType) => {
+      client.on('user-published', async (user: IAgoraRTCRemoteUser, mediaType) => {
         try {
           await client.subscribe(user, mediaType);
           setRemoteUsers(prev => ({
@@ -127,18 +123,19 @@ const VideoCall = ({ channelName, onLeave }: { channelName: string; onLeave: () 
         }
       });
 
-      client.on('user-unpublished', (user: IRemoteUser, mediaType) => {
+      client.on('user-unpublished', (user: IAgoraRTCRemoteUser, mediaType) => {
         setRemoteUsers(prev => {
           const updated = { ...prev };
           if (updated[user.uid]) {
-            if (mediaType === 'video') updated[user.uid].videoTrack = null;
-            if (mediaType === 'audio') updated[user.uid].audioTrack = null;
+          if (mediaType === 'video') updated[user.uid].videoTrack = undefined;
+          if (mediaType === 'audio') updated[user.uid].audioTrack = undefined;
+
           }
           return updated;
         });
       });
 
-      client.on('user-left', (user: IRemoteUser) => {
+      client.on('user-left', (user: IAgoraRTCRemoteUser) => {
         setRemoteUsers(prev => {
           const updated = { ...prev };
           delete updated[user.uid];

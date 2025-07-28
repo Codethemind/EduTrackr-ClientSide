@@ -228,7 +228,6 @@ console.log('h',courses)
         });
       }
 
-      console.log('Submitting assignment with FormData:', Object.fromEntries(formDataToSend));
       await onSubmit(formDataToSend);
       onClose();
     } catch (error) {

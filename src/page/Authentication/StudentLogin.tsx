@@ -66,7 +66,7 @@ const StudentLogin = () => {
       toast.success('Login successful! Redirecting...');
       navigate(from, { replace: true });
   
-  } catch (err) {
+  } catch (err:any) {
   console.log("Caught error:", err);
   setLoading(false);
   if (err.response) {

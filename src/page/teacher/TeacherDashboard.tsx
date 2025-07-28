@@ -5,17 +5,18 @@ import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import TeacherSideBar from '../../components/teacher/common/Sidebar';
 import Header from '../../components/common/Header';
+import { RootState } from '../../redux/store';
 
 const TeacherDashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [teacherInfo, setTeacherInfo] = useState(null);
+  const [teacherInfo, setTeacherInfo] = useState<any>(null);
   const [studentCount, setStudentCount] = useState(0);
   const [courseCount, setCourseCount] = useState(0);
-  const [todaySchedules, setTodaySchedules] = useState([]);
-  const [recentAssignments, setRecentAssignments] = useState([]);
-  const authState = useSelector((state) => state.auth);
-  const teacherId = authState?.user?._id || authState?.user?.id;
+  const [todaySchedules, setTodaySchedules] = useState<any[]>([]);
+  const [recentAssignments, setRecentAssignments] = useState<any[]>([]);
+  const authState = useSelector((state: RootState) => state.auth);
+  const teacherId = authState?.user?.id || authState?.user?.id;
   const accessToken = authState?.accessToken;
 
   useEffect(() => {
@@ -54,7 +55,7 @@ const TeacherDashboard = () => {
           if (studentsResponse.data.success) {
             const allStudents = studentsResponse.data.data || [];
             const filteredByDept = allStudents.filter(
-              (student) => student.departmentName?.toLowerCase() === departmentName.toLowerCase()
+              (student: any) => student.departmentName?.toLowerCase() === departmentName.toLowerCase()
             );
             setStudentCount(filteredByDept.length);
             console.log(`Set student count to ${filteredByDept.length} for department ${departmentName}`);
@@ -79,13 +80,13 @@ const TeacherDashboard = () => {
           // Filter for today's schedule
           const today = new Date().toLocaleDateString('en-US', { weekday: 'long' });
           const todaySched = schedules
-            .filter((s) => s.day === today)
-            .sort((a, b) => a.startTime.localeCompare(b.startTime));
+            .filter((s: any) => s.day === today)
+            .sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
           setTodaySchedules(todaySched);
           console.log(`Today's schedules (${today}):`, todaySched.length);
 
           // Count unique courses across all schedules
-          const uniqueCourses = [...new Set(schedules.map((s) => s.courseId?._id).filter(Boolean))];
+          const uniqueCourses = [...new Set(schedules.map((s: any) => s.courseId?._id).filter(Boolean))];
           setCourseCount(uniqueCourses.length);
           console.log(`Set course count to ${uniqueCourses.length}`);
         } else {
@@ -101,12 +102,12 @@ const TeacherDashboard = () => {
 
         if (assignmentsResponse.data.success) {
           const sortedAssignments = assignmentsResponse.data.data
-            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .slice(0, 5);
           setRecentAssignments(sortedAssignments);
           console.log(`Set ${sortedAssignments.length} recent assignments`);
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching dashboard data:', error.message);
         toast.error('Failed to load dashboard data. Please try again.');
       } finally {
@@ -118,7 +119,7 @@ const TeacherDashboard = () => {
   }, [teacherId, accessToken]);
 
   // Group assignments by course
-  const assignmentsByCourse = recentAssignments.reduce((acc, assignment) => {
+  const assignmentsByCourse: any = recentAssignments.reduce((acc: any, assignment: any) => {
     const courseId = typeof assignment.courseId === 'object' ? assignment.courseId?._id : assignment.courseId;
     const courseName = typeof assignment.courseId === 'object' ? assignment.courseId?.name : 'Unknown Course';
     if (!acc[courseId]) {
@@ -224,7 +225,7 @@ const TeacherDashboard = () => {
                           className="h-16 w-16 rounded-full object-cover border-2 border-blue-100"
                           src={teacherInfo?.profileImage || fallbackAvatar}
                           alt="Teacher Profile"
-                          onError={(e) => (e.target.src = fallbackAvatar)}
+                          onError={(e) => (e.currentTarget.src = fallbackAvatar)}
                         />
                         <div>
                           <h3 className="text-lg font-bold text-gray-900">
@@ -264,11 +265,11 @@ const TeacherDashboard = () => {
                           <p className="mt-2 text-gray-500">No recent assignments created.</p>
                         </div>
                       ) : (
-                        Object.values(assignmentsByCourse).map((course) => (
+                        Object.values(assignmentsByCourse).map((course: any) => (
                           <div key={course.name} className="mb-6">
                             <h4 className="text-md font-semibold text-gray-800 mb-3">{course.name}</h4>
                             <div className="space-y-4">
-                              {course.assignments.map((assignment) => (
+                              {course.assignments.map((assignment: any) => (
                                 <div
                                   key={assignment._id}
                                   className="border-l-4 border-blue-500 bg-blue-50 rounded-r-lg p-4"
@@ -325,7 +326,7 @@ const TeacherDashboard = () => {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {todaySchedules.map((schedule) => (
+                          {todaySchedules.map((schedule: any) => (
                             <div
                               key={schedule._id}
                               className="border-l-4 border-green-500 bg-green-50 rounded-r-lg p-4"

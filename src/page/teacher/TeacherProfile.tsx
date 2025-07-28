@@ -18,10 +18,11 @@ import {
   MdBadge,
   MdVerifiedUser
 } from 'react-icons/md';
+import { RootState } from '../../redux/store';
 
 const TeacherProfile = () => {
   const navigate = useNavigate();
-  const { user: teacher } = useSelector(state => state.auth);
+  const { user: teacher } = useSelector((state:RootState) => state.auth);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -134,7 +135,7 @@ const TeacherProfile = () => {
       toast.success('Profile updated successfully!');
       setIsEditing(false);
       setImageFile(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to update profile:', err);
       toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
@@ -144,11 +145,11 @@ const TeacherProfile = () => {
 
   const handleCancel = () => {
     setEditData({
-      username: teacher.username || '',
-      firstname: teacher.firstname || '',
-      lastname: teacher.lastname || '',
-      email: teacher.email || '',
-      profileImage: teacher.profileImage || '',
+      username: teacher?.username || '',
+      firstname: teacher?.firstname || '',
+      lastname: teacher?.lastname || '',
+      email: teacher?.email || '',
+      profileImage: teacher?.profileImage || '',
     });
     setImageFile(null);
     setIsEditing(false);
@@ -237,7 +238,7 @@ const TeacherProfile = () => {
                       className="w-32 h-32 rounded-full object-cover border-4 border-white shadow-xl"
                       src={editData.profileImage || fallbackAvatar}
                       alt="Teacher Profile"
-                      onError={(e) => {
+                      onError={(e:any) => {
                         e.target.onerror = null;
                         e.target.src = fallbackAvatar;
                       }}
@@ -410,7 +411,7 @@ const TeacherProfile = () => {
                     <label className="block text-sm font-medium text-gray-600 mb-2">Department</label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-800 font-medium">
-                        {teacher.departmentName || 'Not assigned'}
+                        {teacher.department || 'Not assigned'}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Department is managed by administration

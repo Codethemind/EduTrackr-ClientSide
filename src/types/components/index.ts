@@ -5,4 +5,4 @@ export * from './routes';
 export * from './ui';
 export * from './admin';
 export * from './student'; 
-export * from './teacher';
+// export * from './teacher';

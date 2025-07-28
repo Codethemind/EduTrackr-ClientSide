@@ -84,7 +84,7 @@ const TeacherLogin = () => {
       const from = location.state?.from?.pathname || '/teacher/dashboard';
       navigate(from, { replace: true });
   
-    } catch (err) {
+    } catch (err:any) {
       console.log("Caught error:", err);
       setLoading(false);
       if (err.response) {

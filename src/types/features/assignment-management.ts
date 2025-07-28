@@ -9,7 +9,7 @@ export interface Assignment extends BaseEntity {
   description: string;
   instructions?: string;
   dueDate: string; // ISO date string
-  createdAt: string;
+  createdAt?: string;
   updatedAt?: string;
   maxMarks: number;
   maxPoints?: number; // Alternative field name
@@ -19,9 +19,9 @@ export interface Assignment extends BaseEntity {
   departmentId?: string | Department;
   teacherId: string | Teacher;
   teacherName?: string;
-  submissionFormat: string;
-  attachments: Attachment[];
-  allowLateSubmission: boolean;
+  submissionFormat?: string;
+  attachments?: Attachment[];
+  allowLateSubmission?: boolean;
   isActive: boolean;
   submissions?: Submission[];
   semester?: string;

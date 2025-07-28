@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Header from '../../components/common/Header';
 import TeacherSideBar from '../../components/teacher/common/Sidebar';
-import CreateAssignmentModal from '../../components/teacher/assignments/CreateAssignmentModal.tsx';
-import AssignmentCard from '../../components/teacher/assignments/AssignmentCard.tsx';
-import AssignmentFilters from '../../components/teacher/assignments/AssignmentFilters.tsx';
+import CreateAssignmentModal from '../../components/teacher/assignments/CreateAssignmentModal';
+import AssignmentCard from '../../components/teacher/assignments/AssignmentCard';
+import AssignmentFilters from '../../components/teacher/assignments/AssignmentFilters';
 import Pagination from '../../components/common/Pagination';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { RootState } from '../../redux/store';
 
 // TypeScript Interfaces
 interface Course {
@@ -57,11 +58,6 @@ interface Assignment {
   totalStudents?: number;
 }
 
-interface AuthState {
-  user?: { _id?: string; id?: string };
-  accessToken?: string;
-}
-
 interface Filters {
   course: string;
   department: string;
@@ -71,7 +67,7 @@ interface Filters {
 
 const AssignmentsPage: React.FC = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state: { auth: AuthState }) => state.auth);
+  const authState = useSelector((state: RootState) => state.auth);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [teacherSchedules, setTeacherSchedules] = useState<Schedule[]>([]);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
@@ -85,7 +81,7 @@ const AssignmentsPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
 
-  const teacherId = authState?.user?._id || authState?.user?.id;
+  const teacherId = authState?.user?.id || authState?.user?.id;
   const accessToken = authState?.accessToken;
 
   // Fetch teacher's schedules
@@ -107,8 +103,8 @@ const AssignmentsPage: React.FC = () => {
         } else {
           toast.error('Failed to load teacher schedules');
         }
-      } catch (error) {
-        console.error('Error fetching teacher schedules:', error);
+      } catch (error: any) {
+        console.error('Error fetching teacher schedules:', error.message || error);
         toast.error('Failed to load teacher schedules');
       } finally {
         setIsLoading(false);
@@ -139,8 +135,8 @@ const AssignmentsPage: React.FC = () => {
         } else {
           toast.error('Failed to load assignments');
         }
-      } catch (error) {
-        console.error('Error fetching assignments:', error);
+      } catch (error: any) {
+        console.error('Error fetching assignments:', error.message || error);
         toast.error('Failed to load assignments');
       } finally {
         setIsLoading(false);
@@ -167,8 +163,8 @@ const AssignmentsPage: React.FC = () => {
       } else {
         toast.error('Failed to create assignment');
       }
-    } catch (error) {
-      console.error('Error creating assignment:', error);
+    } catch (error: any) {
+      console.error('Error creating assignment:', error.message || error);
       toast.error('Failed to create assignment');
     }
   };
@@ -193,8 +189,8 @@ const AssignmentsPage: React.FC = () => {
       } else {
         toast.error('Failed to update assignment');
       }
-    } catch (error) {
-      console.error('Error updating assignment:', error);
+    } catch (error: any) {
+      console.error('Error updating assignment:', error.message || error);
       toast.error('Failed to update assignment');
     }
   };
@@ -214,8 +210,8 @@ const AssignmentsPage: React.FC = () => {
       } else {
         toast.error('Failed to delete assignment');
       }
-    } catch (error) {
-      console.error('Error deleting assignment:', error);
+    } catch (error: any) {
+      console.error('Error deleting assignment:', error.message || error);
       toast.error('Failed to delete assignment');
     }
   };
@@ -239,7 +235,7 @@ const AssignmentsPage: React.FC = () => {
   const uniqueDepartments = teacherSchedules.length
     ? [...new Set(teacherSchedules.filter((s): s is Schedule & { departmentId: Department } => !!s.departmentId && !!s.departmentId._id).map((s) => s.departmentId._id))]
     : [];
-  console.log('teachera da',teacherSchedules)
+  console.log('Teacher Schedules:', teacherSchedules);
   console.log('Unique Courses:', uniqueCourses);
   console.log('Unique Departments:', uniqueDepartments);
   console.log('Course Name Map:', Array.from(courseNameMap.entries()));

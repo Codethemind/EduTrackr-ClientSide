@@ -12,11 +12,11 @@ import toast from 'react-hot-toast';
 
 const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [stats, setStats] = useState([]);
+  const [stats, setStats] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedAssignment, setSelectedAssignment] = useState(null);
+  const [selectedAssignment, setSelectedAssignment] = useState<any>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const authState = useSelector((state) => state.auth);
+  const authState = useSelector((state: any) => state.auth);
   const studentId = authState?.user?._id || authState?.user?.id;
   const accessToken = authState?.accessToken;
 
@@ -55,10 +55,10 @@ const Dashboard = () => {
             const schedules = schedulesResponse.data.data;
 
             const pendingAssignments = assignments.filter(
-              (a) => !a.submissions?.some((s) => s.studentId === studentId) && new Date(a.dueDate) >= new Date()
+              (a:any) => !a.submissions?.some((s:any) => s.studentId === studentId) && new Date(a.dueDate) >= new Date()
             ).length;
 
-            const activeCourses = new Set(schedules.map((s) => s.courseId?._id)).size;
+            const activeCourses = new Set(schedules.map((s:any) => s.courseId?._id)).size;
 
             setStats([
               {
@@ -128,11 +128,11 @@ const Dashboard = () => {
           <button onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
             <MdMenu size={30} />
           </button>
-          <Header role="student" />
+          <Header  />
         </div>
 
         <div className="hidden md:block">
-          <Header role="student" />
+          <Header  />
         </div>
 
         <div className="flex-1 overflow-y-auto no-scrollbar p-8">
@@ -151,17 +151,21 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Upcoming Assignments */}
               <div className="lg:col-span-2">
-                <UpcomingAssignments
+                {/* <UpcomingAssignments
                   studentId={studentId}
                   accessToken={accessToken}
                   onView={handleViewAssignment}
                   onStart={handleStartSubmission}
+                /> */}
+                <UpcomingAssignments
+                  onView={handleViewAssignment}
                 />
                 </div>
 
               {/* Today's Schedule */}
               <div>
-                <TodaySchedule studentId={studentId} accessToken={accessToken} />
+                {/* <TodaySchedule studentId={studentId} accessToken={accessToken} /> */}
+                <TodaySchedule  />
                     </div>
                   </div>
 

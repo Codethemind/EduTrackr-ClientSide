@@ -4,13 +4,14 @@ import Header from '../../components/common/Header';
 import StudentSideBar from '../../components/student/Common/Sidebar';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
+import { RootState } from '../../redux/store';
 
 const Grade = () => {
-  const authState = useSelector((state) => state.auth);
-  const [grades, setGrades] = useState([]);
+  const authState = useSelector((state:RootState) => state.auth);
+  const [grades, setGrades] = useState<any>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const studentId = authState?.user?._id;
+  const studentId = authState?.user?.id;
   const accessToken = authState?.accessToken;
 
   useEffect(() => {

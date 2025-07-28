@@ -122,7 +122,7 @@ export interface DepartmentTableProps {
 }
 
 export interface ViewDepartmentModalProps {
-  department: Department | null;
+  department: any;
   onClose: () => void;
 }
 
@@ -166,11 +166,13 @@ export interface WeeklyCalendarViewProps {
   className?: string;
   timeSlotConfig?: TimeSlotConfig;
   onScheduleClick?: (schedule: Schedule) => void;
+  schedules?:any
 }
 
 export interface ScheduleTableProps {
   schedules: Schedule[];
   departments: Department[];
+  selectedDepartment?: string;
   loading?: boolean;
   onEdit: (schedule: Schedule) => void;
   onDelete: (scheduleId: string) => void;
@@ -193,7 +195,7 @@ export interface EditScheduleModalProps {
   onClose: () => void;
   onSuccess: () => void;
   departments: Department[];
-  semesters: string[];
+  semesters: any;
   loading?: boolean;
 }
 
@@ -238,6 +240,7 @@ export interface ScheduleFormProps {
   onCancel?: () => void;
   initialData?: Partial<ScheduleFormData>;
   className?: string;
+  onScheduleAdded?:any
 }
 
 export interface ScheduleFormFieldProps {
@@ -286,3 +289,4 @@ export interface ScheduleTableRowProps {
   onEdit: (schedule: Schedule) => void;
   onDelete: (scheduleId: string) => void;
 }
+

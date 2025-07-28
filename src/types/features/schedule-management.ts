@@ -1,6 +1,4 @@
 import { ApiResponse, BaseEntity, User } from '../common';
-
-// Schedule Types
 export interface Schedule extends BaseEntity {
   _id: string;
   departmentId: Department | string;
@@ -34,7 +32,7 @@ export interface Course extends BaseEntity {
   name: string;
   code: string;
   departmentId: string;
-  semester: string;
+  semester?: string;
   credits?: number;
 }
 

@@ -5,15 +5,16 @@ import StudentSideBar from '../../components/student/Common/Sidebar';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import VideoCall from '../../components/common/VideoCall';
+import { RootState } from '../../redux/store';
 
-const StudentClassesPage = () => {
+const StudentClassesPage: React.FC = () => {
   const dispatch = useDispatch();
-  const authState = useSelector((state) => state.auth);
-  const [studentSchedules, setStudentSchedules] = useState([]);
-  const [studentDepartment, setStudentDepartment] = useState(null);
+  const authState = useSelector((state: RootState) => state.auth);
+  const [studentSchedules, setStudentSchedules] = useState<any[]>([]);
+  const [studentDepartment, setStudentDepartment] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
-  const [currentChannel, setCurrentChannel] = useState(null);
+  const [currentChannel, setCurrentChannel] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('Initial state:', { isVideoCallActive, currentChannel });
@@ -21,7 +22,7 @@ const StudentClassesPage = () => {
     setCurrentChannel(null);
 
     const fetchStudentSchedules = async () => {
-      const studentId = authState?.user?._id || authState?.user?.id;
+      const studentId = authState?.user?.id || authState?.user?.id;
       const accessToken = authState?.accessToken;
 
       console.log('Auth State:', authState);
@@ -36,7 +37,7 @@ const StudentClassesPage = () => {
       setIsLoading(true);
       try {
         const studentResponse = await axios.get(`/api/students/${studentId}`, {
-          headers: { Authorization: `Bearer ${authState.accessToken}` },
+          headers: { Authorization: `Bearer ${accessToken}` },
         });
 
         if (studentResponse.data.success) {
@@ -45,7 +46,7 @@ const StudentClassesPage = () => {
 
           if (student.departmentId) {
             const schedulesResponse = await axios.get(`/api/schedules/department/${student.departmentId}`, {
-              headers: { Authorization: `Bearer ${authState.accessToken}` },
+              headers: { Authorization: `Bearer ${accessToken}` },
             });
 
             if (schedulesResponse.data.success) {
@@ -60,7 +61,7 @@ const StudentClassesPage = () => {
         } else {
           toast.error('Failed to load student information');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Error fetching student schedules:', error.response?.data || error.message);
         toast.error(`Failed to load schedule: ${error.response?.data?.message || error.message}`);
       } finally {
@@ -71,7 +72,7 @@ const StudentClassesPage = () => {
     fetchStudentSchedules();
   }, [authState]);
 
-  const handleJoinClass = (schedule) => {
+  const handleJoinClass = (schedule: any) => {
     console.log('Joining class:', schedule);
     if (!schedule._id) {
       toast.error('Invalid class ID');
@@ -86,7 +87,7 @@ const StudentClassesPage = () => {
     setCurrentChannel(null);
   };
 
-  const schedulesByDay = studentSchedules.reduce((acc, schedule) => {
+  const schedulesByDay = studentSchedules.reduce((acc: any, schedule: any) => {
     if (!acc[schedule.day]) {
       acc[schedule.day] = [];
     }
@@ -95,12 +96,12 @@ const StudentClassesPage = () => {
   }, {});
 
   Object.keys(schedulesByDay).forEach((day) => {
-    schedulesByDay[day].sort((a, b) => a.startTime.localeCompare(b.startTime));
+    schedulesByDay[day].sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
   });
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-  const formatTime = (time) => {
+  const formatTime = (time: string) => {
     if (!time) return 'N/A';
     try {
       const [hours, minutes] = time.split(':');
@@ -113,7 +114,7 @@ const StudentClassesPage = () => {
     }
   };
 
-  const isClassActive = (schedule) => {
+  const isClassActive = (schedule: any) => {
     console.log('Checking class activity:', { schedule });
     return schedule.isLive || false; // Use isLive to determine if class is active
   };
@@ -150,7 +151,7 @@ const StudentClassesPage = () => {
                 </div>
               </div>
             </div>
-          
+
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
@@ -161,7 +162,7 @@ const StudentClassesPage = () => {
                 <div key={day} className="mb-8">
                   <h2 className="text-2xl font-semibold mb-4 text-gray-800">{day}</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {schedulesByDay[day].map((schedule) => (
+                    {schedulesByDay[day].map((schedule: any) => (
                       <div key={schedule._id} className="bg-white rounded-lg shadow-lg p-6">
                         <h3 className="text-xl font-bold mb-2">{schedule.courseId?.name || 'N/A'}</h3>
                         <p className="text-gray-600 mb-2">
@@ -193,7 +194,7 @@ const StudentClassesPage = () => {
           <VideoCall
             channelName={currentChannel}
             onLeave={handleLeaveVideoCall}
-            isStudent={true}
+            // isStudent={true}
           />
         )}
       </div>

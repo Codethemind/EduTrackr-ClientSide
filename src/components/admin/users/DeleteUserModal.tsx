@@ -32,7 +32,7 @@ const DeleteUserModal = ({ user, onClose, onDeleteSuccess }) => {
       toast.success(data?.message || 'User deleted successfully');
       onDeleteSuccess(userId);  // Notify parent
       onClose();  // Close modal
-    } catch (error) {
+    } catch (error:any) {
       console.error('Delete error:', error.message);
       toast.error(error.message || 'An error occurred while deleting user');
     }

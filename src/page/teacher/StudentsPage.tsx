@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import axios from "../../api/axiosInstance";
 import Header from '../../components/common/Header';
 import TeacherSideBar from '../../components/teacher/common/Sidebar';
-import StudentList from "../../components/teacher/Students/StudentList.tsx";
+import StudentList from "../../components/teacher/Students/StudentList";
 
 const StudentsPage = () => {
-  const [students, setStudents] = useState([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [teacherDepartment, setTeacherDepartment] = useState('');
@@ -14,7 +14,7 @@ const StudentsPage = () => {
     const fetchTeacherAndStudents = async () => {
       try {
         // 1. Get teacher details
-        const teacher = JSON.parse(localStorage.getItem('user')!);
+        const teacher = JSON.parse(localStorage.getItem('user') || '{}');
         
         const department = teacher?.departmentName;
 
@@ -34,12 +34,12 @@ const StudentsPage = () => {
 
         // 3. Filter students by department
         const filteredByDept = allStudents.filter(
-          student => student.departmentName?.toLowerCase() === department.toLowerCase()
+          (student: any) => student.departmentName?.toLowerCase() === department.toLowerCase()
         );
 
         setStudents(filteredByDept);
-      } catch (error) {
-        console.error('Error fetching students:', error);
+      } catch (error: any) {
+        console.error('Error fetching students:', error.message || error);
       } finally {
         setLoading(false);
       }

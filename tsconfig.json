@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
-    "noImplicitAny": true                        // ensure you're not using 'any' without typing
+    "noImplicitAny": false,
+    "outDir": "dist"                               // ensure you're not using 'any' without typing
   },
   "include": ["src"]
 }

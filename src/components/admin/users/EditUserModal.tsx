@@ -5,20 +5,35 @@ import ProfileImageUpload from './ProfileImageUpload';
 import CourseSelection from './CourseSelection';
 
 interface User {
-  _id?: string;
+   _id?: string;
   id?: string;
   username: string;
   email: string;
-  firstname?: string;
-  lastname?: string;
-  role: 'Student' | 'Teacher' | 'Admin';
-  department?: string;
-  class?: string;
+   role: 'Student' | 'Teacher' | 'Admin'; 
+  firstName?: string;
+  lastName?: string;
+  password?: string;
+  isActive?: boolean;
   courses?: string[];
-  isBlock: boolean;
+  isBlock?: boolean;
   profileImage?: string;
 }
 
+
+// interface User {
+//   _id?: string;
+//   id?: string;
+//   username: string;
+//   email: string;
+//   firstname?: string;
+//   lastname?: string;
+//   role: 'Student' | 'Teacher' | 'Admin';
+//   department?: string;
+//   class?: string;
+//   courses?: string[];
+//   isBlock: boolean;
+//   profileImage?: string;
+// }
 interface EditUserModalProps {
   user: User | null;
   onClose: () => void;

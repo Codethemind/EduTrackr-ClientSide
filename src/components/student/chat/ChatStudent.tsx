@@ -88,6 +88,7 @@ import axios from '../../../api/axiosInstance';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { RootState } from '../../../redux/store';
 
 // Backend configuration
 const API_URL = 'http://localhost:3000/api';
@@ -95,36 +96,37 @@ const SOCKET_URL = 'http://localhost:3000';
 
 const ChatStudent = () => {
   const navigate = useNavigate();
-  const messagesEndRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
-  const socketRef = useRef(null);
+  const messagesEndRef = useRef<any>(null);
+  const fileInputRef = useRef<any> (null);
+  const typingTimeoutRef = useRef<any> (null);
+  const socketRef = useRef<any> (null);
 
-  const authState = useSelector((state) => state.auth);
-  const userId = authState?.user?._id || authState?.user?.id;
-  const departmentId = authState?.user?.departmentId;
+  const authState = useSelector((state:RootState) => state.auth);
+  const userId = authState?.user?.id || authState?.user?.id;
+  const user = authState?.user as any
+  const departmentId = user?.departmentId;
   const accessToken = authState?.accessToken;
   const userModel = 'Student';
 
   const [message, setMessage] = useState('');
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [activeTeacher, setActiveTeacher] = useState(null);
+  const [activeChatId, setActiveChatId] = useState<any>(null);
+  const [activeTeacher, setActiveTeacher] = useState<any>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatList, setChatList] = useState(null);
-  const [teachers, setTeachers] = useState([]);
-  const [messages, setMessages] = useState([]);
+  const [chatList, setChatList] = useState<any>(null);
+  const [teachers, setTeachers] = useState<any>([]);
+  const [messages, setMessages] = useState<any>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [socketConnected, setSocketConnected] = useState(false);
-  const [file, setFile] = useState(null);
-  const [replyTo, setReplyTo] = useState(null);
-  const [showReactionPicker, setShowReactionPicker] = useState(null);
+  const [file, setFile] = useState<any>(null);
+  const [replyTo, setReplyTo] = useState<any>(null);
+  const [showReactionPicker, setShowReactionPicker] = useState<any>(null);
   const [typingStatus, setTypingStatus] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
-  const [unreadCounts, setUnreadCounts] = useState({});
-  const [imageErrors, setImageErrors] = useState({}); // Track image loading errors
+  const [unreadCounts, setUnreadCounts] = useState<any>({});
+  const [imageErrors, setImageErrors] = useState<any>({}); // Track image loading errors
 
   const reactionEmojis = ['❤️', '😂', '😢', '💯', '👍', '👎'];
 
@@ -329,7 +331,7 @@ const ChatStudent = () => {
       );
       setTeachers(filteredTeachers);
       setError('');
-    } catch (err) {
+    } catch (err:any) {
       console.error('Fetch teachers error:', err);
       setError('Failed to fetch teachers');
       toast.error(err.response?.data?.message || 'Failed to fetch teachers');
@@ -359,7 +361,7 @@ const ChatStudent = () => {
       setUnreadCounts(initialUnreadCounts);
       
       setError('');
-    } catch (err) {
+    } catch (err:any) {
       console.error('Fetch chat list error:', err);
       setError('Failed to fetch chat list');
       toast.error(err.response?.data?.message || 'Failed to fetch chat list');
@@ -407,7 +409,7 @@ const ChatStudent = () => {
       
       // Mark messages as read when fetching
       markMessagesAsRead(chatId);
-    } catch (err) {
+    } catch (err:any) {
       console.error('Fetch messages error:', err);
       setError('Failed to fetch messages');
       toast.error(err.response?.data?.message || 'Failed to fetch messages');
@@ -535,7 +537,7 @@ const ChatStudent = () => {
           });
         }
       }
-    } catch (err) {
+    } catch (err:any) {
       console.error('Reaction error:', err);
       toast.error(err.response?.data?.message || 'Failed to add reaction');
     } finally {
@@ -573,7 +575,7 @@ const ChatStudent = () => {
               },
               onUploadProgress: (progressEvent) => {
                 const percentCompleted = Math.round(
-                  (progressEvent.loaded * 100) / progressEvent.total
+                  (progressEvent.loaded * 100) / progressEvent.total!
                 );
                 setUploadProgress(percentCompleted);
               },
@@ -613,7 +615,7 @@ const ChatStudent = () => {
                 }
               }
             );
-          } catch (err) {
+          } catch (err:any) {
             console.error('Upload error:', err);
             toast.error(err.response?.data?.message || 'Failed to upload media');
             setMessage(messageText);
@@ -654,7 +656,7 @@ const ChatStudent = () => {
         console.log('📤 Sending message via HTTP (socket not connected)');
         const formData = new FormData();
         formData.append('chatId', activeChatId);
-        formData.append('sender', userId);
+        formData.append('sender', userId!);
         formData.append('senderModel', 'Student');
         formData.append('receiver', activeTeacher.id);
         formData.append('receiverModel', 'Teacher');
@@ -674,7 +676,7 @@ const ChatStudent = () => {
           },
           onUploadProgress: (progressEvent) => {
             const percentCompleted = Math.round(
-              (progressEvent.loaded * 100) / progressEvent.total
+              (progressEvent.loaded * 100) / progressEvent.total!
             );
             setUploadProgress(percentCompleted);
           },
@@ -700,7 +702,7 @@ const ChatStudent = () => {
           throw new Error(response.data.message || 'Failed to send message');
         }
       }
-    } catch (err) {
+    } catch (err:any) {
       console.error('Send message error:', err);
       setError('Failed to send message');
       toast.error(err.response?.data?.message || 'Failed to send message');
@@ -740,7 +742,7 @@ const ChatStudent = () => {
         );
         fetchChatList();
       }
-    } catch (err) {
+    } catch (err:any) {
       console.error('Delete message error:', err);
       toast.error(err.response?.data?.message || 'Failed to delete message');
     }
@@ -775,7 +777,7 @@ const ChatStudent = () => {
         name: teachers.find((t) => t._id === teacherId)?.name || 'Teacher',
       });
       toast.success('Chat initiated successfully');
-    } catch (err) {
+    } catch (err:any) {
       console.error('Initiate chat error:', err);
       const errorMessage = err.response?.data?.message || 'Failed to initiate chat';
       setError(errorMessage);
@@ -897,8 +899,9 @@ const ChatStudent = () => {
                           className="max-w-full rounded-md"
                           style={{ maxHeight: '200px' }}
                           onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.parentNode.innerHTML = '<span class="text-blue-500">[Image not available]</span>';
+                            const event= e as any;
+                            event.target.onerror = null;
+                            event.target.parentNode.innerHTML = '<span class="text-blue-500">[Image not available]</span>';
                           }}
                         />
                       ) : (
@@ -1173,7 +1176,7 @@ const ChatStudent = () => {
                 onKeyPress={handleKeyPress}
                 placeholder={`Message ${activeTeacher?.name || 'teacher'}...`}
                 className="w-full px-4 py-3 border border-gray-300 rounded-2xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent max-h-32"
-                rows="1"
+                rows={1}
                 style={{ minHeight: '48px' }}
                 disabled={!activeChatId || isUploading}
               />

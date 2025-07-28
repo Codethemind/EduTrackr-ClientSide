@@ -7,8 +7,7 @@ import axios from '../../../api/axiosInstance';
 import io, { Socket } from 'socket.io-client';
 import toast from 'react-hot-toast';
 
-import { Message, UnreadCounts, ChatList, Student, Chat, Reaction } from '../../../types/chat.ts';
-import { RootState } from '../../../redux/store.ts';
+import { Message, UnreadCounts, ChatList, Student, Chat, Reaction } from '../../../types/chat';
 
 // Backend configuration
 const API_URL = 'http://localhost:3000/api';
@@ -19,7 +18,7 @@ let socket: Socket | null = null;
 
 const ChatTeacher: FC = () => {
   const navigate = useNavigate();
-  const authState = useSelector((state: RootState) => state.auth);
+  const authState = useSelector((state:any) => state.auth);
   const userId = authState?.user?.id || authState?.user?.id;
   const user= authState?.user as any;
   const teacherDepartmentId = user.departmentId as unknown as string;
