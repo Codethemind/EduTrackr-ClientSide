@@ -91,8 +91,8 @@ import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../../redux/store';
 
 // Backend configuration
-const API_URL = 'http://localhost:3000/api';
-const SOCKET_URL = 'http://localhost:3000';
+const API_URL = 'https://api.edutrackr.shop/api';
+const SOCKET_URL = 'https://api.edutrackr.shop';
 
 const ChatStudent = () => {
   const navigate = useNavigate();
