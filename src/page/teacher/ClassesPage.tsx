@@ -6,10 +6,16 @@ import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import VideoCall from '../../components/common/VideoCall';
 import { RootState } from '../../redux/store';
+import { MdMenu } from 'react-icons/md';
 
-const ClassesPage = () => {
+const ClassesPage: React.FC = () => {
   const dispatch = useDispatch();
   const authState = useSelector((state: RootState) => state.auth);
+
+  // Responsive sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Data state
   const [teacherSchedules, setTeacherSchedules] = useState<any[]>([]);
   const [studentCounts, setStudentCounts] = useState<any>({});
   const [teacherInfo, setTeacherInfo] = useState<any>(null);
@@ -18,8 +24,6 @@ const ClassesPage = () => {
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
 
   useEffect(() => {
-    console.log('Initial state:', { isVideoCallActive, currentChannel });
-    console.log('Student Counts updated:', studentCounts);
     setIsVideoCallActive(false);
     setCurrentChannel(null);
 
@@ -27,10 +31,7 @@ const ClassesPage = () => {
       const teacherId = authState?.user?.id || authState?.user?.id;
       const accessToken = authState?.accessToken;
 
-      console.log('Auth State:', authState);
-
       if (!teacherId || !accessToken) {
-        console.log('Missing required auth data:', { teacherId, hasToken: !!accessToken });
         toast.error('Please log in to view your schedule.');
         setIsLoading(false);
         return;
@@ -41,7 +42,6 @@ const ClassesPage = () => {
         const teacherResponse = await axios.get(`/api/teachers/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-
         if (teacherResponse.data.success) {
           setTeacherInfo(teacherResponse.data.data);
         }
@@ -49,23 +49,21 @@ const ClassesPage = () => {
         const schedulesResponse = await axios.get(`/api/schedules/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-
         if (schedulesResponse.data.success) {
-          console.log('Teacher Schedules:', schedulesResponse.data.data);
           setTeacherSchedules(schedulesResponse.data.data);
 
           const counts: any = {};
           for (const schedule of schedulesResponse.data.data) {
             if (schedule.departmentId?._id && !counts[schedule.departmentId._id]) {
               try {
-                const studentsResponse = await axios.get(`/api/students/department/${schedule.departmentId._id}`, {
-                  headers: { Authorization: `Bearer ${accessToken}` },
-                });
+                const studentsResponse = await axios.get(
+                  `/api/students/department/${schedule.departmentId._id}`,
+                  { headers: { Authorization: `Bearer ${accessToken}` } }
+                );
                 if (studentsResponse.data.success) {
                   counts[schedule.departmentId._id] = studentsResponse.data.data.length;
                 }
               } catch (error: any) {
-                console.error('Error fetching student count:', error.message || error);
                 counts[schedule.departmentId._id] = 0;
               }
             }
@@ -75,7 +73,6 @@ const ClassesPage = () => {
           toast.error('Failed to load schedule data');
         }
       } catch (error: any) {
-        console.error('Error fetching teacher data:', error.message || error);
         toast.error(`Failed to load schedule: ${error.response?.data?.message || error.message}`);
       } finally {
         setIsLoading(false);
@@ -86,7 +83,6 @@ const ClassesPage = () => {
   }, [authState]);
 
   const handleJoinClass = (schedule: any) => {
-    console.log('Joining class:', schedule);
     if (!schedule._id) {
       toast.error('Invalid class ID');
       return;
@@ -111,7 +107,6 @@ const ClassesPage = () => {
         toast.error('Failed to start live class');
       }
     } catch (error: any) {
-      console.error('Error starting live class:', error.message || error);
       toast.error(`Failed to start: ${error.response?.data?.message || error.message}`);
     }
   };
@@ -149,34 +144,81 @@ const ClassesPage = () => {
   };
 
   const isClassActive = (schedule: any) => {
-    console.log('Checking class activity:', { schedule });
     return schedule.isLive || false;
   };
 
+  // Sidebar handlers
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      <TeacherSideBar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 md:ml-64">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          onClick={closeSidebar}
+          aria-label="Close sidebar"
+        />
+      )}
+      {/* Sidebar: slide-in on mobile, fixed on desktop */}
+      <aside
+        className={`
+          fixed top-0 left-0 bottom-0 z-50 w-64 bg-white shadow-lg
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static md:shadow-none
+        `}
+        aria-label="Sidebar"
+      >
+        <TeacherSideBar />
+      </aside>
+
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 ">
+        {/* Mobile header with hamburger menu */}
+        <div className="md:hidden flex items-center justify-between bg-white shadow p-4">
+          <button
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            className="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring"
+          >
+            <MdMenu size={30} />
+          </button>
+          <Header role="teacher" />
+        </div>
+        {/* Desktop header */}
+        <div className="hidden md:block">
+          <Header role="teacher" />
+        </div>
+
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
             <div className="mb-8">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                   <h1 className="text-3xl font-bold text-gray-900 mb-2">My Teaching Schedule</h1>
                   {teacherInfo && (
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-wrap items-center space-x-4 gap-1">
                       <p className="text-gray-600">
-                        Instructor: <span className="font-semibold text-blue-600">{teacherInfo.username || 'N/A'}</span>
+                        Instructor:{' '}
+                        <span className="font-semibold text-blue-600">
+                          {teacherInfo.username || 'N/A'}
+                        </span>
                       </p>
                       {teacherInfo.email && (
                         <p className="text-gray-600">
-                          Email: <span className="font-medium text-gray-800">{teacherInfo.email}</span>
+                          Email:{' '}
+                          <span className="font-medium text-gray-800">
+                            {teacherInfo.email}
+                          </span>
                         </p>
                       )}
                       {teacherInfo.departmentId?.name && (
                         <p className="text-gray-600">
-                          Department: <span className="font-medium text-gray-800">{teacherInfo.departmentId.name}</span>
+                          Department:{' '}
+                          <span className="font-medium text-gray-800">
+                            {teacherInfo.departmentId.name}
+                          </span>
                         </p>
                       )}
                     </div>
@@ -185,7 +227,13 @@ const ClassesPage = () => {
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Teaching Schedule</p>
                   <p className="text-sm font-medium text-gray-700">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' })}
+                    {new Date().toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                      timeZone: 'Asia/Kolkata',
+                    })}
                   </p>
                 </div>
               </div>
@@ -213,7 +261,9 @@ const ClassesPage = () => {
                     <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
                       <h3 className="text-xl font-bold text-white flex items-center justify-between">
                         {day}
-                        <span className="text-sm font-normal text-green-100">{schedulesByDay[day]?.length || 0} classes</span>
+                        <span className="text-sm font-normal text-green-100">
+                          {schedulesByDay[day]?.length || 0} classes
+                        </span>
                       </h3>
                     </div>
                     <div className="p-6">
@@ -232,7 +282,9 @@ const ClassesPage = () => {
                                       {schedule.courseId?.name || 'Course Name Not Available'}
                                     </h4>
                                     {schedule.courseId?.code && (
-                                      <p className="text-sm font-medium text-blue-700 mt-1">Course ID: {schedule.courseId.code}</p>
+                                      <p className="text-sm font-medium text-blue-700 mt-1">
+                                        Course ID: {schedule.courseId.code}
+                                      </p>
                                     )}
                                   </div>
                                   <span className="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -261,15 +313,17 @@ const ClassesPage = () => {
                                     <svg className="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 8h5"></path>
                                     </svg>
-                                    <span className="text-gray-600">Department: </span>
+                                    <span className="text-gray-600">Department:</span>
                                     <span className="font-semibold text-gray-800 ml-1">{schedule.departmentId?.name || 'Not Assigned'}</span>
                                   </div>
-                                  {/* <div className="flex items-center text-sm">
+                                  {/* If you want to show student count, uncomment this:
+                                  <div className="flex items-center text-sm">
                                     <svg className="w-4 h-4 mr-1 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                                     </svg>
                                     <span className="font-bold text-purple-700">{studentCounts[schedule.departmentId?._id] || 0} Students</span>
-                                  </div> */}
+                                  </div>
+                                  */}
                                 </div>
                                 <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                                   <div className="flex items-center space-x-2">

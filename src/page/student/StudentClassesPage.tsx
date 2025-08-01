@@ -6,6 +6,7 @@ import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import VideoCall from '../../components/common/VideoCall';
 import { RootState } from '../../redux/store';
+import { MdMenu } from 'react-icons/md';
 
 const StudentClassesPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -16,41 +17,35 @@ const StudentClassesPage: React.FC = () => {
   const [isVideoCallActive, setIsVideoCallActive] = useState(false);
   const [currentChannel, setCurrentChannel] = useState<string | null>(null);
 
+  // Sidebar mobile state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
   useEffect(() => {
-    console.log('Initial state:', { isVideoCallActive, currentChannel });
     setIsVideoCallActive(false);
     setCurrentChannel(null);
 
     const fetchStudentSchedules = async () => {
       const studentId = authState?.user?.id || authState?.user?.id;
       const accessToken = authState?.accessToken;
-
-      console.log('Auth State:', authState);
-
       if (!studentId || !accessToken) {
-        console.log('Missing required auth data:', { studentId, hasToken: !!accessToken });
         toast.error('Please log in to view your timetable.');
         setIsLoading(false);
         return;
       }
-
       setIsLoading(true);
       try {
         const studentResponse = await axios.get(`/api/students/${studentId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-
         if (studentResponse.data.success) {
           const student = studentResponse.data.data;
           setStudentDepartment(student);
-
           if (student.departmentId) {
-            const schedulesResponse = await axios.get(`/api/schedules/department/${student.departmentId}`, {
-              headers: { Authorization: `Bearer ${accessToken}` },
-            });
-
+            const schedulesResponse = await axios.get(
+              `/api/schedules/department/${student.departmentId}`,
+              { headers: { Authorization: `Bearer ${accessToken}` } }
+            );
             if (schedulesResponse.data.success) {
-              console.log('Student Schedules:', schedulesResponse.data.data);
               setStudentSchedules(schedulesResponse.data.data);
             } else {
               toast.error('Failed to load schedule data');
@@ -62,18 +57,15 @@ const StudentClassesPage: React.FC = () => {
           toast.error('Failed to load student information');
         }
       } catch (error: any) {
-        console.error('Error fetching student schedules:', error.response?.data || error.message);
         toast.error(`Failed to load schedule: ${error.response?.data?.message || error.message}`);
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchStudentSchedules();
   }, [authState]);
 
   const handleJoinClass = (schedule: any) => {
-    console.log('Joining class:', schedule);
     if (!schedule._id) {
       toast.error('Invalid class ID');
       return;
@@ -88,19 +80,15 @@ const StudentClassesPage: React.FC = () => {
   };
 
   const schedulesByDay = studentSchedules.reduce((acc: any, schedule: any) => {
-    if (!acc[schedule.day]) {
-      acc[schedule.day] = [];
-    }
+    if (!acc[schedule.day]) acc[schedule.day] = [];
     acc[schedule.day].push(schedule);
     return acc;
   }, {});
-
   Object.keys(schedulesByDay).forEach((day) => {
     schedulesByDay[day].sort((a: any, b: any) => a.startTime.localeCompare(b.startTime));
   });
 
   const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
   const formatTime = (time: string) => {
     if (!time) return 'N/A';
     try {
@@ -113,25 +101,61 @@ const StudentClassesPage: React.FC = () => {
       return time;
     }
   };
+  const isClassActive = (schedule: any) => schedule.isLive || false;
 
-  const isClassActive = (schedule: any) => {
-    console.log('Checking class activity:', { schedule });
-    return schedule.isLive || false; // Use isLive to determine if class is active
-  };
-
+  // RESPONSIVE SIDEBAR: Both mobile (menu overlay) and desktop (fixed left)
   return (
-    <div className="flex h-screen bg-gray-50">
-      <StudentSideBar />
-      <div className="flex-1 flex flex-col overflow-hidden ml-64">
-        <Header role="student" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
-          <div className="container mx-auto px-6 py-6">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Overlay for mobile sidebar */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+          aria-label="Close sidebar"
+        />
+      )}
+      {/* Sidebar, slide on mobile, fixed on desktop */}
+      <aside
+        className={`
+          fixed top-0 left-0 bottom-0 z-50 w-64 bg-white shadow-lg
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static md:shadow-none
+        `}
+        aria-label="Sidebar"
+      >
+        <StudentSideBar />
+      </aside>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Mobile header with menu button */}
+        <div className="md:hidden flex items-center justify-between bg-white shadow p-4">
+          <button
+            onClick={() => setIsSidebarOpen((prev) => !prev)}
+            aria-label="Open sidebar"
+            className="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring"
+          >
+            <MdMenu size={30} />
+          </button>
+          <Header role="student" />
+        </div>
+        {/* Desktop header */}
+        <div className="hidden md:block">
+          <Header role="student" />
+        </div>
+
+        <main className="flex-1 overflow-y-auto no-scrollbar bg-gray-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-6">
+            {/* Timetable header */}
             <div className="mb-8">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-2 sm:gap-0 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h1 className="text-3xl font-bold text-gray-900 mb-2">My Timetable</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
+                    My Timetable
+                  </h1>
                   {studentDepartment && (
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-wrap items-center gap-3">
                       <p className="text-gray-600">
                         Department: <span className="font-semibold text-blue-600">{studentDepartment.departmentName || 'N/A'}</span>
                       </p>
@@ -143,32 +167,34 @@ const StudentClassesPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <div className="text-right">
+                <div className="text-right mt-2 sm:mt-0">
                   <p className="text-sm text-gray-500">Academic Schedule</p>
                   <p className="text-sm font-medium text-gray-700">
-                    {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' })}
+                    {new Date().toLocaleDateString('en-US',
+                      { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'Asia/Kolkata' }
+                    )}
                   </p>
                 </div>
               </div>
             </div>
-
+            {/* Timetable grid */}
             {isLoading ? (
               <div className="flex flex-col items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent"></div>
                 <p className="mt-4 text-lg text-gray-600">Loading your timetable...</p>
               </div>
-            ) : daysOfWeek.map((day) => (
+            ) : daysOfWeek.map((day) =>
               schedulesByDay[day] && schedulesByDay[day].length > 0 && (
                 <div key={day} className="mb-8">
-                  <h2 className="text-2xl font-semibold mb-4 text-gray-800">{day}</h2>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <h2 className="text-lg sm:text-2xl font-semibold mb-2 sm:mb-4 text-gray-800">{day}</h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                     {schedulesByDay[day].map((schedule: any) => (
-                      <div key={schedule._id} className="bg-white rounded-lg shadow-lg p-6">
-                        <h3 className="text-xl font-bold mb-2">{schedule.courseId?.name || 'N/A'}</h3>
-                        <p className="text-gray-600 mb-2">
+                      <div key={schedule._id} className="bg-white rounded-lg shadow-md p-5 sm:p-6">
+                        <h3 className="text-base sm:text-xl font-bold mb-1 sm:mb-2">{schedule.courseId?.name || 'N/A'}</h3>
+                        <p className="text-gray-600 mb-1 sm:mb-2">
                           {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
                         </p>
-                        <p className="text-gray-500 mb-4">
+                        <p className="text-gray-500 mb-2 sm:mb-4">
                           Teacher: {schedule.teacherId?.name || 'N/A'}
                         </p>
                         <button
@@ -187,7 +213,7 @@ const StudentClassesPage: React.FC = () => {
                   </div>
                 </div>
               )
-            ))}
+            )}
           </div>
         </main>
         {isVideoCallActive && currentChannel && (

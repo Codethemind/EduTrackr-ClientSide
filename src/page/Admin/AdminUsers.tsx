@@ -234,7 +234,14 @@ const fetchAllUsers = async (): Promise<void> => {
         rel="stylesheet"
       />
 
-      <div className="flex min-h-screen bg-gradient-to-b from-[#F5F7FB] to-white">
+     <div className="flex min-h-screen bg-gradient-to-b from-[#F5F7FB] to-white">
+      {/* Mobile Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
         {/* Sidebar */}
         <div
           className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:static lg:transform-none ${

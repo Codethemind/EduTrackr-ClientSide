@@ -9,25 +9,22 @@ import Pagination from '../../components/common/Pagination';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { RootState } from '../../redux/store';
+import { MdMenu } from 'react-icons/md';
 
-// TypeScript Interfaces
 interface Course {
   _id: string;
   name: string;
   code?: string;
 }
-
 interface Department {
   _id: string;
   name: string;
 }
-
 interface Schedule {
   _id: string;
   courseId?: Course;
   departmentId?: Department;
 }
-
 interface Submission {
   _id: string;
   studentName?: string;
@@ -37,7 +34,6 @@ interface Submission {
   feedback?: string;
   attachments?: { name: string; url: string }[];
 }
-
 interface Assignment {
   _id: string;
   title: string;
@@ -47,8 +43,8 @@ interface Assignment {
   createdAt: string;
   maxMarks: number;
   submissions?: Submission[];
-  courseId: string; // Changed to string, assuming API returns ObjectId
-  departmentId: string; // Changed to string, assuming API returns ObjectId
+  courseId: string;
+  departmentId: string;
   allowLateSubmission: boolean;
   lateSubmissionPenalty: number;
   submissionFormat: string;
@@ -57,7 +53,6 @@ interface Assignment {
   attachments?: { name: string; url: string }[];
   totalStudents?: number;
 }
-
 interface Filters {
   course: string;
   department: string;
@@ -66,6 +61,8 @@ interface Filters {
 }
 
 const AssignmentsPage: React.FC = () => {
+  // State for mobile sidebar
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const dispatch = useDispatch();
   const authState = useSelector((state: RootState) => state.auth);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
@@ -92,25 +89,21 @@ const AssignmentsPage: React.FC = () => {
         setIsLoading(false);
         return;
       }
-
       try {
         const response = await axios.get(`/api/schedules/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-        console.log('Teacher Schedules Response:', response.data);
         if (response.data.success) {
           setTeacherSchedules(response.data.data);
         } else {
           toast.error('Failed to load teacher schedules');
         }
       } catch (error: any) {
-        console.error('Error fetching teacher schedules:', error.message || error);
         toast.error('Failed to load teacher schedules');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchTeacherSchedules();
   }, [teacherId, accessToken]);
 
@@ -122,27 +115,22 @@ const AssignmentsPage: React.FC = () => {
         setIsLoading(false);
         return;
       }
-
       setIsLoading(true);
       try {
         const response = await axios.get(`/api/assignments/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
-
         if (response.data.success) {
-          console.log('Raw Assignments:', JSON.stringify(response.data.data, null, 2));
           setAssignments(response.data.data);
         } else {
           toast.error('Failed to load assignments');
         }
       } catch (error: any) {
-        console.error('Error fetching assignments:', error.message || error);
         toast.error('Failed to load assignments');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchAssignments();
   }, [teacherId, accessToken]);
 
@@ -155,7 +143,6 @@ const AssignmentsPage: React.FC = () => {
           'Content-Type': 'multipart/form-data',
         },
       });
-
       if (response.data.success) {
         setAssignments((prev) => [response.data.data, ...prev]);
         setIsCreateModalOpen(false);
@@ -164,7 +151,6 @@ const AssignmentsPage: React.FC = () => {
         toast.error('Failed to create assignment');
       }
     } catch (error: any) {
-      console.error('Error creating assignment:', error.message || error);
       toast.error('Failed to create assignment');
     }
   };
@@ -178,7 +164,6 @@ const AssignmentsPage: React.FC = () => {
       const response = await axios.put(`/api/assignments/${assignmentId}`, updatedData, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
       if (response.data.success) {
         setAssignments((prev) =>
           prev.map((assignment) =>
@@ -190,7 +175,6 @@ const AssignmentsPage: React.FC = () => {
         toast.error('Failed to update assignment');
       }
     } catch (error: any) {
-      console.error('Error updating assignment:', error.message || error);
       toast.error('Failed to update assignment');
     }
   };
@@ -198,12 +182,10 @@ const AssignmentsPage: React.FC = () => {
   // Handle assignment deletion
   const handleDeleteAssignment = async (assignmentId: string) => {
     if (!window.confirm('Are you sure you want to delete this assignment?')) return;
-
     try {
       const response = await axios.delete(`/api/assignments/${assignmentId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-
       if (response.data.success) {
         setAssignments((prev) => prev.filter((assignment) => assignment._id !== assignmentId));
         toast.success('Assignment deleted successfully!');
@@ -211,12 +193,11 @@ const AssignmentsPage: React.FC = () => {
         toast.error('Failed to delete assignment');
       }
     } catch (error: any) {
-      console.error('Error deleting assignment:', error.message || error);
       toast.error('Failed to delete assignment');
     }
   };
 
-  // Create maps for course and department names
+  // For filters and maps
   const courseNameMap = new Map<string, string>(
     teacherSchedules
       .filter((s): s is Schedule & { courseId: Course } => !!s.courseId && !!s.courseId._id && !!s.courseId.name)
@@ -228,18 +209,13 @@ const AssignmentsPage: React.FC = () => {
       .map((s) => [s.departmentId._id, s.departmentId.name])
   );
 
-  // Get unique courses and departments
+  // Unique courses and departments
   const uniqueCourses = teacherSchedules.length
     ? [...new Set(teacherSchedules.filter((s): s is Schedule & { courseId: Course } => !!s.courseId && !!s.courseId._id).map((s) => s.courseId._id))]
     : [];
   const uniqueDepartments = teacherSchedules.length
     ? [...new Set(teacherSchedules.filter((s): s is Schedule & { departmentId: Department } => !!s.departmentId && !!s.departmentId._id).map((s) => s.departmentId._id))]
     : [];
-  console.log('Teacher Schedules:', teacherSchedules);
-  console.log('Unique Courses:', uniqueCourses);
-  console.log('Unique Departments:', uniqueDepartments);
-  console.log('Course Name Map:', Array.from(courseNameMap.entries()));
-  console.log('Department Name Map:', Array.from(departmentNameMap.entries()));
 
   // Map assignments to include courseName and departmentName
   const enrichedAssignments = assignments.map((assignment) => ({
@@ -253,36 +229,20 @@ const AssignmentsPage: React.FC = () => {
     .filter((assignment) => {
       const now = new Date();
       const dueDate = new Date(assignment.dueDate);
-      if (isNaN(dueDate.getTime())) return false; // Skip invalid dates
-
+      if (isNaN(dueDate.getTime())) return false;
       const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-      if (filters.course !== 'all' && assignment.courseId !== filters.course) {
-        return false;
-      }
-
-      if (filters.department !== 'all' && assignment.departmentId !== filters.department) {
-        return false;
-      }
-
+      if (filters.course !== 'all' && assignment.courseId !== filters.course) return false;
+      if (filters.department !== 'all' && assignment.departmentId !== filters.department) return false;
       if (filters.status !== 'all') {
-        if (filters.status === 'active' && dueDate < now) {
-          return false;
-        }
-        if (filters.status === 'expired' && dueDate >= now) {
-          return false;
-        }
-        if (filters.status === 'due-soon' && (daysUntilDue > 3 || daysUntilDue < 0)) {
-          return false;
-        }
+        if (filters.status === 'active' && dueDate < now) return false;
+        if (filters.status === 'expired' && dueDate >= now) return false;
+        if (filters.status === 'due-soon' && (daysUntilDue > 3 || daysUntilDue < 0)) return false;
       }
-
       return true;
     })
     .sort((a, b) => {
       const dateA = new Date(a[filters.sortBy as keyof Assignment] as string);
       const dateB = new Date(b[filters.sortBy as keyof Assignment] as string);
-
       switch (filters.sortBy) {
         case 'dueDate':
         case 'createdAt':
@@ -305,15 +265,11 @@ const AssignmentsPage: React.FC = () => {
   const endIndex = startIndex + itemsPerPage;
   const currentAssignments = filteredAssignments.slice(startIndex, endIndex);
 
-  // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  useEffect(() => {
-    console.log('Filters:', filters);
-  }, [filters]);
-
+  // Stats
   const activeAssignments = assignments.filter((a) => {
     const dueDate = new Date(a.dueDate);
     return !isNaN(dueDate.getTime()) && dueDate >= new Date();
@@ -324,12 +280,52 @@ const AssignmentsPage: React.FC = () => {
   }).length;
   const totalSubmissions = assignments.reduce((sum, a) => sum + (a.submissions?.length || 0), 0);
 
+  // Responsive sidebar handlers
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
-    <div className="flex h-screen bg-gray-50">
-      <TeacherSideBar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 ml-64">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          onClick={closeSidebar}
+          aria-label="Close sidebar"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed top-0 left-0 bottom-0 z-50 w-64 bg-white shadow-lg
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static md:shadow-none
+        `}
+        aria-label="Sidebar"
+      >
+        <TeacherSideBar />
+      </aside>
+
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 ">
+        {/* Mobile header with hamburger */}
+        <div className="md:hidden flex items-center justify-between bg-white shadow p-4">
+          <button
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            className="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring"
+          >
+            <MdMenu size={30} />
+          </button>
+          <Header role="teacher" />
+        </div>
+        {/* Desktop header */}
+        <div className="hidden md:block">
+          <Header role="teacher" />
+        </div>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50">
           <div className="container mx-auto px-6 py-6">
             <div className="mb-8">
               <div className="flex items-center justify-between">
@@ -361,12 +357,7 @@ const AssignmentsPage: React.FC = () => {
                 <div className="flex items-center">
                   <div className="p-2 bg-blue-100 rounded-lg">
                     <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      ></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -379,12 +370,7 @@ const AssignmentsPage: React.FC = () => {
                 <div className="flex items-center">
                   <div className="p-2 bg-green-100 rounded-lg">
                     <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -397,12 +383,7 @@ const AssignmentsPage: React.FC = () => {
                 <div className="flex items-center">
                   <div className="p-2 bg-red-100 rounded-lg">
                     <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                      ></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -415,12 +396,7 @@ const AssignmentsPage: React.FC = () => {
                 <div className="flex items-center">
                   <div className="p-2 bg-purple-100 rounded-lg">
                     <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                      ></path>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                     </svg>
                   </div>
                   <div className="ml-4">
@@ -449,12 +425,7 @@ const AssignmentsPage: React.FC = () => {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
                 <div className="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
                   <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    ></path>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                   </svg>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">No Assignments Found</h3>

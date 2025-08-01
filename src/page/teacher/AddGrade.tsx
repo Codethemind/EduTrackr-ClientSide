@@ -7,6 +7,7 @@ import GradeEntryTable from '../../components/teacher/Grades/GradeEntryTable';
 import axios from '../../api/axiosInstance';
 import toast from 'react-hot-toast';
 import { RootState } from '../../redux/store';
+import { MdMenu } from 'react-icons/md';
 
 const AddGrade: React.FC = () => {
   const authState = useSelector((state: RootState) => state.auth);
@@ -17,6 +18,9 @@ const AddGrade: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+
+  // Sidebar state for mobile responsiveness
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const teacherId = authState?.user?.id || authState?.user?.id;
   const accessToken = authState?.accessToken;
@@ -29,7 +33,6 @@ const AddGrade: React.FC = () => {
         setIsLoading(false);
         return;
       }
-
       try {
         const response = await axios.get(`/api/assignments/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
@@ -41,8 +44,7 @@ const AddGrade: React.FC = () => {
         }
       } catch (error: any) {
         const message =
-          error.response?.data?.message ||
-          'Unable to load assignments due to a server error.';
+          error.response?.data?.message || 'Unable to load assignments due to a server error.';
         toast.error(message);
         if (error.response?.status === 401 || error.response?.status === 403) {
           toast.error('Unauthorized access. Please log in again.');
@@ -51,11 +53,9 @@ const AddGrade: React.FC = () => {
         setIsLoading(false);
       }
     };
-
     fetchAssignments();
   }, [teacherId, accessToken]);
 
-  // Handle assignment selection
   const handleAssignmentSelect = (assignmentId: string) => {
     if (!assignmentId) {
       setSelectedAssignment(null);
@@ -63,12 +63,10 @@ const AddGrade: React.FC = () => {
       setGrades({});
       return;
     }
-
     setIsLoadingStudents(true);
     const assignment = assignments.find((a) => a._id === assignmentId);
     setSelectedAssignment(assignment);
 
-    console.log('Selected assignment:', assignment);
     // Derive students from submissions
     const submittedStudents = assignment?.submissions?.map((submission: any) => ({
       _id: submission.studentId,
@@ -81,10 +79,9 @@ const AddGrade: React.FC = () => {
         submittedAt: submission.submittedAt || null,
       },
     })) || [];
-
     setStudents(submittedStudents);
 
-    // Initialize grades from submissions
+    // Initialize grades
     const initialGrades: any = {};
     submittedStudents.forEach((student: any) => {
       const submission = assignment?.submissions?.find(
@@ -97,7 +94,6 @@ const AddGrade: React.FC = () => {
     setIsLoadingStudents(false);
   };
 
-  // Handle grade change
   const handleGradeChange = (studentId: string, grade: string) => {
     const value = grade === '' ? '' : Math.max(0, Math.min(100, parseInt(grade) || 0));
     setGrades((prev: any) => ({
@@ -106,7 +102,6 @@ const AddGrade: React.FC = () => {
     }));
   };
 
-  // Extract the actual submission logic into a separate function
   const submitGrades = async (gradesToSubmit: any[]) => {
     setIsSubmitting(true);
     try {
@@ -118,13 +113,13 @@ const AddGrade: React.FC = () => {
 
       if (response.data.success) {
         toast.success(response.data.message || 'Grades submitted successfully!');
-        // Refresh assignments to update submissions
+        // Refresh assignments and students/grades state
         const responseAssignments = await axios.get(`/api/assignments/teacher/${teacherId}`, {
           headers: { Authorization: `Bearer ${accessToken}` },
         });
         if (responseAssignments.data.success) {
           setAssignments(responseAssignments.data.data);
-          handleAssignmentSelect(selectedAssignment._id); // Refresh students and grades
+          handleAssignmentSelect(selectedAssignment._id);
         }
       } else {
         toast.error(response.data.message || 'Failed to submit grades.');
@@ -142,13 +137,11 @@ const AddGrade: React.FC = () => {
     }
   };
 
-  // Handle grade submission with toast confirmation
   const handleSubmitGrades = async () => {
     if (!selectedAssignment) {
       toast.error('Please select an assignment.');
       return;
     }
-
     // Validate grades
     const invalidGrades = Object.entries(grades).filter(
       ([_, grade]) => grade !== '' && (Number(grade) < 0 || Number(grade) > 100)
@@ -157,25 +150,20 @@ const AddGrade: React.FC = () => {
       toast.error('All grades must be between 0 and 100.');
       return;
     }
-
     const gradesToSubmit = Object.entries(grades)
       .filter(([_, grade]) => grade !== '')
       .map(([studentId, grade]) => ({
         studentId,
         grade: parseInt(grade as string),
       }));
-
     if (gradesToSubmit.length === 0) {
       toast.error('Please enter at least one grade to submit.');
       return;
     }
-
-    // Replace window.confirm with styled toast confirmation
     toast(
       (t) => (
         <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-6 max-w-md mx-auto">
           <div className="flex items-start space-x-4">
-            {/* Warning Icon */}
             <div className="flex-shrink-0">
               <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
                 <svg
@@ -193,8 +181,6 @@ const AddGrade: React.FC = () => {
                 </svg>
               </div>
             </div>
-
-            {/* Content */}
             <div className="flex-1 min-w-0">
               <div className="text-lg font-semibold text-gray-900 mb-2">
                 Confirm Grade Submission
@@ -202,8 +188,6 @@ const AddGrade: React.FC = () => {
               <div className="text-sm text-gray-600 mb-4 leading-relaxed">
                 Are you sure you want to submit these grades? This action cannot be undone and will be visible to students immediately.
               </div>
-
-              {/* Action Buttons */}
               <div className="flex space-x-3 justify-end">
                 <button
                   onClick={() => toast.dismiss(t.id)}
@@ -226,7 +210,7 @@ const AddGrade: React.FC = () => {
         </div>
       ),
       {
-        duration: 0, // Don't auto-dismiss
+        duration: 0,
         position: 'top-center',
         style: {
           background: 'transparent',
@@ -237,12 +221,50 @@ const AddGrade: React.FC = () => {
     );
   };
 
+  // Sidebar handlers
+  const toggleSidebar = () => setIsSidebarOpen((prev) => !prev);
+  const closeSidebar = () => setIsSidebarOpen(false);
+
   return (
     <div className="flex min-h-screen bg-gray-100">
-      <TeacherSideBar />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="teacher" />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 md:ml-64">
+      {/* Mobile sidebar overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden"
+          onClick={closeSidebar}
+          aria-label="Close sidebar"
+        />
+      )}
+      {/* Sidebar: slide-in on mobile, fixed on desktop */}
+      <aside
+        className={`
+          fixed top-0 left-0 bottom-0 z-50 w-64 bg-white shadow-lg
+          transform transition-transform duration-300 ease-in-out
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0 md:static md:shadow-none
+        `}
+        aria-label="Sidebar"
+      >
+        <TeacherSideBar />
+      </aside>
+      {/* Main content */}
+      <div className="flex-1 flex flex-col overflow-hidden ml-0 ">
+        {/* Mobile header with hamburger menu */}
+        <div className="md:hidden flex items-center justify-between bg-white shadow p-4">
+          <button
+            onClick={toggleSidebar}
+            aria-label={isSidebarOpen ? 'Close sidebar' : 'Open sidebar'}
+            className="p-2 rounded-md hover:bg-gray-200 focus:outline-none focus:ring"
+          >
+            <MdMenu size={30} />
+          </button>
+          <Header role="teacher" />
+        </div>
+        {/* Desktop header */}
+        <div className="hidden md:block">
+          <Header role="teacher" />
+        </div>
+        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {/* Header Section */}
             <div className="mb-8">
@@ -304,7 +326,6 @@ const AddGrade: React.FC = () => {
                     {selectedAssignment.totalStudents || 0}
                   </p>
                 </div>
-
                 {isLoadingStudents ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent"></div>
