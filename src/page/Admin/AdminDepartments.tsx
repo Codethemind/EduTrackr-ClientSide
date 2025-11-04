@@ -204,7 +204,8 @@ const AdminDepartments: React.FC = () => {
           isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <Sidebar activePage="departments" onClose={closeSidebar} />
+        <Sidebar
+         activePage="departments" onClose={closeSidebar} />
       </div>
 
       <div className="flex-1 flex flex-col">
@@ -213,8 +214,8 @@ const AdminDepartments: React.FC = () => {
           isSidebarOpen={isSidebarOpen}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="flex justify-between items-center mb-6">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 ml-64">
+          <div className="flex justify-between items-center mb-2">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Department Management</h1>
               <p className="text-sm sm:text-base text-gray-500">Manage academic departments</p>

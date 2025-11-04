@@ -198,7 +198,7 @@ const AdminConcernPage: React.FC = () => {
       <div className="flex-1 flex flex-col">
         {/* <Header onToggleSidebar={toggleSidebar} isSidebarOpen={isSidebarOpen} role="admin" /> */}
         <Header   role="admin" />
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 ml-64">
           <div className="flex justify-between items-center mb-6">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold text-neutral-800">Manage Concerns</h1>
